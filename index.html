@@ -13,7 +13,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="game-container">
+  <div class="game-container" id="game-container">
+    <!-- Game Juice エフェクト用レイヤー（クリックを一切遮らない pointer-events: none） -->
+    <div class="particle-container" id="particle-container"></div>
+    <div class="floating-text-container" id="floating-text-container"></div>
 
     <!-- ================= スタート（タイトル）画面 ================= -->
     <div class="title-screen" id="title-screen">

@@ -81,6 +81,134 @@ function playSound(type) {
   }
 }
 
+// ========================================================
+// 1.5 Game Juice エフェクトエンジン
+// （視覚演出・振動・パーティクル・カウントアップ）
+// ========================================================
+const previousValues = {};
+
+function triggerScreenShake() {
+  const gc = document.getElementById('game-container');
+  if (!gc) return;
+  gc.classList.remove('screen-shake');
+  void gc.offsetWidth; // reflow
+  gc.classList.add('screen-shake');
+  setTimeout(() => gc.classList.remove('screen-shake'), 380);
+}
+
+function triggerScreenBounce() {
+  const gc = document.getElementById('game-container');
+  if (!gc) return;
+  gc.classList.remove('screen-bounce');
+  void gc.offsetWidth; // reflow
+  gc.classList.add('screen-bounce');
+  setTimeout(() => gc.classList.remove('screen-bounce'), 360);
+}
+
+function showFloatingText(text, x, y, type = 'exp') {
+  const container = document.getElementById('floating-text-container');
+  if (!container) return;
+
+  const el = document.createElement('div');
+  el.className = `floating-text ${type}`;
+  el.textContent = text;
+
+  // コンテナ相対座標の計算
+  const rect = container.getBoundingClientRect();
+  const relX = Math.max(30, Math.min(rect.width - 30, x ? (x - rect.left) : (rect.width / 2)));
+  const relY = Math.max(30, Math.min(rect.height - 30, y ? (y - rect.top) : (rect.height * 0.45)));
+
+  el.style.left = `${relX}px`;
+  el.style.top = `${relY}px`;
+
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 860);
+}
+
+function triggerParticles(x, y, count = 16, type = 'star') {
+  const container = document.getElementById('particle-container');
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+  const originX = x ? (x - rect.left) : (rect.width / 2);
+  const originY = y ? (y - rect.top) : (rect.height * 0.45);
+
+  const icons = {
+    star: ['⭐', '✨', '🌟', '✦'],
+    gold: ['👑', '✨', '⚡', '🌟'],
+    heal: ['💖', '🍀', '✨', '💚'],
+    mood: ['🔥', '✨', '🎮', '💖'],
+    confetti: ['🌸', '🎉', '🎊', '✨']
+  };
+  const list = icons[type] || icons.star;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.textContent = list[Math.floor(Math.random() * list.length)];
+    p.style.fontSize = `${Math.random() * 0.6 + 0.8}rem`;
+    p.style.left = `${originX}px`;
+    p.style.top = `${originY}px`;
+
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const dist = Math.random() * 90 + 40;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const rot = (Math.random() - 0.5) * 720;
+
+    p.style.setProperty('--dx', `${dx}px`);
+    p.style.setProperty('--dy', `${dy}px`);
+    p.style.setProperty('--rot', `${rot}deg`);
+
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 760);
+  }
+}
+
+function animateNumberValue(el, targetVal, isScore = false, isMoney = false) {
+  if (!el) return;
+  const key = el.id;
+  const currentVal = previousValues[key] !== undefined ? previousValues[key] : targetVal;
+  previousValues[key] = targetVal;
+
+  if (currentVal === targetVal) {
+    el.textContent = isMoney ? `¥${targetVal.toLocaleString()}` : targetVal;
+    return;
+  }
+
+  // アニメーションカウントアップ
+  const startTime = performance.now();
+  const duration = 350;
+
+  // バウンスクラス付与
+  el.classList.remove('number-pop', 'number-pop-green');
+  void el.offsetWidth;
+  if (isScore && targetVal > currentVal) {
+    el.classList.add('number-pop');
+  } else if (!isScore && targetVal > currentVal) {
+    el.classList.add('number-pop-green');
+  }
+  setTimeout(() => el.classList.remove('number-pop', 'number-pop-green'), 360);
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    // イージング
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    const value = Math.round(currentVal + (targetVal - currentVal) * easeProgress);
+
+    el.textContent = isMoney ? `¥${value.toLocaleString()}` : value;
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = isMoney ? `¥${targetVal.toLocaleString()}` : targetVal;
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
 // 2. ゲーム状態
 let state = createInitialState();
 
@@ -309,7 +437,8 @@ function renderUI() {
   stressBar.className = 'bar-inner stress-bar';
   if (state.stress >= 70) stressBar.classList.add('danger');
 
-  document.getElementById('money-text').textContent = `¥${state.money.toLocaleString()}`;
+  const moneyEl = document.getElementById('money-text');
+  animateNumberValue(moneyEl, state.money, false, true);
 
   const sciLabel = state.course === '理系' ? '理科(物化)' : (state.course === '文系' ? '社会(歴公)' : '理科/社会');
   document.getElementById('subj-name-sci').textContent = sciLabel;
@@ -328,7 +457,7 @@ function renderUI() {
 
     rankEl.textContent = rankInfo.rank;
     rankEl.className = `subj-rank ${rankInfo.class}`;
-    scoreEl.textContent = data.score;
+    animateNumberValue(scoreEl, data.score, true, false);
 
     const remainingExp = data.nextExp - data.exp;
     nextEl.textContent = `次まで ${remainingExp} pt`;
@@ -582,6 +711,8 @@ function executeStudy(subject) {
 
   if (isFailed) {
     playSound('fail');
+    triggerScreenShake();
+    showFloatingText('勉強失敗…！', null, null, 'damage');
     state.stamina = Math.max(0, state.stamina - Math.floor(stamCost * 1.2));
     state.stress = Math.min(100, state.stress + 10);
 
@@ -634,6 +765,7 @@ function executeStudy(subject) {
         if (up > 0) anyLevelUp = true;
       });
       rewardLines.push(`全科目経験値: 各 +${pts} pt 獲得！`);
+      showFloatingText(`全科目 +${pts} pt`, null, null, 'exp');
     } else {
       let mult = 1.0;
       if (state.traits.includes('speed_reading') && (subject === 'eng' || subject === 'jp')) mult = 1.25;
@@ -644,6 +776,7 @@ function executeStudy(subject) {
 
       const subjNames = { eng: '英語', math: '数学', jp: '国語', sci: document.getElementById('subj-name-sci').textContent };
       rewardLines.push(`${subjNames[subject]}経験値: +${gainedExp} pt 獲得！`);
+      showFloatingText(`${subjNames[subject]} +${gainedExp} pt`, null, null, 'exp');
 
       if (levelUps > 0) {
         anyLevelUp = true;
@@ -651,8 +784,20 @@ function executeStudy(subject) {
       }
     }
 
-    if (anyLevelUp) playSound('levelup');
-    else playSound('success');
+    if (anyLevelUp) {
+      playSound('levelup');
+      showFloatingText('偏差値 UP! ⤴', null, null, 'levelup');
+      triggerParticles(null, null, 24, 'gold');
+      triggerScreenBounce();
+    } else {
+      playSound('success');
+      if (isZone) {
+        triggerParticles(null, null, 28, 'gold');
+        triggerScreenBounce();
+      } else {
+        triggerParticles(null, null, 12, 'star');
+      }
+    }
 
     let flashTrait = null;
     if (isZone && !state.traits.includes('focus_mind') && Math.random() < 0.25) {
@@ -689,6 +834,10 @@ function executeRest() {
 
   state.stamina = Math.min(state.maxStamina, state.stamina + recovery);
   state.stress = Math.max(0, state.stress - 25);
+
+  showFloatingText(`体力 +${recovery}`, null, null, 'heal');
+  triggerParticles(null, null, 16, 'heal');
+  triggerScreenBounce();
 
   let motUp = false;
   if (state.motivation < 4 && Math.random() < 0.4) {
@@ -790,6 +939,9 @@ function executePlay(type) {
 
   if (type === 'alone') {
     playSound('click');
+    showFloatingText('やる気 UP! ⤴', null, null, 'mood');
+    triggerParticles(null, null, 16, 'mood');
+    triggerScreenBounce();
     state.stress = Math.max(0, state.stress - 25);
     if (state.motivation < 4) state.motivation++;
     enqueueModal(() => {
@@ -1449,25 +1601,33 @@ function advanceExamBattle() {
   if (state.traits.includes('math_spark') && (q.subj === 'math' || q.subj === 'sci')) {
     gained += 25;
     term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」が発動！！難問の突破口を瞬時に閃いた！</div>`;
+    triggerParticles(null, null, 20, 'gold');
+    triggerScreenBounce();
   }
   if (state.traits.includes('lang_master') && (q.subj === 'eng' || q.subj === 'jp')) {
     gained += 20;
     term.innerHTML += `<div class="log-line trait">【金特】「言語の極意」が発動！！論理展開を完璧に掌握した！</div>`;
+    triggerParticles(null, null, 20, 'gold');
+    triggerScreenBounce();
   }
 
   if (state.traits.includes('careless_mistake') && Math.random() < 0.35) {
     if (state.hasAmulet) {
       state.hasAmulet = false;
       term.innerHTML += `<div class="log-line trait">🌸 あおいの「合格祈願お守り」が輝いた！計算ミスを寸前で自覚して書き直した！</div>`;
+      triggerParticles(null, null, 16, 'star');
     } else {
       gained -= 25;
       term.innerHTML += `<div class="log-line fail">【赤特】「ケアレスミス癖」発動…！符号の書き間違いで部分点を落とした！</div>`;
+      triggerScreenShake();
+      showFloatingText('-25点 痛恨のミス！', null, null, 'damage');
     }
   }
 
   gained = Math.max(10, Math.min(100, gained));
   battleState.score += gained;
   document.getElementById('battle-current-score').textContent = `獲得得点: ${battleState.score} / 500`;
+  triggerParticles(null, null, 12, 'star');
 
   term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
   term.scrollTop = term.scrollHeight;
@@ -1546,6 +1706,12 @@ function triggerGameEnd() {
   }
 
   enqueueModal(() => {
+    if (isPassed) {
+      triggerParticles(null, null, 40, 'confetti');
+      triggerScreenBounce();
+    } else {
+      triggerScreenShake();
+    }
     const modalFooter = document.getElementById('event-modal-footer');
     modalFooter.innerHTML = `
       <button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>
