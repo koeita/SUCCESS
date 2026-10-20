@@ -5,6 +5,7 @@ screenshot_*.png
 mobile_*.png
 modern_mobile_*.png
 game_juice_*.png
+audio_*.png
 __pycache__/
 *.log
 .DS_Store

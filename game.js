@@ -2,82 +2,214 @@
 // 受験サクセス 完全版ゲームエンジン（イベントキュー＆安定性強化版）
 // ========================================================
 
-// 1. Web Audio API
+// ========================================================
+// 1. Web Audio API 音響エンジン（外部音声ファイル一切不使用）
+// ========================================================
+let isMuted = localStorage.getItem('juken_muted') === 'true';
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function toggleMute() {
+  isMuted = !isMuted;
+  localStorage.setItem('juken_muted', isMuted);
+  updateMuteUI();
+  if (!isMuted) {
+    playSound('click');
+  }
+}
+
+function updateMuteUI() {
+  const icon = document.getElementById('mute-icon');
+  const btn = document.getElementById('btn-mute-toggle');
+  if (icon) icon.textContent = isMuted ? '🔇' : '🔊';
+  if (btn) btn.classList.toggle('muted', isMuted);
+}
+
+// ホバー音のスロットリング（高速移動時のノイズ化を防止）
+let lastHoverSoundTime = 0;
+function playHoverSound() {
+  const now = performance.now();
+  if (now - lastHoverSoundTime > 80) {
+    lastHoverSoundTime = now;
+    playSound('hover');
+  }
+}
+
 function playSound(type) {
+  if (isMuted) return;
   try {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
     const now = audioCtx.currentTime;
 
     if (type === 'click') {
+      // 軽快な打鍵クリック音（短く小気味よい）
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.05);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
       osc.start(now);
-      osc.stop(now + 0.08);
-    } else if (type === 'start') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(554.37, now + 0.1);
-      osc.frequency.setValueAtTime(659.25, now + 0.2);
-      osc.frequency.setValueAtTime(880.00, now + 0.3);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
-      osc.start(now);
-      osc.stop(now + 0.7);
-    } else if (type === 'success') {
+      osc.stop(now + 0.05);
+
+    } else if (type === 'hover') {
+      // 控えめで上質なUIフォーカス音（非常に短く耳障りにならない）
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, now);
-      osc.frequency.setValueAtTime(659.25, now + 0.08);
-      osc.frequency.setValueAtTime(783.99, now + 0.16);
-      osc.frequency.setValueAtTime(1046.50, now + 0.24);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+      osc.frequency.setValueAtTime(1100, now);
+      osc.frequency.exponentialRampToValueAtTime(1300, now + 0.025);
+      gain.gain.setValueAtTime(0.035, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
       osc.start(now);
-      osc.stop(now + 0.45);
+      osc.stop(now + 0.025);
+
+    } else if (type === 'start') {
+      // ゲーム開始の上昇アルペジオ
+      const notes = [440, 554.37, 659.25, 880];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        const t = now + idx * 0.08;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      });
+
+    } else if (type === 'success') {
+      // 爽快な和音上昇音（ド・ミ・ソ・ド）
+      const freqs = [523.25, 659.25, 783.99, 1046.50];
+      freqs.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        const t = now + idx * 0.07;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      });
+
     } else if (type === 'levelup') {
+      // レベルアップ（劇的なファンファーレ和音）
+      const chords = [
+        [523.25, 659.25, 783.99],
+        [587.33, 739.99, 880.00],
+        [659.25, 830.61, 987.77],
+        [1046.50, 1318.51, 1567.98]
+      ];
+      chords.forEach((chord, step) => {
+        const t = now + step * 0.1;
+        chord.forEach(freq => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(step === 3 ? 0.22 : 0.12, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + (step === 3 ? 0.6 : 0.18));
+          osc.start(t);
+          osc.stop(t + (step === 3 ? 0.6 : 0.18));
+        });
+      });
+
+    } else if (type === 'fail') {
+      // ミス・下降ブザー音（低めの鋸波下降音）
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(240, now);
+      osc1.frequency.exponentialRampToValueAtTime(75, now + 0.32);
+      osc2.frequency.setValueAtTime(235, now);
+      osc2.frequency.exponentialRampToValueAtTime(70, now + 0.32);
+
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.32);
+      osc2.stop(now + 0.32);
+
+    } else if (type === 'fanfare') {
+      // ハイスコア更新・第一志望現役合格ファンファーレ（堂々たるブラス風進行）
+      const rhythm = [
+        { freqs: [392.00], time: 0, dur: 0.1 },
+        { freqs: [392.00], time: 0.12, dur: 0.1 },
+        { freqs: [392.00], time: 0.24, dur: 0.1 },
+        { freqs: [523.25], time: 0.36, dur: 0.2 },
+        { freqs: [523.25, 659.25, 783.99, 1046.50], time: 0.58, dur: 1.2 }
+      ];
+      rhythm.forEach(item => {
+        const t = now + item.time;
+        item.freqs.forEach(freq => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + item.dur);
+          osc.start(t);
+          osc.stop(t + item.dur);
+        });
+      });
+
+    } else if (type === 'rest') {
+      // 穏やかな回復音（サイン波アルペジオ）
+      const freqs = [329.63, 440.00, 554.37, 659.25];
+      freqs.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        const t = now + idx * 0.09;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        osc.start(t);
+        osc.stop(t + 0.4);
+      });
+
+    } else if (type === 'battle_hit') {
+      // 解答・試験進行音
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(587.33, now);
-      osc.frequency.setValueAtTime(739.99, now + 0.1);
-      osc.frequency.setValueAtTime(880.00, now + 0.2);
-      osc.frequency.setValueAtTime(1174.66, now + 0.3);
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-      osc.start(now);
-      osc.stop(now + 0.6);
-    } else if (type === 'fail') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
-      gain.gain.setValueAtTime(0.25, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-      osc.start(now);
-      osc.stop(now + 0.25);
-    } else if (type === 'rest') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.3);
+      osc.frequency.exponentialRampToValueAtTime(1174.66, now + 0.12);
       gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.start(now);
-      osc.stop(now + 0.35);
-    } else if (type === 'battle_hit') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-      osc.start(now);
-      osc.stop(now + 0.1);
+      osc.stop(now + 0.12);
     }
   } catch (e) {
-    console.warn(e);
+    console.warn('Audio error:', e);
   }
 }
 
@@ -1707,9 +1839,11 @@ function triggerGameEnd() {
 
   enqueueModal(() => {
     if (isPassed) {
+      playSound('fanfare');
       triggerParticles(null, null, 40, 'confetti');
       triggerScreenBounce();
     } else {
+      playSound('fail');
       triggerScreenShake();
     }
     const modalFooter = document.getElementById('event-modal-footer');
@@ -1809,6 +1943,15 @@ function initInnateTraits() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  updateMuteUI();
   document.getElementById('title-screen').style.display = 'flex';
   document.getElementById('main-game-screen').style.display = 'none';
+
+  // 全ボタン・対話要素への心地よいホバー効果音自動登録
+  document.addEventListener('mouseover', (e) => {
+    const btn = e.target.closest('button, .tab-btn, .choice-btn, .study-card-btn, .btn-confirm, .btn-close');
+    if (btn) {
+      playHoverSound();
+    }
+  });
 });

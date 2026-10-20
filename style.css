@@ -1511,6 +1511,44 @@ body::before {
   transform: translateY(-2px) scale(1.02);
 }
 
+/* ミュート切り替えボタン（画面右上の常設フローティングUI） */
+.btn-mute-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 1.05rem;
+}
+
+.btn-mute-toggle:hover {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.btn-mute-toggle:active {
+  transform: scale(0.92);
+}
+
+.btn-mute-toggle.muted {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
 /* ========================================================
    スマートフォン（モバイル画面）完全最適化
    ======================================================== */
@@ -1535,6 +1573,14 @@ body::before {
     border: none;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .btn-mute-toggle {
+    top: calc(env(safe-area-inset-top, 0px) + 8px);
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
   }
 
   .title-screen {

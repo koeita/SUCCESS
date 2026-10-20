@@ -14,6 +14,11 @@
 </head>
 <body>
   <div class="game-container" id="game-container">
+    <!-- ミュート切り替えボタン（画面右上の常設フローティングUI） -->
+    <button class="btn-mute-toggle" id="btn-mute-toggle" onclick="toggleMute()" title="効果音の消音/再生切り替え">
+      <span id="mute-icon">🔊</span>
+    </button>
+
     <!-- Game Juice エフェクト用レイヤー（クリックを一切遮らない pointer-events: none） -->
     <div class="particle-container" id="particle-container"></div>
     <div class="floating-text-container" id="floating-text-container"></div>
