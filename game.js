@@ -283,9 +283,9 @@ function renderUI() {
 
   const univBadge = document.getElementById('target-univ-badge');
   if (state.targetUniv) {
-    univBadge.textContent = `志望: ${state.targetUniv.name} (目:${state.targetUniv.border})`;
+    univBadge.textContent = `志望: ${state.targetUniv.name} (${state.targetUniv.border})`;
   } else {
-    univBadge.textContent = '志望校: 未決定 (高3春に決定)';
+    univBadge.textContent = '志望校: 未決定 (高3決定)';
   }
 
   document.getElementById('scene-course-badge').textContent = `コース: ${state.course} | 部活: ${state.club}`;

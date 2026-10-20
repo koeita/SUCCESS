@@ -1,6 +1,7 @@
 # Test scripts and temporary artifacts
 test_*.py
 screenshot_*.png
+mobile_*.png
 __pycache__/
 *.log
 .DS_Store
