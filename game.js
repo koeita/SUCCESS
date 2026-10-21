@@ -1119,10 +1119,10 @@ function executeStudy(subject) {
   }
 
   let stamCost = 15;
-  let stressCost = 6;
-  if (subject === 'math') { stamCost = 18; stressCost = 8; }
-  if (subject === 'jp') { stamCost = 12; stressCost = 4; }
-  if (subject === 'all') { stamCost = 24; stressCost = 12; }
+  let stressCost = 12;
+  if (subject === 'math') { stamCost = 18; stressCost = 15; }
+  if (subject === 'jp') { stamCost = 12; stressCost = 9; }
+  if (subject === 'all') { stamCost = 24; stressCost = 20; }
 
   if (state.club === '運動部') stamCost += 3;
 
@@ -1141,7 +1141,7 @@ function executeStudy(subject) {
     triggerScreenShake();
     showFloatingText('勉強失敗…！', null, null, 'damage');
     state.stamina = Math.max(0, state.stamina - Math.floor(stamCost * 1.2));
-    state.stress = Math.min(100, state.stress + 10);
+    state.stress = Math.min(100, state.stress + 15);
 
     let motDown = false;
     if (state.motivation > 0 && Math.random() < 0.5) {
@@ -1260,14 +1260,14 @@ function executeRest() {
   if (state.traits.includes('insomnia')) recovery = Math.floor(recovery * 0.6);
 
   state.stamina = Math.min(state.maxStamina, state.stamina + recovery);
-  state.stress = Math.max(0, state.stress - 25);
+  state.stress = Math.max(0, state.stress - 5);
 
   showFloatingText(`体力 +${recovery}`, null, null, 'heal');
   triggerParticles(null, null, 16, 'heal');
   triggerScreenBounce();
 
   let motUp = false;
-  if (state.motivation < 4 && Math.random() < 0.4) {
+  if (state.motivation < 4 && Math.random() < 0.15) {
     state.motivation++;
     motUp = true;
   }
@@ -1277,18 +1277,18 @@ function executeRest() {
       '🛌 しっかり休養',
       state.traits.includes('insomnia')
         ? '不眠症のせいで浅い眠りだったが、体力を少し回復した。'
-        : 'ゆっくりお風呂に入って熟睡した！心身ともにリフレッシュ！',
+        : 'ゆっくりお風呂に入って熟睡した！体力が大幅に回復！',
       [
         `体力 +${recovery} 回復`,
-        'ストレス -25%',
-        motUp ? `やる気アップ ⤴ (${MOTIVATIONS[state.motivation].label})` : '体調万全！'
+        'ストレス -5%',
+        motUp ? `やる気アップ ⤴ (${MOTIVATIONS[state.motivation].label})` : '体調リセット！'
       ],
       '🌿',
       () => advanceTurn()
     );
   });
 
-  setDialog(state.playerName, 'よく寝たー！リフレッシュできたぞ！');
+  setDialog(state.playerName, 'よく寝たー！体力が回復したぞ！');
   renderUI();
 }
 
@@ -1304,7 +1304,7 @@ function openPlayMenu() {
     <span class="icon">🎮</span>
     <div class="info">
       <div class="name">ゲーム・マンガで息抜き</div>
-      <div class="desc">ストレス-25 / やる気UP (費用: ¥0)</div>
+      <div class="desc">ストレス-45% / やる気確定UP / 体力+15 (費用: ¥0)</div>
     </div>
   `;
   container.appendChild(btnAlone);
@@ -1317,7 +1317,7 @@ function openPlayMenu() {
       <span class="icon">👧</span>
       <div class="info">
         <div class="name">あおいとカフェで自習＆おしゃべり</div>
-        <div class="desc">あおいの好感度UP / ストレス-35 (費用: ¥800)</div>
+        <div class="desc">あおいの好感度UP / ストレス-50% / 体力+10 (費用: ¥800)</div>
       </div>
     `;
   } else {
@@ -1340,7 +1340,7 @@ function openPlayMenu() {
       <span class="icon">👦</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
-        <div class="desc">神童の友好度UP / 数学経験値ボーナス (費用: ¥1,000)</div>
+        <div class="desc">神童の友好度UP / 数学＆英語経験値 / ストレス-30% (費用: ¥1,000)</div>
       </div>
     `;
   } else {
@@ -1366,21 +1366,26 @@ function executePlay(type) {
 
   if (type === 'alone') {
     playSound('click');
-    showFloatingText('やる気 UP! ⤴', null, null, 'mood');
+    showFloatingText('ストレス大幅解消！', null, null, 'heal');
     triggerParticles(null, null, 16, 'mood');
     triggerScreenBounce();
-    state.stress = Math.max(0, state.stress - 25);
+    state.stress = Math.max(0, state.stress - 45);
+    state.stamina = Math.min(state.maxStamina, state.stamina + 15);
     if (state.motivation < 4) state.motivation++;
     enqueueModal(() => {
       showEventModal(
         '🎮 ゲーム＆マンガで息抜き',
-        '思いっきり遊んでストレスをしっかり発散した！',
-        ['ストレス -25%', 'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')'],
+        '大好きなゲームとマンガに没頭し、心のストレスを徹底的に発散！やる気がみなぎってきた！',
+        [
+          'ストレス -45% 大幅解消！',
+          'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')',
+          '体力 +15 回復'
+        ],
         '🎮',
         () => advanceTurn()
       );
     });
-    setDialog(state.playerName, '楽しかった！これでまた勉強に集中できるぞ！');
+    setDialog(state.playerName, '最高に楽しかった！心がすっきりしてやる気全開だ！');
   } else if (type === 'aoi') {
     if (state.money < 800) {
       playSound('fail');
@@ -1389,7 +1394,8 @@ function executePlay(type) {
     }
     playSound('success');
     state.money -= 800;
-    state.stress = Math.max(0, state.stress - 35);
+    state.stress = Math.max(0, state.stress - 50);
+    state.stamina = Math.min(state.maxStamina, state.stamina + 10);
     state.friends.aoi.affection = Math.min(100, state.friends.aoi.affection + 15);
     if (state.motivation < 4) state.motivation++;
 
@@ -1402,10 +1408,11 @@ function executePlay(type) {
     enqueueModal(() => {
       showEventModal(
         '👧 あおいとカフェで自習＆おしゃべり',
-        'お互いの志望校や将来の夢について語り合い、心の支えができた。',
+        'お互いの志望校や将来の夢について語り合い、心の支えができた。甘いスイーツで疲れも癒やされた！',
         [
           `あおいの好感度 +15% (現在:${state.friends.aoi.affection}%)`,
-          'ストレス -35%',
+          'ストレス -50% 大幅解消！',
+          '体力 +10 回復',
           'やる気アップ ⤴',
           'お小遣い -¥800',
           traitMsg
@@ -1423,8 +1430,9 @@ function executePlay(type) {
     }
     playSound('success');
     state.money -= 1000;
-    state.stress = Math.max(0, state.stress - 20);
+    state.stress = Math.max(0, state.stress - 30);
     state.friends.shindo.affection = Math.min(100, state.friends.shindo.affection + 15);
+    if (state.motivation < 4) state.motivation++;
 
     addExpToSubject('math', 20);
     addExpToSubject('eng', 15);
@@ -1438,15 +1446,17 @@ function executePlay(type) {
     enqueueModal(() => {
       showEventModal(
         '👦 神童くんとファミレスで受験戦略会議',
-        '神童くんから「難問の着眼点と別解」を徹底伝授された！',
+        '難問の解法テクニックや効率的な学習プランについて熱い議論を交わした！',
         [
           `神童の友好度 +15% (現在:${state.friends.shindo.affection}%)`,
-          '数学経験値 +20 pt / 英語経験値 +15 pt 獲得！',
-          'ストレス -20%',
+          '数学 経験値 +20 pt',
+          '英語 経験値 +15 pt',
+          'ストレス -30%',
+          'やる気アップ ⤴',
           'お小遣い -¥1,000',
           traitMsg
         ].filter(Boolean),
-        '📐',
+        '📝',
         () => advanceTurn()
       );
     });
