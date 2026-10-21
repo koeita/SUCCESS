@@ -457,13 +457,13 @@ const TRAITS_MASTER = [
 ];
 
 function getRank(score) {
-  if (score >= 75) return { rank: 'S', class: 'rank-s' };
-  if (score >= 68) return { rank: 'A', class: 'rank-a' };
-  if (score >= 62) return { rank: 'B', class: 'rank-b' };
-  if (score >= 55) return { rank: 'C', class: 'rank-c' };
-  if (score >= 48) return { rank: 'D', class: 'rank-d' };
+  if (score >= 90) return { rank: 'S', class: 'rank-s' };
+  if (score >= 80) return { rank: 'A', class: 'rank-a' };
+  if (score >= 70) return { rank: 'B', class: 'rank-b' };
+  if (score >= 60) return { rank: 'C', class: 'rank-c' };
+  if (score >= 50) return { rank: 'D', class: 'rank-d' };
   if (score >= 40) return { rank: 'E', class: 'rank-e' };
-  if (score >= 35) return { rank: 'F', class: 'rank-f' };
+  if (score >= 20) return { rank: 'F', class: 'rank-f' };
   return { rank: 'G', class: 'rank-g' };
 }
 
