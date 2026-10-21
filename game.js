@@ -3,15 +3,48 @@
 // ========================================================
 
 // ========================================================
-// 1. Web Audio API 音響エンジン（外部音声ファイル一切不使用）
+// 1. Web Audio API 音響エンジン & 各種設定システム
 // ========================================================
-let isMuted = localStorage.getItem('juken_muted') === 'true';
+const SAVE_KEY = 'juken_success_save';
+const SETTINGS_KEY = 'juken_success_settings';
+
+const defaultSettings = {
+  isMuted: false,
+  seVolume: 0.8,
+  screenShake: true,
+  particles: true
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return { ...defaultSettings, ...JSON.parse(raw) };
+  } catch (e) {
+    console.error('Failed to load settings:', e);
+  }
+  const legacyMuted = localStorage.getItem('juken_muted') === 'true';
+  return { ...defaultSettings, isMuted: legacyMuted };
+}
+
+let settings = loadSettings();
+let isMuted = settings.isMuted;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem('juken_muted', settings.isMuted);
+  } catch (e) {
+    console.error('Failed to save settings:', e);
+  }
+}
+
 function toggleMute() {
-  isMuted = !isMuted;
-  localStorage.setItem('juken_muted', isMuted);
+  settings.isMuted = !settings.isMuted;
+  isMuted = settings.isMuted;
+  saveSettings();
   updateMuteUI();
+  updateSettingsUI();
   if (!isMuted) {
     playSound('click');
   }
@@ -35,7 +68,8 @@ function playHoverSound() {
 }
 
 function playSound(type) {
-  if (isMuted) return;
+  if (isMuted || settings.seVolume <= 0) return;
+  const vol = settings.seVolume;
   try {
     if (audioCtx.state === 'suspended') {
       audioCtx.resume();
@@ -51,7 +85,7 @@ function playSound(type) {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(800, now);
       osc.frequency.exponentialRampToValueAtTime(1400, now + 0.05);
-      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.setValueAtTime(0.18 * vol, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
       osc.start(now);
       osc.stop(now + 0.05);
@@ -65,7 +99,7 @@ function playSound(type) {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1100, now);
       osc.frequency.exponentialRampToValueAtTime(1300, now + 0.025);
-      gain.gain.setValueAtTime(0.035, now);
+      gain.gain.setValueAtTime(0.035 * vol, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
       osc.start(now);
       osc.stop(now + 0.025);
@@ -81,7 +115,7 @@ function playSound(type) {
         osc.type = 'triangle';
         const t = now + idx * 0.08;
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.setValueAtTime(0.2 * vol, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
         osc.start(t);
         osc.stop(t + 0.35);
@@ -98,7 +132,7 @@ function playSound(type) {
         osc.type = 'sine';
         const t = now + idx * 0.07;
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.setValueAtTime(0.18 * vol, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
         osc.start(t);
         osc.stop(t + 0.3);
@@ -121,7 +155,7 @@ function playSound(type) {
           gain.connect(audioCtx.destination);
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(step === 3 ? 0.22 : 0.12, t);
+          gain.gain.setValueAtTime((step === 3 ? 0.22 : 0.12) * vol, t);
           gain.gain.exponentialRampToValueAtTime(0.001, t + (step === 3 ? 0.6 : 0.18));
           osc.start(t);
           osc.stop(t + (step === 3 ? 0.6 : 0.18));
@@ -144,7 +178,7 @@ function playSound(type) {
       osc2.frequency.setValueAtTime(235, now);
       osc2.frequency.exponentialRampToValueAtTime(70, now + 0.32);
 
-      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.setValueAtTime(0.22 * vol, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
 
       osc1.start(now);
@@ -170,7 +204,7 @@ function playSound(type) {
           gain.connect(audioCtx.destination);
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.setValueAtTime(0.2 * vol, t);
           gain.gain.exponentialRampToValueAtTime(0.001, t + item.dur);
           osc.start(t);
           osc.stop(t + item.dur);
@@ -188,7 +222,7 @@ function playSound(type) {
         osc.type = 'sine';
         const t = now + idx * 0.09;
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.setValueAtTime(0.18 * vol, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
         osc.start(t);
         osc.stop(t + 0.4);
@@ -220,6 +254,7 @@ function playSound(type) {
 const previousValues = {};
 
 function triggerScreenShake() {
+  if (!settings.screenShake) return;
   const gc = document.getElementById('game-container');
   if (!gc) return;
   gc.classList.remove('screen-shake');
@@ -258,6 +293,7 @@ function showFloatingText(text, x, y, type = 'exp') {
 }
 
 function triggerParticles(x, y, count = 16, type = 'star') {
+  if (!settings.particles) return;
   const container = document.getElementById('particle-container');
   if (!container) return;
 
@@ -453,8 +489,75 @@ function showNextModal() {
   nextFn();
 }
 
-// ================= スタート画面処理 =================
+// ================= セーブ＆ロード・ポーズメニュー・スタート画面処理 =================
 
+// オートセーブ
+function autoSaveGame() {
+  if (!state) return;
+  state.inGame = true;
+  state.savedAt = Date.now();
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('Failed to auto-save game:', e);
+  }
+}
+
+function getSavedGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (data && data.year && data.month && data.week && data.subjects) {
+      return data;
+    }
+  } catch (e) {
+    console.error('Failed to parse save data:', e);
+  }
+  return null;
+}
+
+function clearSavedGame() {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch (e) {
+    console.error('Failed to clear save data:', e);
+  }
+}
+
+// つづきから再開
+function resumeGame() {
+  const saved = getSavedGame();
+  if (!saved) {
+    alert('セーブデータが見つかりませんでした。');
+    return;
+  }
+  playSound('start');
+  state = saved;
+  state.inGame = true;
+  autoSaveGame();
+
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('main-game-screen').style.display = 'flex';
+
+  renderUI();
+  setDialog('担任の先生', `${state.playerName}、前回の続き（${state.year}年目 ${state.month}月 ${state.week}週）から再開するぞ！集中して合格を目指そう！`);
+}
+
+// 「はじめからスタート」ボタン押下時（既存セーブの確認）
+function handleStartNewClick() {
+  const saved = getSavedGame();
+  if (saved) {
+    const univName = saved.targetUniv ? saved.targetUniv.name : '志望校未定';
+    const msg = '前回のセーブデータがあります。上書きして最初から始めますか？';
+    if (!confirm(msg)) {
+      return;
+    }
+  }
+  startGame();
+}
+
+// 新規ゲーム開始
 function startGame() {
   playSound('start');
   const nameInput = document.getElementById('player-name-input');
@@ -462,6 +565,8 @@ function startGame() {
 
   state = createInitialState(playerName);
   initInnateTraits();
+  state.inGame = true;
+  autoSaveGame();
 
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'flex';
@@ -475,6 +580,176 @@ function returnToTitle() {
   document.getElementById('event-modal').classList.remove('active');
   document.getElementById('main-game-screen').style.display = 'none';
   document.getElementById('title-screen').style.display = 'flex';
+  clearSavedGame(); // クリア後は新しい代を始めるためセーブ消去
+  updateTitleScreenUI();
+}
+
+function updateTitleScreenUI() {
+  const saved = getSavedGame();
+  const contSection = document.getElementById('continue-section');
+  const contSub = document.getElementById('continue-info-sub');
+  const startNewText = document.getElementById('start-new-text');
+  const nameInput = document.getElementById('player-name-input');
+
+  if (saved) {
+    if (contSection) contSection.style.display = 'block';
+    if (contSub) {
+      const univName = saved.targetUniv ? saved.targetUniv.name : '志望校未定';
+      contSub.textContent = `${saved.year}年目 ${saved.month}月 ${saved.week}週 • ${saved.playerName} (${univName})`;
+    }
+    if (startNewText) startNewText.textContent = 'はじめからスタート';
+    if (nameInput && saved.playerName) nameInput.value = saved.playerName;
+  } else {
+    if (contSection) contSection.style.display = 'none';
+    if (startNewText) startNewText.textContent = 'ゲームスタート！';
+  }
+}
+
+// ポーズメニュー制御
+let isPauseFromTitle = false;
+
+function openPauseModal(fromTitle = false) {
+  playSound('click');
+  isPauseFromTitle = fromTitle;
+  const modal = document.getElementById('pause-modal');
+  if (!modal) return;
+
+  const summaryCard = document.getElementById('pause-summary-card');
+  const titleBtn = document.getElementById('btn-pause-title');
+  const restartBtn = document.getElementById('btn-pause-restart');
+  const resumeBtn = document.getElementById('btn-pause-resume');
+
+  const saved = getSavedGame();
+  const current = (state && state.inGame) ? state : saved;
+
+  if (current) {
+    summaryCard.style.display = 'flex';
+    document.getElementById('pause-summary-name').textContent = `${current.playerName} くん`;
+    document.getElementById('pause-summary-date').textContent = `${current.year}年目 ${current.month}月 ${current.week}週 (残り ${current.maxTurns - current.totalTurn + 1} 週)`;
+    document.getElementById('pause-summary-univ').textContent = `志望校: ${current.targetUniv ? current.targetUniv.name : '未決定 (高3決定)'}`;
+  } else {
+    summaryCard.style.display = 'none';
+  }
+
+  if (fromTitle) {
+    if (resumeBtn) resumeBtn.style.display = 'none';
+    if (titleBtn) titleBtn.style.display = 'none';
+    if (restartBtn) restartBtn.style.display = 'none';
+  } else {
+    if (resumeBtn) resumeBtn.style.display = 'flex';
+    if (titleBtn) titleBtn.style.display = 'flex';
+    if (restartBtn) restartBtn.style.display = 'flex';
+  }
+
+  updateSettingsUI();
+  modal.classList.add('active');
+}
+
+function closePauseModal() {
+  playSound('click');
+  const modal = document.getElementById('pause-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+function pauseReturnToTitle() {
+  playSound('click');
+  if (state) {
+    state.inGame = false;
+    autoSaveGame();
+  }
+  closePauseModal();
+  document.getElementById('main-game-screen').style.display = 'none';
+  document.getElementById('title-screen').style.display = 'flex';
+  updateTitleScreenUI();
+}
+
+function confirmRestartGame() {
+  playSound('click');
+  if (confirm('現在の高校生活データをすべて破棄して、1年目4月1週から最初からやり直しますか？')) {
+    clearSavedGame();
+    closePauseModal();
+    startGame();
+  }
+}
+
+function toggleSettingSE() {
+  settings.isMuted = !settings.isMuted;
+  isMuted = settings.isMuted;
+  saveSettings();
+  updateSettingsUI();
+  updateMuteUI();
+  if (!settings.isMuted) {
+    playSound('click');
+  }
+}
+
+function changeSEVolume(val) {
+  settings.seVolume = Math.max(0, Math.min(100, parseInt(val, 10))) / 100;
+  saveSettings();
+  const valEl = document.getElementById('setting-se-val');
+  if (valEl) valEl.textContent = `${Math.round(settings.seVolume * 100)}%`;
+  playSound('hover');
+}
+
+function toggleSettingShake() {
+  settings.screenShake = !settings.screenShake;
+  saveSettings();
+  updateSettingsUI();
+  playSound('click');
+  if (settings.screenShake) {
+    triggerScreenShake();
+  }
+}
+
+function toggleSettingParticle() {
+  settings.particles = !settings.particles;
+  saveSettings();
+  updateSettingsUI();
+  playSound('click');
+}
+
+function updateSettingsUI() {
+  const seBtn = document.getElementById('setting-se-toggle');
+  if (seBtn) {
+    seBtn.textContent = settings.isMuted ? 'OFF' : 'ON';
+    seBtn.classList.toggle('active', !settings.isMuted);
+  }
+  const slider = document.getElementById('setting-se-slider');
+  const sliderVal = document.getElementById('setting-se-val');
+  if (slider) slider.value = Math.round(settings.seVolume * 100);
+  if (sliderVal) sliderVal.textContent = `${Math.round(settings.seVolume * 100)}%`;
+
+  const shakeBtn = document.getElementById('setting-shake-toggle');
+  if (shakeBtn) {
+    shakeBtn.textContent = settings.screenShake ? 'ON' : 'OFF';
+    shakeBtn.classList.toggle('active', settings.screenShake);
+  }
+
+  const particleBtn = document.getElementById('setting-particle-toggle');
+  if (particleBtn) {
+    particleBtn.textContent = settings.particles ? 'ON' : 'OFF';
+    particleBtn.classList.toggle('active', settings.particles);
+  }
+
+  updateMuteUI();
+}
+
+// リロード時の自動復元チェック
+function checkAutoResumeOnLoad() {
+  const saved = getSavedGame();
+  if (saved && saved.inGame) {
+    // プレイ中（inGame: true）にリロードされた場合、自動的にメイン画面を表示して再開
+    state = saved;
+    document.getElementById('title-screen').style.display = 'none';
+    document.getElementById('main-game-screen').style.display = 'flex';
+    renderUI();
+    setDialog('担任の先生', `${state.playerName}、おかえり！前回の続き（${state.year}年目 ${state.month}月 ${state.week}週）から高校生活を再開するぞ！`);
+  } else {
+    // タイトル画面を表示
+    document.getElementById('title-screen').style.display = 'flex';
+    document.getElementById('main-game-screen').style.display = 'none';
+    updateTitleScreenUI();
+  }
 }
 
 function openHowToPlayModal() {
@@ -602,6 +877,7 @@ function renderUI() {
   renderTraitsDetailTab();
   renderRelationsGrid();
   renderHistoryList();
+  autoSaveGame();
 }
 
 function renderTraitsSummary() {
@@ -1942,8 +2218,8 @@ function initInnateTraits() {
 
 window.addEventListener('DOMContentLoaded', () => {
   updateMuteUI();
-  document.getElementById('title-screen').style.display = 'flex';
-  document.getElementById('main-game-screen').style.display = 'none';
+  updateSettingsUI();
+  checkAutoResumeOnLoad();
 
   // 全ボタン・対話要素への心地よいホバー効果音自動登録
   document.addEventListener('mouseover', (e) => {

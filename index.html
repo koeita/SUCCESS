@@ -47,17 +47,32 @@
       </div>
 
       <div class="title-action-area">
-        <!-- 主人公名前入力枠 -->
-        <div class="name-input-group">
-          <label for="player-name-input">受験生の名前:</label>
-          <input type="text" id="player-name-input" maxlength="8" value="合格太郎" placeholder="名前を入力">
+        <!-- つづきから再開ボタン（セーブデータがある場合に表示） -->
+        <div id="continue-section" style="display: none; width: 100%;">
+          <button class="btn-title-main btn-continue" onclick="resumeGame()">
+            <div class="continue-btn-content">
+              <span class="btn-title-icon">▶</span>
+              <span class="continue-title-text">つづきから再開！</span>
+            </div>
+            <div class="continue-info-sub" id="continue-info-sub">1年目 4月 1週 • 合格太郎</div>
+          </button>
         </div>
 
-        <button class="btn-title-main" onclick="startGame()">
-          <span class="btn-title-icon">▶</span> ゲームスタート！
-        </button>
+        <!-- はじめからスタート枠 -->
+        <div class="new-game-section" id="new-game-section">
+          <!-- 主人公名前入力枠 -->
+          <div class="name-input-group">
+            <label for="player-name-input">受験生の名前:</label>
+            <input type="text" id="player-name-input" maxlength="8" value="合格太郎" placeholder="名前を入力">
+          </div>
+
+          <button class="btn-title-main" id="btn-start-new" onclick="handleStartNewClick()">
+            <span class="btn-title-icon">✨</span> <span id="start-new-text">ゲームスタート！</span>
+          </button>
+        </div>
 
         <div class="title-sub-buttons">
+          <button class="btn-title-sub" onclick="openPauseModal(true)">⚙️ 設定</button>
           <button class="btn-title-sub" onclick="openHowToPlayModal()">📖 あそびかた</button>
           <button class="btn-title-sub" onclick="openOBRosterModal()">👨‍🎓 OB名簿・戦績</button>
         </div>
@@ -78,7 +93,10 @@
           <div class="target-univ-badge" id="target-univ-badge">
             志望校: 未決定 (高3決定)
           </div>
-          <div class="turn-count" id="turn-count">残り 144 週</div>
+          <div class="header-right-actions">
+            <div class="turn-count" id="turn-count">残り 144 週</div>
+            <button class="btn-header-menu" onclick="openPauseModal(false)" title="ポーズ・各種設定">⚙️</button>
+          </div>
         </div>
 
         <!-- バイタルゲージ群 -->
@@ -441,6 +459,83 @@
         <div class="event-icon" id="choice-modal-icon">🤔</div>
         <p class="event-text" id="choice-modal-text"></p>
         <div class="choice-buttons-container" id="choice-buttons-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ポーズ・設定モーダル ================= -->
+  <div class="modal-overlay" id="pause-modal">
+    <div class="modal-window modal-pause-window">
+      <div class="modal-header">
+        <h3>⚙️ ポーズ & 各種設定</h3>
+        <button class="btn-close" onclick="closePauseModal()">✕</button>
+      </div>
+
+      <!-- プレイ中情報サマリー -->
+      <div class="pause-summary-card" id="pause-summary-card">
+        <div class="summary-avatar">🎓</div>
+        <div class="summary-details">
+          <div class="summary-name" id="pause-summary-name">合格太郎</div>
+          <div class="summary-date" id="pause-summary-date">1年目 4月 1週 (残り 144 週)</div>
+          <div class="summary-univ" id="pause-summary-univ">志望校: 未決定</div>
+        </div>
+      </div>
+
+      <!-- 音響設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔊 サウンド設定</div>
+        
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-title">効果音 (SE)</div>
+            <div class="setting-desc">決定音やアクションの効果音</div>
+          </div>
+          <button class="setting-toggle-btn active" id="setting-se-toggle" onclick="toggleSettingSE()">ON</button>
+        </div>
+
+        <div class="setting-item slider-item">
+          <div class="setting-info">
+            <div class="setting-title">効果音 音量</div>
+          </div>
+          <div class="slider-control">
+            <input type="range" class="setting-slider" id="setting-se-slider" min="0" max="100" value="80" oninput="changeSEVolume(this.value)">
+            <span class="slider-val" id="setting-se-val">80%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 演出設定 -->
+      <div class="settings-section">
+        <div class="settings-section-title">✨ 演出・動作設定</div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-title">画面の振動 (シェイク)</div>
+            <div class="setting-desc">ミス時や重要イベントの画面揺れ</div>
+          </div>
+          <button class="setting-toggle-btn active" id="setting-shake-toggle" onclick="toggleSettingShake()">ON</button>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-title">パーティクル演出</div>
+            <div class="setting-desc">経験値獲得時の光の粒エフェクト</div>
+          </div>
+          <button class="setting-toggle-btn active" id="setting-particle-toggle" onclick="toggleSettingParticle()">ON</button>
+        </div>
+      </div>
+
+      <!-- アクションボタン群 -->
+      <div class="pause-actions-group">
+        <button class="btn-pause-action resume" id="btn-pause-resume" onclick="closePauseModal()">
+          <span class="icon">▶</span> ゲームを再開する
+        </button>
+        <button class="btn-pause-action title" id="btn-pause-title" onclick="pauseReturnToTitle()">
+          <span class="icon">🏠</span> タイトル画面へ戻る (セーブして中断)
+        </button>
+        <button class="btn-pause-action restart" id="btn-pause-restart" onclick="confirmRestartGame()">
+          <span class="icon">🔄</span> 最初からやり直す
+        </button>
       </div>
     </div>
   </div>
