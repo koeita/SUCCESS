@@ -161,7 +161,7 @@
       <!-- タブ切り替えステータスボード -->
       <section class="status-board">
         <div class="board-tabs">
-          <button class="tab-btn active" id="tab-btn-academic" onclick="switchTab('academic')">各教科 偏差値</button>
+          <button class="tab-btn active" id="tab-btn-academic" onclick="switchTab('academic')">各教科 学力</button>
           <button class="tab-btn" id="tab-btn-traits" onclick="switchTab('traits')">所持特能</button>
           <button class="tab-btn" id="tab-btn-relations" onclick="switchTab('relations')">交友関係</button>
           <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">模試・戦績</button>
@@ -253,7 +253,7 @@
           <button class="btn-cmd btn-study" onclick="openStudyMenu()">
             <span class="cmd-icon">📖</span>
             <span class="cmd-title">勉強する</span>
-            <span class="cmd-sub">経験値獲得・偏差値UP</span>
+            <span class="cmd-sub">経験値獲得・学力UP</span>
           </button>
 
           <button class="btn-cmd btn-rest" onclick="executeRest()">
@@ -326,7 +326,7 @@
   <div class="modal-overlay" id="study-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3>どの科目を勉強する？（経験値が溜まると自動で偏差値UP）</h3>
+        <h3>どの科目を勉強する？（経験値が溜まると自動で学力UP）</h3>
         <button class="btn-close" onclick="closeStudyMenu()">×</button>
       </div>
       <div class="study-options">
@@ -399,7 +399,7 @@
 
         <div class="traits-note-box">
           💡 <b>育成の仕組み:</b><br>
-          各科目を勉強するとその科目の経験値が溜まり、<b>ゲージが満タンになると自動で偏差値がアップ</b>します！<br>
+          各科目を勉強するとその科目の経験値が溜まり、<b>ゲージが満タンになると学力パラメータ（0〜100・G〜Sランク）がアップ</b>します！<br>定期模試を受けると、鍛えた学力に応じたリアルな<b>全国偏差値と志望校合否判定</b>が返却されます！<br>
           赤特（悪癖）がついてしまった場合は、お小遣いを使ってカウンセリングで克服できます。
         </div>
       </div>

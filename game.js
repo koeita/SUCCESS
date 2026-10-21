@@ -456,6 +456,13 @@ const TRAITS_MASTER = [
   { id: 'insomnia', name: '不眠症', desc: '【赤特】休養コマンドの体力回復量が半減する', cureMoney: 1500, type: 'red' }
 ];
 
+// 学力パラメータ(0〜100)からリアルな全国偏差値(35〜75)を算出
+function calcDeviation(academicScore, bonus = 0) {
+  let dev = 50 + (academicScore - 50) * 0.38 + bonus;
+  dev = Math.max(30.0, Math.min(80.0, dev));
+  return Math.round(dev * 10) / 10;
+}
+
 function getSubjectDisplayName(key) {
   if (key === 'eng') return '英語';
   if (key === 'math') return '数学';
@@ -788,7 +795,8 @@ function openOBRosterModal() {
     try {
       const ob = JSON.parse(obDataStr);
       const bestName = ob.bestSubjectName || (ob.bestSubject ? getSubjectDisplayName(ob.bestSubject) : null);
-      const bestInfoHtml = bestName ? `<div class="univ" style="color:#0284c7; font-size:0.85rem; font-weight:800;">🔥 得意科目: ${bestName} ${ob.bestScore ? `(偏差値 ${ob.bestScore})` : ''}</div>` : '';
+      const bestRank = ob.bestScore ? getRank(ob.bestScore).rank : '';
+      const bestInfoHtml = bestName ? `<div class="univ" style="color:#0284c7; font-size:0.85rem; font-weight:800;">🔥 得意科目: ${bestName} ${ob.bestScore ? `(学力 ${ob.bestScore}・${bestRank}ランク)` : ''}</div>` : '';
 
       body.innerHTML = `
         <div class="ob-history-card">
@@ -1883,55 +1891,79 @@ function triggerOBVisit() {
 function runSchoolExam() {
   playSound('success');
   let avg = Math.round((state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4);
+  let dev = calcDeviation(avg);
   let rankStr = '';
   let rewardText = '';
+  let schoolRank = '';
 
-  if (avg >= 60) {
-    rankStr = '学年トップクラス（上位10%）！先生や親に褒められた！';
+  if (avg >= 75) {
+    schoolRank = '学年 5位以内 (上位 2%)';
+    rankStr = '学年トップクラス！全校に名前が轟く秀才！';
+    if (state.motivation < 4) state.motivation++;
+    state.money += 3000;
+    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 18));
+    rewardText = '特別お小遣い +¥3,000 / 全教科経験値 +18pt';
+  } else if (avg >= 60) {
+    schoolRank = '学年 25位 (上位 12%)';
+    rankStr = '成績優秀！先生や親から大きく褒められた！';
     if (state.motivation < 4) state.motivation++;
     state.money += 2000;
     ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 15));
     rewardText = '臨時お小遣い +¥2,000 / 全教科経験値 +15pt';
   } else if (avg >= 45) {
-    rankStr = '学年平均レベル。基礎はできている。';
+    schoolRank = '学年 95位 (平均レベル)';
+    rankStr = '学年平均レベル。基礎はしっかり定着している。';
     ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 8));
     rewardText = '全教科経験値 +8pt';
   } else {
+    schoolRank = '学年 178位 (下位 10%)';
     rankStr = '赤点ギリギリ…補習の危機！';
     if (state.motivation > 0) state.motivation--;
     rewardText = 'やる気ダウン…';
   }
 
-  state.history.unshift(`${state.year}年生${state.month}月 定期考査: 平均偏差値 ${avg} (${rankStr})`);
+  state.history.unshift(`${state.year}年生${state.month}月 定期考査: 【${schoolRank}】(学力平均 ${avg}・学内偏差値 ${dev})`);
 
   showEventModal(
     '📝 校内定期考査 結果発表！',
-    `全教科のテストが返却された！\n4教科平均偏差値: ${avg}\n${rankStr}`,
-    [`平均偏差値: ${avg}`, rewardText],
+    `全教科のテストが返却された！\n4教科平均学力: ${avg} （${getRank(avg).rank}ランク）\n校内成績: 【${schoolRank}】\n\n${rankStr}`,
+    [`校内順位: ${schoolRank}`, `学内換算偏差値: ${dev}`, rewardText],
     '📋'
   );
-  setDialog('担任の先生', `定期テストの結果が出たぞ。偏差値は${avg}だ！慢心せず次へ向けろ！`);
+  setDialog('担任の先生', `定期テストの結果が出たぞ。校内成績は【${schoolRank}】だ！慢心せず次へ向けろ！`);
   renderUI();
 }
 
 function runMockExam() {
   playSound('success');
   let totalScore = state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score;
-  if (state.traits.includes('strong_exam')) totalScore += 12;
-  if (state.traits.includes('weak_exam')) totalScore -= 12;
+  let avgAcademic = totalScore / 4;
 
-  let avg = Math.round(totalScore / 4);
+  // やる気補正
+  const motBonusTable = { 4: 1.5, 3: 0.8, 2: 0.0, 1: -1.0, 0: -2.0 };
+  let motBonus = motBonusTable[state.motivation] || 0;
 
-  let targetBorder = state.targetUniv ? state.targetUniv.border : 60;
-  let diff = avg - targetBorder;
+  // 特能補正
+  let traitBonus = 0;
+  if (state.traits.includes('strong_exam')) traitBonus += 3.0;
+  if (state.traits.includes('weak_exam')) traitBonus -= 3.0;
+
+  // 当日のブレ (-0.8 ~ +0.8)
+  let randomJitter = (Math.random() - 0.5) * 1.6;
+
+  let dev = calcDeviation(avgAcademic, motBonus + traitBonus + randomJitter);
+
+  let targetBorder = state.targetUniv ? state.targetUniv.border : 58;
+  let diff = dev - targetBorder;
   let judge = 'E';
-  if (diff >= 3) judge = 'A';
-  else if (diff >= 0) judge = 'B';
-  else if (diff >= -4) judge = 'C';
-  else if (diff >= -8) judge = 'D';
+  let probText = '合格可能性 20%未満';
+  if (diff >= 2.0) { judge = 'A'; probText = '合格可能性 80%以上 (安全圏)'; }
+  else if (diff >= 0.0) { judge = 'B'; probText = '合格可能性 60%以上 (合格圏)'; }
+  else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
+  else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
 
   const univName = state.targetUniv ? state.targetUniv.name : '志望大学';
-  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (偏差値 ${avg})`);
+  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (総合偏差値 ${dev})`);
 
   let traitMsg = '';
   if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.4) {
@@ -1944,10 +1976,11 @@ function runMockExam() {
   }
 
   showEventModal(
-    '📊 全校統一マーク模試 結果！',
-    `志望校【${univName}】の判定が返却された！\n\n判定：【 ${judge} 判定 】 (総合偏差値: ${avg})`,
+    '📊 全国統一マーク模試 帳票返却！',
+    `第1志望【${univName}】の合否判定が返却された！\n\n【判定結果】: 【 ${judge} 判定 】\n全国総合偏差値: ${dev} （目標ボーダー: ${targetBorder}）\n${probText}`,
     [
-      `判定: ${judge}判定 (目標ボーダー:${targetBorder})`,
+      `判定: ${judge}判定 (${probText})`,
+      `総合偏差値: ${dev} (平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
       judge === 'A' || judge === 'B' ? 'やる気 絶好調！！' : 'ここからの追い上げが勝負！',
       traitMsg
     ].filter(Boolean),
@@ -1955,7 +1988,7 @@ function runMockExam() {
   );
 
   if (judge === 'A' || judge === 'B') state.motivation = 4;
-  setDialog('予備校アドバイザー', `現在の志望校判定は【${judge}判定】です。模試の弱点分野を徹底的に復習しましょう！`);
+  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。目標の${univName}(ボーダー${targetBorder})に向けて弱点科目を重点補強しましょう！`);
   renderUI();
 }
 
@@ -2128,14 +2161,18 @@ function finishExamBattle() {
 
 function triggerGameEnd() {
   playSound('success');
-  let avg = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
-  if (state.traits.includes('miracle_pass')) avg += 8;
+  let avgAcademic = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
+  let finalBonus = 0;
+  if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
+  if (state.traits.includes('strong_exam')) finalBonus += 2.0;
+  if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
 
+  let finalDev = calcDeviation(avgAcademic, finalBonus);
   const target = state.targetUniv || UNIV_LIST[2];
-  const isPassed = avg >= (target.border - 2);
+  const isPassed = finalDev >= (target.border - 1.2);
 
   let resultUnivName = isPassed ? target.name : '中堅私立大学';
-  if (!isPassed && avg < 42) resultUnivName = '浪人';
+  if (!isPassed && finalDev < 43.0) resultUnivName = '浪人';
 
   let title = '';
   let desc = '';
@@ -2189,7 +2226,7 @@ function triggerGameEnd() {
 
     showEventModal(
       title,
-      `${desc}\n\n【最終成績】\n受験生: ${state.playerName}\n平均偏差値: ${Math.round(avg)}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
+      `${desc}\n\n【最終戦績】\n受験生: ${state.playerName}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番入試偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
       [
         isPassed ? '★ クリアデータをOB名簿に保存しました！次周回で家庭教師として登場します！' : 'タイトル画面からもう一度挑戦できます！'
       ],
