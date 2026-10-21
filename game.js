@@ -408,7 +408,9 @@ function createInitialState(playerName = '合格太郎') {
     maxStamina: 100,
     stress: 10,
     motivation: 2,
-    money: 3000,
+    turnsAtMotivation: 0,
+    lastMotivation: 2,
+    money: 1000,
 
     subjects: {
       eng:  { score: 38, exp: 0, nextExp: 20 },
@@ -1076,8 +1078,56 @@ function advanceTurn() {
     }
   }
 
+  // 1. 月初めのお小遣い（学年に応じた支給）
   if (state.week === 1) {
-    state.money += 3500;
+    let monthlyAllowance = 1000;
+    if (state.year === 2) monthlyAllowance = 1500;
+    if (state.year === 3) monthlyAllowance = 2000;
+    state.money += monthlyAllowance;
+    showFloatingText(`お小遣い +¥${monthlyAllowance.toLocaleString()}`, null, null, 'heal');
+  }
+
+  // 2. 時間経過によるやる気の自然低下（中だるみ・気の緩み）
+  if (state.lastMotivation === undefined) state.lastMotivation = state.motivation;
+  if (state.motivation !== state.lastMotivation) {
+    state.turnsAtMotivation = 0;
+    state.lastMotivation = state.motivation;
+  } else {
+    state.turnsAtMotivation = (state.turnsAtMotivation || 0) + 1;
+  }
+
+  let motDropMsg = null;
+  // 絶好調(4): 2ターン以上維持していると時間経過で落ち着く
+  if (state.motivation === 4) {
+    const decayChance = state.turnsAtMotivation >= 3 ? 0.45 : 0.25;
+    if (state.turnsAtMotivation >= 2 && Math.random() < decayChance) {
+      state.motivation = 3;
+      state.lastMotivation = 3;
+      state.turnsAtMotivation = 0;
+      motDropMsg = '少し気の緩みが出て、やる気が【絶好調】から【好調】に落ち着いた…';
+    }
+  } else if (state.motivation === 3) {
+    // 好調(3): 3ターン以上維持していると、日々のマンネリで普通に落ち着く
+    const decayChance = state.turnsAtMotivation >= 4 ? 0.35 : 0.20;
+    if (state.turnsAtMotivation >= 3 && Math.random() < decayChance) {
+      state.motivation = 2;
+      state.lastMotivation = 2;
+      state.turnsAtMotivation = 0;
+      motDropMsg = '日々の勉強のマンネリで、やる気が【普通】に戻ってしまった…';
+    }
+  }
+
+  // 高ストレス（70%以上）による追加のやる気低下判定
+  if (!motDropMsg && state.stress >= 70 && state.motivation > 0 && Math.random() < 0.30) {
+    state.motivation--;
+    state.lastMotivation = state.motivation;
+    state.turnsAtMotivation = 0;
+    motDropMsg = '蓄積したストレスの重圧で、やる気が下がってしまった…！';
+  }
+
+  if (motDropMsg) {
+    showFloatingText('やる気ダウン⤵', null, null, 'damage');
+    setDialog(state.playerName, motDropMsg);
   }
 
   renderUI();
@@ -1282,7 +1332,10 @@ function executeRest() {
   triggerScreenBounce();
 
   let motUp = false;
-  if (state.motivation < 4 && Math.random() < 0.25) {
+  if (state.motivation < 2 && Math.random() < 0.35) {
+    state.motivation++;
+    motUp = true;
+  } else if (state.motivation < 3 && Math.random() < 0.10) {
     state.motivation++;
     motUp = true;
   }
@@ -1320,7 +1373,7 @@ function openPlayMenu() {
     <span class="icon">🎮</span>
     <div class="info">
       <div class="name">自宅の部屋でゲーム＆マンガ</div>
-      <div class="desc">費用: ¥0 • ストレス-35% / 体力+15 / やる気確定UP</div>
+      <div class="desc">費用: ¥0 • ストレス-30% / 体力+15 / やる気確定UP</div>
     </div>
   `;
   container.appendChild(btnHome);
@@ -1333,7 +1386,7 @@ function openPlayMenu() {
     <span class="icon">⛩️</span>
     <div class="info">
       <div class="name">学問神社でお参り＆合格祈願</div>
-      <div class="desc">費用: ¥500 • やる気絶好調確定 / ストレス-25% / 悪癖・赤特の浄化祈祷</div>
+      <div class="desc">費用: ¥500 • やる気絶好調確定 / ストレス-20% / 悪癖・赤特の低確率お祓い浄化(15%)</div>
     </div>
   `;
   container.appendChild(btnShrine);
@@ -1346,7 +1399,7 @@ function openPlayMenu() {
     <span class="icon">📚</span>
     <div class="info">
       <div class="name">大型書店＆自習カフェ</div>
-      <div class="desc">費用: ¥600 • 全教科経験値+8pt / ストレス-25% / やる気UP</div>
+      <div class="desc">費用: ¥600 • 全教科経験値+8pt / ストレス-20% / やる気UP</div>
     </div>
   `;
   container.appendChild(btnBookstore);
@@ -1359,7 +1412,7 @@ function openPlayMenu() {
     <span class="icon">🎤</span>
     <div class="info">
       <div class="name">カラオケで熱唱！大発散</div>
-      <div class="desc">費用: ¥1,200 • ストレス-60%特大解消 / やる気絶好調確定 / 体力-5</div>
+      <div class="desc">費用: ¥1,200 • ストレス-50%大解消 / やる気絶好調確定 / 体力-5</div>
     </div>
   `;
   container.appendChild(btnKaraoke);
@@ -1373,7 +1426,7 @@ function openPlayMenu() {
       <span class="icon">👧</span>
       <div class="info">
         <div class="name">あおいとカフェで自習＆おしゃべり</div>
-        <div class="desc">費用: ¥800 • 好感度+15% / ストレス-45% / 体力+10 / やる気UP</div>
+        <div class="desc">費用: ¥800 • 好感度+15% / ストレス-35% / 体力+10 / やる気UP</div>
       </div>
     `;
   } else {
@@ -1397,7 +1450,7 @@ function openPlayMenu() {
       <span class="icon">👦</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
-        <div class="desc">費用: ¥1,000 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-25%</div>
+        <div class="desc">費用: ¥900 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-20%</div>
       </div>
     `;
   } else {
@@ -1426,7 +1479,7 @@ function executePlay(type) {
     showFloatingText('リフレッシュ！', null, null, 'heal');
     triggerParticles(null, null, 16, 'mood');
     triggerScreenBounce();
-    state.stress = Math.max(0, state.stress - 35);
+    state.stress = Math.max(0, state.stress - 30);
     state.stamina = Math.min(state.maxStamina, state.stamina + 15);
     if (state.motivation < 4) state.motivation++;
     enqueueModal(() => {
@@ -1434,7 +1487,7 @@ function executePlay(type) {
         '🎮 自宅の部屋で息抜き',
         '自室で大好きなゲームとマンガに没頭した！程よくリラックスしてやる気が回復！',
         [
-          'ストレス -35% 解消',
+          'ストレス -30% 解消',
           '体力 +15 回復',
           'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')'
         ],
@@ -1451,7 +1504,7 @@ function executePlay(type) {
     }
     playSound('success');
     state.money -= 500;
-    state.stress = Math.max(0, state.stress - 25);
+    state.stress = Math.max(0, state.stress - 20);
     state.motivation = 4; // 絶好調確定！
     triggerParticles(null, null, 24, 'star');
     triggerScreenBounce();
@@ -1462,11 +1515,11 @@ function executePlay(type) {
       const t = TRAITS_MASTER.find(m => m.id === tid);
       return t && t.type === 'red';
     });
-    if (redTraits.length > 0 && Math.random() < 0.5) {
+    if (redTraits.length > 0 && Math.random() < 0.15) {
       const removeId = redTraits[Math.floor(Math.random() * redTraits.length)];
       state.traits = state.traits.filter(t => t !== removeId);
       const master = TRAITS_MASTER.find(m => m.id === removeId);
-      curedTraitName = `✨ 御利益成就！悪癖【${master.name}】が綺麗に浄化された！`;
+      curedTraitName = `✨ 奇跡のお祓い！悪癖【${master.name}】が綺麗に浄化された！`;
     }
 
     // お守りチャンス（お守り未所持なら15%で獲得）
@@ -1482,7 +1535,7 @@ function executePlay(type) {
         '二礼二拍手一礼…厳かな境内で志望校合格を祈願した。澄んだ空気とお守りの力で心が研ぎ澄まされ、やる気が極限までみなぎる！',
         [
           'やる気 絶好調！！ ⤴⤴',
-          'ストレス -25% 解消',
+          'ストレス -20% 解消',
           'お賽銭 -¥500',
           curedTraitName,
           amuletMsg
@@ -1511,7 +1564,7 @@ function executePlay(type) {
         '最新の大学別赤本や合格体験記を読みあさり、カフェスペースで読書した。効果的な勉強法とモチベーションを同時に手に入れた！',
         [
           '全教科 経験値 +8 pt 獲得！',
-          'ストレス -25% 解消',
+          'ストレス -20% 解消',
           'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')',
           'お小遣い -¥600'
         ],
@@ -1528,7 +1581,7 @@ function executePlay(type) {
     }
     playSound('fanfare');
     state.money -= 1200;
-    state.stress = Math.max(0, state.stress - 60); // 特大解消！
+    state.stress = Math.max(0, state.stress - 50); // 大解消！
     state.stamina = Math.max(10, state.stamina - 5);
     state.motivation = 4; // 絶好調確定！
     triggerParticles(null, null, 30, 'confetti');
@@ -1539,7 +1592,7 @@ function executePlay(type) {
         '🎤 カラオケで大熱唱！完全発散！',
         '個室で大好きなアニソンや応援歌を大熱唱！溜まっていた受験のストレスとモヤモヤが完全に吹き飛んだ！',
         [
-          'ストレス -60% 特大解消！',
+          'ストレス -50% 大解消！',
           'やる気 絶好調！！ ⤴⤴',
           '体力 -5 (熱唱疲れ)',
           'カラオケ代 -¥1,200'
@@ -1557,7 +1610,7 @@ function executePlay(type) {
     }
     playSound('success');
     state.money -= 800;
-    state.stress = Math.max(0, state.stress - 45);
+    state.stress = Math.max(0, state.stress - 35);
     state.stamina = Math.min(state.maxStamina, state.stamina + 10);
     state.friends.aoi.affection = Math.min(100, state.friends.aoi.affection + 15);
     if (state.motivation < 4) state.motivation++;
@@ -1574,7 +1627,7 @@ function executePlay(type) {
         'お互いの志望校や将来の夢について語り合い、心の支えができた。甘いスイーツで疲れも癒やされた！',
         [
           `あおいの好感度 +15% (現在:${state.friends.aoi.affection}%)`,
-          'ストレス -45% 解消',
+          'ストレス -35% 解消',
           '体力 +10 回復',
           'やる気アップ ⤴',
           'お小遣い -¥800',
@@ -1586,13 +1639,13 @@ function executePlay(type) {
     });
     setDialog('あおい', '一緒に勉強できて嬉しい！絶対に志望校合格しようね！');
   } else if (type === 'shindo') {
-    if (state.money < 1000) {
+    if (state.money < 900) {
       playSound('fail');
-      alert('お小遣い（¥1,000）が足りません！');
+      alert('お小遣い（¥900）が足りません！');
       return;
     }
     playSound('success');
-    state.money -= 1000;
+    state.money -= 900;
     state.stress = Math.max(0, state.stress - 25);
     state.friends.shindo.affection = Math.min(100, state.friends.shindo.affection + 15);
     if (state.motivation < 4) state.motivation++;
@@ -1614,9 +1667,9 @@ function executePlay(type) {
           `神童の友好度 +15% (現在:${state.friends.shindo.affection}%)`,
           '数学 経験値 +20 pt',
           '英語 経験値 +15 pt',
-          'ストレス -25% 解消',
+          'ストレス -20% 解消',
           'やる気アップ ⤴',
-          'お小遣い -¥1,000',
+          'お小遣い -¥900',
           traitMsg
         ].filter(Boolean),
         '📝',
@@ -2055,16 +2108,16 @@ function runSchoolExam() {
     schoolRank = '学年 5位以内 (上位 2%)';
     rankStr = '学年トップクラス！全校に名前が轟く秀才！';
     if (state.motivation < 4) state.motivation++;
-    state.money += 3000;
+    state.money += 1000;
     ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 18));
-    rewardText = '特別お小遣い +¥3,000 / 全教科経験値 +18pt';
+    rewardText = '特別お小遣い +¥1,000 / 全教科経験値 +18pt';
   } else if (avg >= 60) {
     schoolRank = '学年 25位 (上位 12%)';
     rankStr = '成績優秀！先生や親から大きく褒められた！';
     if (state.motivation < 4) state.motivation++;
-    state.money += 2000;
+    state.money += 500;
     ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 15));
-    rewardText = '臨時お小遣い +¥2,000 / 全教科経験値 +15pt';
+    rewardText = '臨時お小遣い +¥500 / 全教科経験値 +15pt';
   } else if (avg >= 45) {
     schoolRank = '学年 95位 (平均レベル)';
     rankStr = '学年平均レベル。基礎はしっかり定着している。';
