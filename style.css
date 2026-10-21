@@ -1638,41 +1638,44 @@ body::before {
    ======================================================== */
 @media (max-width: 600px) {
   html, body {
-    width: 100%;
-    min-height: 100%;
-    height: auto;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     margin: 0;
     padding: 0;
     background: #090d16;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    position: static;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    touch-action: manipulation;
   }
 
   .game-container {
     width: 100vw;
     max-width: 100vw;
-    min-height: 100dvh;
-    height: auto;
+    height: 100vh;
+    height: 100dvh;
     border-radius: 0;
     box-shadow: none;
     border: none;
     padding-top: env(safe-area-inset-top, 0px);
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    overflow: hidden;
     position: relative;
   }
 
   .main-game-screen {
     width: 100%;
-    min-height: 100dvh;
-    height: auto;
+    height: 100%;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    overflow: visible;
-    padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 145px); /* 最下部固定カードの裏抜け防止 */
+    overflow: hidden;
+    padding-bottom: 0;
     box-sizing: border-box;
   }
 
@@ -1803,12 +1806,11 @@ body::before {
     line-height: 1.35;
   }
 
-  /* ステータスボード＆タブ（巨大な空白を作らない自然なレイアウト） */
+  /* ステータスボード＆タブ（画面全体はスクロールせず、中央部のみ必要に応じスクロール） */
   .status-board {
-    flex: 0 0 auto;
-    height: auto;
-    min-height: auto;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     background: #ffffff;
@@ -1826,11 +1828,11 @@ body::before {
   }
 
   .tab-content {
-    padding: 10px 10px 12px;
-    flex: 0 0 auto;
-    height: auto;
-    min-height: 180px; /* タブ切り替え時の極端なガタつきを防止 */
-    overflow: visible;
+    padding: 8px 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* 各教科カード */
@@ -1840,8 +1842,8 @@ body::before {
   }
 
   .subject-card {
-    padding: 10px 4px 8px;
-    border-radius: 14px;
+    padding: 8px 3px 6px;
+    border-radius: 12px;
   }
 
   .subj-name {
@@ -1850,12 +1852,12 @@ body::before {
   }
 
   .subj-rank {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     line-height: 1.1;
   }
 
   .subj-score {
-    font-size: 0.88rem;
+    font-size: 0.9rem;
   }
 
   .next-pt {
@@ -1863,7 +1865,7 @@ body::before {
   }
 
   .traits-summary-bar {
-    padding: 4px 8px;
+    padding: 5px 8px;
     border-radius: 10px;
     margin-top: 4px;
   }
@@ -1872,21 +1874,19 @@ body::before {
     font-size: 0.68rem;
   }
 
-  /* 行動コマンドフッター（最下部完全固定ドック：タブ切替時も絶対に上下に動かない） */
+  /* 行動コマンドフッター（画面最下部に固定・タブ切替時も微動だにしない） */
   .command-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    flex-shrink: 0;
+    position: relative;
     width: 100%;
     margin: 0;
-    padding: 8px 8px calc(env(safe-area-inset-bottom, 12px) + 55px);
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 8px) + 55px);
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid rgba(226, 232, 240, 0.9);
-    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.12);
-    z-index: 100;
+    box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.08);
+    z-index: 10;
     box-sizing: border-box;
   }
 
