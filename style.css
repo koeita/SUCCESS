@@ -394,7 +394,7 @@ body::before {
   justify-content: space-between;
   gap: 6px;
   margin-bottom: 8px;
-  padding-right: 38px; /* 右上の常設音ON/OFFボタンとの重なりを防止 */
+  padding-right: 0; /* 右上の常設音ON/OFFボタンとの重なりを防止 */
 }
 
 .date-badge {
@@ -1637,42 +1637,38 @@ body::before {
   transform: translateY(-2px) scale(1.02);
 }
 
-/* ミュート切り替えボタン（画面右上の常設フローティングUI） */
-.btn-mute-toggle {
+/* スタート画面 右上の設定ボタン */
+.btn-title-setting {
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #f8fafc;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1000;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  font-size: 1.05rem;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s var(--ease-spring);
+  font-size: 1.15rem;
+  padding: 0;
 }
 
-.btn-mute-toggle:hover {
+.btn-title-setting:hover {
   background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: scale(1.08);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.08) rotate(30deg);
 }
 
-.btn-mute-toggle:active {
+.btn-title-setting:active {
   transform: scale(0.92);
-}
-
-.btn-mute-toggle.muted {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.55);
 }
 
 /* ========================================================
@@ -1725,12 +1721,12 @@ body::before {
   }
 
   /* 仕様3: 右上UIのセーフエリア対応 */
-  .btn-mute-toggle {
+  .btn-title-setting {
     top: calc(8px + env(safe-area-inset-top, 0px));
-    right: 10px;
-    width: 32px;
-    height: 32px;
-    font-size: 0.92rem;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    font-size: 1.05rem;
   }
 
   /* タイトル画面のセーフエリア対応 */
@@ -1783,7 +1779,7 @@ body::before {
   }
 
   .header-top-row {
-    padding-right: 36px;
+    padding-right: 0;
     margin-bottom: 5px;
     gap: 4px;
   }

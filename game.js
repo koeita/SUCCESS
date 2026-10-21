@@ -618,11 +618,13 @@ function openPauseModal(fromTitle = false) {
   const titleBtn = document.getElementById('btn-pause-title');
   const restartBtn = document.getElementById('btn-pause-restart');
   const resumeBtn = document.getElementById('btn-pause-resume');
+  const closeSettingsBtn = document.getElementById('btn-pause-close-settings');
+  const modalTitle = modal.querySelector('.modal-header h3');
 
   const saved = getSavedGame();
   const current = (state && state.inGame) ? state : saved;
 
-  if (current) {
+  if (current && !fromTitle) {
     summaryCard.style.display = 'flex';
     document.getElementById('pause-summary-name').textContent = `${current.playerName} くん`;
     document.getElementById('pause-summary-date').textContent = `${current.year}年生 ${current.month}月 ${current.week}週 (残り ${current.maxTurns - current.totalTurn + 1} 週)`;
@@ -632,13 +634,17 @@ function openPauseModal(fromTitle = false) {
   }
 
   if (fromTitle) {
+    if (modalTitle) modalTitle.textContent = '⚙️ ゲーム設定';
     if (resumeBtn) resumeBtn.style.display = 'none';
     if (titleBtn) titleBtn.style.display = 'none';
     if (restartBtn) restartBtn.style.display = 'none';
+    if (closeSettingsBtn) closeSettingsBtn.style.display = 'flex';
   } else {
+    if (modalTitle) modalTitle.textContent = '⚙️ ポーズ & 各種設定';
     if (resumeBtn) resumeBtn.style.display = 'flex';
     if (titleBtn) titleBtn.style.display = 'flex';
     if (restartBtn) restartBtn.style.display = 'flex';
+    if (closeSettingsBtn) closeSettingsBtn.style.display = 'none';
   }
 
   updateSettingsUI();
