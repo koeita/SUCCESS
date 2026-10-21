@@ -2216,20 +2216,7 @@ function initInnateTraits() {
   }
 }
 
-// iOS Safari などのブラウザUI（タブバー下/上/コンパクト）に完全適応する動的高さ制御
-function updateAppLayout() {
-  const vv = window.visualViewport;
-  const h = vv ? vv.height : window.innerHeight;
-  document.documentElement.style.setProperty('--app-height', `${h}px`);
-}
 
-window.addEventListener('resize', updateAppLayout);
-window.addEventListener('orientationchange', updateAppLayout);
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', updateAppLayout);
-  window.visualViewport.addEventListener('scroll', updateAppLayout);
-}
-updateAppLayout();
 
 window.addEventListener('DOMContentLoaded', () => {
   updateMuteUI();
