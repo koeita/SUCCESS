@@ -456,6 +456,17 @@ const TRAITS_MASTER = [
   { id: 'insomnia', name: '不眠症', desc: '【赤特】休養コマンドの体力回復量が半減する', cureMoney: 1500, type: 'red' }
 ];
 
+function getSubjectDisplayName(key) {
+  if (key === 'eng') return '英語';
+  if (key === 'math') return '数学';
+  if (key === 'jp') return '国語';
+  if (key === 'sci') {
+    const el = document.getElementById('subj-name-sci');
+    return el ? el.textContent : '理科/社会';
+  }
+  return key;
+}
+
 function getRank(score) {
   if (score >= 90) return { rank: 'S', class: 'rank-s' };
   if (score >= 80) return { rank: 'A', class: 'rank-a' };
@@ -776,17 +787,21 @@ function openOBRosterModal() {
   if (obDataStr) {
     try {
       const ob = JSON.parse(obDataStr);
+      const bestName = ob.bestSubjectName || (ob.bestSubject ? getSubjectDisplayName(ob.bestSubject) : null);
+      const bestInfoHtml = bestName ? `<div class="univ" style="color:#0284c7; font-size:0.85rem; font-weight:800;">🔥 得意科目: ${bestName} ${ob.bestScore ? `(偏差値 ${ob.bestScore})` : ''}</div>` : '';
+
       body.innerHTML = `
         <div class="ob-history-card">
           <div class="avatar">👨‍🎓</div>
           <div class="info">
             <div class="name">${ob.name} 先輩</div>
             <div class="univ">🌸 【${ob.univ}】 現役合格！</div>
+            ${bestInfoHtml}
             <div class="date">合格年: ${ob.year}年 / 習得特能数: ${ob.traitsCount}個</div>
           </div>
         </div>
         <p style="font-size:0.75rem; color:#475569; margin-top:8px;">
-          ※登録された先輩は、2周目以降の高校生活で激励に現れ、大量の経験値を差し入れしてくれます！
+          ※登録された先輩は、2周目以降の高校生活で激励に現れ、得意科目【${bestName || '主要科目'}】の集中指導（+25pt）と他科目の基礎アドバイス（+6pt）をしてくれます！
         </p>
       `;
     } catch(e) {}
@@ -1594,7 +1609,7 @@ function checkScheduledEvents() {
     }
   }
 
-  if (localStorage.getItem('juken_success_ob') && Math.random() < 0.1) {
+  if (localStorage.getItem('juken_success_ob') && Math.random() < 0.04) {
     enqueueModal(() => triggerOBVisit());
     return;
   }
@@ -1822,19 +1837,36 @@ function triggerAmuletEvent() {
 
 function triggerOBVisit() {
   playSound('success');
-  const ob = JSON.parse(localStorage.getItem('juken_success_ob'));
+  let ob;
+  try {
+    ob = JSON.parse(localStorage.getItem('juken_success_ob'));
+  } catch(e) {}
+  if (!ob) return;
+
+  const bestSubj = ob.bestSubject || 'eng';
+  const bestSubjName = ob.bestSubjectName || getSubjectDisplayName(bestSubj);
+
+  // 得意科目に特化（+25 pt）、他科目は基礎アドバイス（+6 pt）
   ['eng', 'math', 'jp', 'sci'].forEach(s => {
-    addExpToSubject(s, 25);
+    if (s === bestSubj) {
+      addExpToSubject(s, 25);
+    } else {
+      addExpToSubject(s, 6);
+    }
   });
   if (state.motivation < 4) state.motivation++;
 
   showEventModal(
     `👨‍🎓 ${ob.name}先輩の激励訪問！`,
-    `前周回で見事【${ob.univ}】に合格した伝説の先輩が来校！\n「後輩よ、合格の秘訣は日々の復習と本番のメンタルだ！」と大量の参考書とノウハウを差し入れてくれた！`,
-    ['全教科 経験値 +25 pt 獲得！', 'やる気アップ ⤴'],
+    `前周回で見事【${ob.univ}】に合格した伝説の先輩が来校！\n「特に俺が得意だった【${bestSubjName}】の受験テクニックを伝授してやるぞ！」と熱血指導と参考書を差し入れてくれた！`,
+    [
+      `得意科目【${bestSubjName}】経験値 +25 pt！`,
+      `他全教科 経験値 +6 pt！`,
+      `やる気アップ ⤴`
+    ],
     '👑'
   );
-  setDialog(`${ob.name}先輩`, '俺に続け！お前なら絶対に志望校へ行けるぞ！');
+  setDialog(`${ob.name}先輩`, `俺の得意な${bestSubjName}なら何でも聞いてくれ！お前なら絶対に志望校へ行けるぞ！`);
   renderUI();
 }
 
@@ -2102,11 +2134,25 @@ function triggerGameEnd() {
     title = `🌸 祝！【${target.name}】 現役合格！！ 🌸`;
     desc = `掲示板に自分の受験番号を見つけた瞬間、涙があふれ出した！\n3年間の弛まぬ努力が最高の栄冠をもたらした！\n晴れて夢のキャンパスライフが始まる！`;
 
+    // 最もスコアの高い得意科目を特定して保存
+    const subjKeys = ['eng', 'math', 'jp', 'sci'];
+    let bestSubj = 'eng';
+    let maxScore = -1;
+    subjKeys.forEach(s => {
+      if (state.subjects[s] && state.subjects[s].score > maxScore) {
+        maxScore = state.subjects[s].score;
+        bestSubj = s;
+      }
+    });
+
     const obData = {
       name: state.playerName,
       univ: target.name,
       year: new Date().getFullYear(),
-      traitsCount: state.traits.length
+      traitsCount: state.traits.length,
+      bestSubject: bestSubj,
+      bestSubjectName: getSubjectDisplayName(bestSubj),
+      bestScore: maxScore
     };
     localStorage.setItem('juken_success_ob', JSON.stringify(obData));
   } else if (resultUnivName === '浪人') {
