@@ -379,6 +379,13 @@ function animateNumberValue(el, targetVal, isScore = false, isMoney = false) {
 
 // 2. ゲーム状態
 let state = createInitialState();
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'state', {
+    get: () => state,
+    set: (v) => { state = v; },
+    configurable: true
+  });
+}
 
 function createInitialState(playerName = '合格太郎') {
   return {
@@ -1127,10 +1134,10 @@ function executeStudy(subject) {
   }
 
   let stamCost = 15;
-  let stressCost = 12;
-  if (subject === 'math') { stamCost = 18; stressCost = 15; }
-  if (subject === 'jp') { stamCost = 12; stressCost = 9; }
-  if (subject === 'all') { stamCost = 24; stressCost = 20; }
+  let stressCost = 7;
+  if (subject === 'math') { stamCost = 18; stressCost = 9; }
+  if (subject === 'jp') { stamCost = 12; stressCost = 5; }
+  if (subject === 'all') { stamCost = 24; stressCost = 12; }
 
   if (state.club === '運動部') stamCost += 3;
 
@@ -1149,7 +1156,7 @@ function executeStudy(subject) {
     triggerScreenShake();
     showFloatingText('勉強失敗…！', null, null, 'damage');
     state.stamina = Math.max(0, state.stamina - Math.floor(stamCost * 1.2));
-    state.stress = Math.min(100, state.stress + 15);
+    state.stress = Math.min(100, state.stress + 10);
 
     let motDown = false;
     if (state.motivation > 0 && Math.random() < 0.5) {
@@ -1268,14 +1275,14 @@ function executeRest() {
   if (state.traits.includes('insomnia')) recovery = Math.floor(recovery * 0.6);
 
   state.stamina = Math.min(state.maxStamina, state.stamina + recovery);
-  state.stress = Math.max(0, state.stress - 5);
+  state.stress = Math.max(0, state.stress - 12);
 
   showFloatingText(`体力 +${recovery}`, null, null, 'heal');
   triggerParticles(null, null, 16, 'heal');
   triggerScreenBounce();
 
   let motUp = false;
-  if (state.motivation < 4 && Math.random() < 0.15) {
+  if (state.motivation < 4 && Math.random() < 0.25) {
     state.motivation++;
     motUp = true;
   }
@@ -1285,18 +1292,18 @@ function executeRest() {
       '🛌 しっかり休養',
       state.traits.includes('insomnia')
         ? '不眠症のせいで浅い眠りだったが、体力を少し回復した。'
-        : 'ゆっくりお風呂に入って熟睡した！体力が大幅に回復！',
+        : 'ゆっくりお風呂に入って熟睡した！心身の疲れがしっかり回復！',
       [
         `体力 +${recovery} 回復`,
-        'ストレス -5%',
-        motUp ? `やる気アップ ⤴ (${MOTIVATIONS[state.motivation].label})` : '体調リセット！'
+        'ストレス -12%',
+        motUp ? `やる気アップ ⤴ (${MOTIVATIONS[state.motivation].label})` : '体調リフレッシュ！'
       ],
       '🌿',
       () => advanceTurn()
     );
   });
 
-  setDialog(state.playerName, 'よく寝たー！体力が回復したぞ！');
+  setDialog(state.playerName, 'よく寝たー！体力が回復して頭もすっきりしたぞ！');
   renderUI();
 }
 
@@ -1305,18 +1312,59 @@ function openPlayMenu() {
   const container = document.getElementById('play-options-container');
   container.innerHTML = '';
 
-  const btnAlone = document.createElement('button');
-  btnAlone.className = 'study-card-btn';
-  btnAlone.onclick = () => executePlay('alone');
-  btnAlone.innerHTML = `
+  // 1. 自宅の部屋
+  const btnHome = document.createElement('button');
+  btnHome.className = 'study-card-btn';
+  btnHome.onclick = () => executePlay('home');
+  btnHome.innerHTML = `
     <span class="icon">🎮</span>
     <div class="info">
-      <div class="name">ゲーム・マンガで息抜き</div>
-      <div class="desc">ストレス-45% / やる気確定UP / 体力+15 (費用: ¥0)</div>
+      <div class="name">自宅の部屋でゲーム＆マンガ</div>
+      <div class="desc">費用: ¥0 • ストレス-35% / 体力+15 / やる気確定UP</div>
     </div>
   `;
-  container.appendChild(btnAlone);
+  container.appendChild(btnHome);
 
+  // 2. 学問神社（お参り・合格祈願・赤特浄化）
+  const btnShrine = document.createElement('button');
+  btnShrine.className = 'study-card-btn';
+  btnShrine.onclick = () => executePlay('shrine');
+  btnShrine.innerHTML = `
+    <span class="icon">⛩️</span>
+    <div class="info">
+      <div class="name">学問神社でお参り＆合格祈願</div>
+      <div class="desc">費用: ¥500 • やる気絶好調確定 / ストレス-25% / 悪癖・赤特の浄化祈祷</div>
+    </div>
+  `;
+  container.appendChild(btnShrine);
+
+  // 3. 大型書店・自習カフェ
+  const btnBookstore = document.createElement('button');
+  btnBookstore.className = 'study-card-btn';
+  btnBookstore.onclick = () => executePlay('bookstore');
+  btnBookstore.innerHTML = `
+    <span class="icon">📚</span>
+    <div class="info">
+      <div class="name">大型書店＆自習カフェ</div>
+      <div class="desc">費用: ¥600 • 全教科経験値+8pt / ストレス-25% / やる気UP</div>
+    </div>
+  `;
+  container.appendChild(btnBookstore);
+
+  // 4. カラオケ・ゲーセン（ストレス完全発散）
+  const btnKaraoke = document.createElement('button');
+  btnKaraoke.className = 'study-card-btn';
+  btnKaraoke.onclick = () => executePlay('karaoke');
+  btnKaraoke.innerHTML = `
+    <span class="icon">🎤</span>
+    <div class="info">
+      <div class="name">カラオケで熱唱！大発散</div>
+      <div class="desc">費用: ¥1,200 • ストレス-60%特大解消 / やる気絶好調確定 / 体力-5</div>
+    </div>
+  `;
+  container.appendChild(btnKaraoke);
+
+  // 5. あおいとカフェ（交友）
   const btnAoi = document.createElement('button');
   if (state.friends.aoi.met) {
     btnAoi.className = 'study-card-btn';
@@ -1325,7 +1373,7 @@ function openPlayMenu() {
       <span class="icon">👧</span>
       <div class="info">
         <div class="name">あおいとカフェで自習＆おしゃべり</div>
-        <div class="desc">あおいの好感度UP / ストレス-50% / 体力+10 (費用: ¥800)</div>
+        <div class="desc">費用: ¥800 • 好感度+15% / ストレス-45% / 体力+10 / やる気UP</div>
       </div>
     `;
   } else {
@@ -1333,13 +1381,14 @@ function openPlayMenu() {
     btnAoi.innerHTML = `
       <span class="icon">🔒</span>
       <div class="info">
-        <div class="name">？？？ (未解放)</div>
-        <div class="desc">まだ一緒に出かける相手と出会っていません</div>
+        <div class="name">幼馴染とお出かけ (未解放)</div>
+        <div class="desc">高校生活が進むと出会えるかも…？</div>
       </div>
     `;
   }
   container.appendChild(btnAoi);
 
+  // 6. 神童くんとファミレス（ライバル）
   const btnShindo = document.createElement('button');
   if (state.friends.shindo.met) {
     btnShindo.className = 'study-card-btn';
@@ -1348,7 +1397,7 @@ function openPlayMenu() {
       <span class="icon">👦</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
-        <div class="desc">神童の友好度UP / 数学＆英語経験値 / ストレス-30% (費用: ¥1,000)</div>
+        <div class="desc">費用: ¥1,000 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-25%</div>
       </div>
     `;
   } else {
@@ -1356,8 +1405,8 @@ function openPlayMenu() {
     btnShindo.innerHTML = `
       <span class="icon">🔒</span>
       <div class="info">
-        <div class="name">？？？ (未解放)</div>
-        <div class="desc">まだライバルと出会っていません</div>
+        <div class="name">ライバルとお出かけ (未解放)</div>
+        <div class="desc">模試などで優秀な成績を収めると…？</div>
       </div>
     `;
   }
@@ -1372,37 +1421,143 @@ function closePlayMenu() {
 function executePlay(type) {
   closePlayMenu();
 
-  if (type === 'alone') {
+  if (type === 'home' || type === 'alone') {
     playSound('click');
-    showFloatingText('ストレス大幅解消！', null, null, 'heal');
+    showFloatingText('リフレッシュ！', null, null, 'heal');
     triggerParticles(null, null, 16, 'mood');
     triggerScreenBounce();
-    state.stress = Math.max(0, state.stress - 45);
+    state.stress = Math.max(0, state.stress - 35);
     state.stamina = Math.min(state.maxStamina, state.stamina + 15);
     if (state.motivation < 4) state.motivation++;
     enqueueModal(() => {
       showEventModal(
-        '🎮 ゲーム＆マンガで息抜き',
-        '大好きなゲームとマンガに没頭し、心のストレスを徹底的に発散！やる気がみなぎってきた！',
+        '🎮 自宅の部屋で息抜き',
+        '自室で大好きなゲームとマンガに没頭した！程よくリラックスしてやる気が回復！',
         [
-          'ストレス -45% 大幅解消！',
-          'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')',
-          '体力 +15 回復'
+          'ストレス -35% 解消',
+          '体力 +15 回復',
+          'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')'
         ],
         '🎮',
         () => advanceTurn()
       );
     });
-    setDialog(state.playerName, '最高に楽しかった！心がすっきりしてやる気全開だ！');
+    setDialog(state.playerName, '楽しかった！心がすっきりして勉強へのやる気も戻ってきたぞ！');
+  } else if (type === 'shrine') {
+    if (state.money < 500) {
+      playSound('fail');
+      alert('お賽銭（¥500）が足りません！');
+      return;
+    }
+    playSound('success');
+    state.money -= 500;
+    state.stress = Math.max(0, state.stress - 25);
+    state.motivation = 4; // 絶好調確定！
+    triggerParticles(null, null, 24, 'star');
+    triggerScreenBounce();
+
+    // 赤特の浄化祈祷判定（赤特があれば50%で1つ治癒）
+    let curedTraitName = '';
+    const redTraits = state.traits.filter(tid => {
+      const t = TRAITS_MASTER.find(m => m.id === tid);
+      return t && t.type === 'red';
+    });
+    if (redTraits.length > 0 && Math.random() < 0.5) {
+      const removeId = redTraits[Math.floor(Math.random() * redTraits.length)];
+      state.traits = state.traits.filter(t => t !== removeId);
+      const master = TRAITS_MASTER.find(m => m.id === removeId);
+      curedTraitName = `✨ 御利益成就！悪癖【${master.name}】が綺麗に浄化された！`;
+    }
+
+    // お守りチャンス（お守り未所持なら15%で獲得）
+    let amuletMsg = '';
+    if (!state.hasAmulet && Math.random() < 0.15) {
+      state.hasAmulet = true;
+      amuletMsg = '🎁 奇跡！宮司さんから【合格祈願お守り】を授かった！';
+    }
+
+    enqueueModal(() => {
+      showEventModal(
+        '⛩️ 学問神社でお参り＆祈祷',
+        '二礼二拍手一礼…厳かな境内で志望校合格を祈願した。澄んだ空気とお守りの力で心が研ぎ澄まされ、やる気が極限までみなぎる！',
+        [
+          'やる気 絶好調！！ ⤴⤴',
+          'ストレス -25% 解消',
+          'お賽銭 -¥500',
+          curedTraitName,
+          amuletMsg
+        ].filter(Boolean),
+        '⛩️',
+        () => advanceTurn()
+      );
+    });
+    setDialog(state.playerName, '神様、絶対に第一志望に合格します！不思議と力が湧いてきたぞ！');
+  } else if (type === 'bookstore') {
+    if (state.money < 600) {
+      playSound('fail');
+      alert('お小遣い（¥600）が足りません！');
+      return;
+    }
+    playSound('success');
+    state.money -= 600;
+    state.stress = Math.max(0, state.stress - 25);
+    if (state.motivation < 4) state.motivation++;
+    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 8));
+    triggerParticles(null, null, 16, 'star');
+
+    enqueueModal(() => {
+      showEventModal(
+        '📚 大型書店＆自習カフェ',
+        '最新の大学別赤本や合格体験記を読みあさり、カフェスペースで読書した。効果的な勉強法とモチベーションを同時に手に入れた！',
+        [
+          '全教科 経験値 +8 pt 獲得！',
+          'ストレス -25% 解消',
+          'やる気アップ ⤴ (' + MOTIVATIONS[state.motivation].label + ')',
+          'お小遣い -¥600'
+        ],
+        '📚',
+        () => advanceTurn()
+      );
+    });
+    setDialog(state.playerName, '面白い解法や勉強法がたくさん載っていた！これなら偏差値も伸ばせそうだ！');
+  } else if (type === 'karaoke') {
+    if (state.money < 1200) {
+      playSound('fail');
+      alert('カラオケ代（¥1,200）が足りません！');
+      return;
+    }
+    playSound('fanfare');
+    state.money -= 1200;
+    state.stress = Math.max(0, state.stress - 60); // 特大解消！
+    state.stamina = Math.max(10, state.stamina - 5);
+    state.motivation = 4; // 絶好調確定！
+    triggerParticles(null, null, 30, 'confetti');
+    triggerScreenBounce();
+
+    enqueueModal(() => {
+      showEventModal(
+        '🎤 カラオケで大熱唱！完全発散！',
+        '個室で大好きなアニソンや応援歌を大熱唱！溜まっていた受験のストレスとモヤモヤが完全に吹き飛んだ！',
+        [
+          'ストレス -60% 特大解消！',
+          'やる気 絶好調！！ ⤴⤴',
+          '体力 -5 (熱唱疲れ)',
+          'カラオケ代 -¥1,200'
+        ],
+        '🎤',
+        () => advanceTurn()
+      );
+    });
+    setDialog(state.playerName, '最高にスッキリしたーーー！！もう怖いものはない、全力で勉強するぞ！');
   } else if (type === 'aoi') {
     if (state.money < 800) {
       playSound('fail');
-      alert('お小遣いが足りません！');
+      alert('お小遣い（¥800）が足りません！');
       return;
     }
     playSound('success');
     state.money -= 800;
-    state.stress = Math.max(0, state.stress - 50);
+    state.stress = Math.max(0, state.stress - 45);
     state.stamina = Math.min(state.maxStamina, state.stamina + 10);
     state.friends.aoi.affection = Math.min(100, state.friends.aoi.affection + 15);
     if (state.motivation < 4) state.motivation++;
@@ -1419,7 +1574,7 @@ function executePlay(type) {
         'お互いの志望校や将来の夢について語り合い、心の支えができた。甘いスイーツで疲れも癒やされた！',
         [
           `あおいの好感度 +15% (現在:${state.friends.aoi.affection}%)`,
-          'ストレス -50% 大幅解消！',
+          'ストレス -45% 解消',
           '体力 +10 回復',
           'やる気アップ ⤴',
           'お小遣い -¥800',
@@ -1433,12 +1588,12 @@ function executePlay(type) {
   } else if (type === 'shindo') {
     if (state.money < 1000) {
       playSound('fail');
-      alert('お小遣いが足りません！');
+      alert('お小遣い（¥1,000）が足りません！');
       return;
     }
     playSound('success');
     state.money -= 1000;
-    state.stress = Math.max(0, state.stress - 30);
+    state.stress = Math.max(0, state.stress - 25);
     state.friends.shindo.affection = Math.min(100, state.friends.shindo.affection + 15);
     if (state.motivation < 4) state.motivation++;
 
@@ -1459,7 +1614,7 @@ function executePlay(type) {
           `神童の友好度 +15% (現在:${state.friends.shindo.affection}%)`,
           '数学 経験値 +20 pt',
           '英語 経験値 +15 pt',
-          'ストレス -30%',
+          'ストレス -25% 解消',
           'やる気アップ ⤴',
           'お小遣い -¥1,000',
           traitMsg
