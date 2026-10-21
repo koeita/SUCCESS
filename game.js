@@ -614,9 +614,7 @@ function renderTraitsSummary() {
       const trait = TRAITS_MASTER.find(t => t.id === tId);
       if (trait) {
         const badge = document.createElement('span');
-        let typeClass = '';
-        if (trait.type === 'gold') typeClass = 'gold';
-        else if (trait.type === 'red') typeClass = 'red';
+        const typeClass = trait.type || 'blue';
         badge.className = `trait-badge ${typeClass}`;
         badge.textContent = trait.name;
         container.appendChild(badge);

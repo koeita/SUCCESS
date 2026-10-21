@@ -213,13 +213,14 @@ body::before {
 .title-action-area {
   z-index: 2;
   width: 100%;
-  max-width: 330px;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
 .name-input-group {
+  width: 100%;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -229,6 +230,7 @@ body::before {
   align-items: center;
   gap: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .name-input-group label {
@@ -236,20 +238,24 @@ body::before {
   font-weight: 800;
   color: #e0e7ff;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .name-input-group input {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid transparent;
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   font-size: 0.95rem;
   font-weight: 900;
   color: #0f172a;
   text-align: center;
   outline: none;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .name-input-group input:focus {
@@ -366,6 +372,7 @@ body::before {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+  padding-right: 44px; /* 右上の常設音ON/OFFボタンとの重なりを防止 */
 }
 
 .date-badge {
@@ -615,6 +622,7 @@ body::before {
 .status-board {
   background: #ffffff;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -669,8 +677,9 @@ body::before {
 
 .tab-content {
   padding: 10px 12px;
-  height: 200px;
-  max-height: 200px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
   overflow-y: auto;
   box-sizing: border-box;
   animation: tabFadeIn 0.22s var(--ease-spring);
@@ -781,57 +790,132 @@ body::before {
 .trait-badge {
   font-size: 0.68rem;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
-  color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .trait-badge.gold {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
+  color: #ffffff !important;
   border: 1px solid #fef08a;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .trait-badge.blue {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .trait-badge.red {
   background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .trait-badge.empty {
   background: #e2e8f0;
-  color: #94a3b8;
+  color: #64748b !important;
   box-shadow: none;
+  font-weight: 700;
+  text-shadow: none;
 }
 
 /* 特能詳細リスト */
 .traits-detail-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .trait-detail-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 8px 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.trait-detail-card .name {
-  font-weight: 800;
-  font-size: 0.78rem;
+.trait-detail-card.blue {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
 }
-.trait-detail-card .desc {
-  font-size: 0.7rem;
-  color: #64748b;
+
+.trait-detail-card.blue .t-name {
+  color: #1d4ed8;
+  font-weight: 900;
+  font-size: 0.82rem;
+  margin-bottom: 2px;
+}
+
+.trait-detail-card.blue .t-desc {
+  color: #1e3a8a;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.trait-detail-card.gold {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+}
+
+.trait-detail-card.gold .t-name {
+  color: #b45309;
+  font-weight: 900;
+  font-size: 0.82rem;
+  margin-bottom: 2px;
+}
+
+.trait-detail-card.gold .t-desc {
+  color: #78350f;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.trait-detail-card.red {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+}
+
+.trait-detail-card.red .t-name {
+  color: #b91c1c;
+  font-weight: 900;
+  font-size: 0.82rem;
+  margin-bottom: 2px;
+}
+
+.trait-detail-card.red .t-desc {
+  color: #7f1d1d;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.trait-detail-card .name,
+.trait-detail-card .t-name {
+  font-weight: 900;
+  font-size: 0.82rem;
+}
+
+.trait-detail-card .desc,
+.trait-detail-card .t-desc {
+  font-size: 0.72rem;
+  color: #475569;
 }
 
 /* 交友関係グリッド */
@@ -1578,48 +1662,123 @@ body::before {
   .btn-mute-toggle {
     top: calc(env(safe-area-inset-top, 0px) + 8px);
     right: 10px;
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     font-size: 0.95rem;
   }
 
   .title-screen {
-    padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 14px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  .title-action-area {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  .name-input-group {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .name-input-group input {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .title-main {
-    font-size: 2.3rem;
+    font-size: 2.2rem;
   }
 
   .title-avatar {
-    font-size: 4.5rem;
+    font-size: 4.2rem;
   }
 
   .status-header {
-    padding: 10px 12px 8px;
+    padding: 8px 10px 8px;
+  }
+
+  .header-top-row {
+    padding-right: 40px; /* 右上のミュートボタンと重ならない */
+    margin-bottom: 6px;
+  }
+
+  .date-badge {
+    font-size: 0.95rem;
   }
 
   .target-univ-badge {
-    font-size: 0.73rem;
-    padding: 3px 8px;
-    max-width: 190px;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    max-width: 130px;
+  }
+
+  .turn-count {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+  }
+
+  .screen-area {
+    padding: 6px 10px;
+  }
+
+  .character-scene {
+    height: 88px;
+  }
+
+  .avatar-icon {
+    font-size: 2.8rem;
+  }
+
+  .dialog-box {
+    margin-top: 6px;
+    height: 48px;
+    padding: 6px 10px;
+  }
+
+  .dialog-content {
+    font-size: 0.74rem;
+  }
+
+  .status-board {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .tab-content {
+    padding: 8px 10px;
+    flex: 1;
+    min-height: 0;
   }
 
   .command-footer {
-    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px);
+    padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px);
+    flex-shrink: 0;
   }
 
   .command-grid {
-    gap: 6px;
+    gap: 5px;
   }
 
   .btn-cmd {
-    padding: 10px 4px 8px;
-    border-radius: 14px;
+    padding: 8px 3px 6px;
+    border-radius: 12px;
   }
 
   .cmd-icon {
-    font-size: 1.45rem;
+    font-size: 1.3rem;
+  }
+
+  .cmd-name {
+    font-size: 0.72rem;
+  }
+
+  .cmd-desc {
+    font-size: 0.58rem;
   }
 
   .modal-window {
