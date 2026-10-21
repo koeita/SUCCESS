@@ -392,35 +392,50 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-  padding-right: 44px; /* 右上の常設音ON/OFFボタンとの重なりを防止 */
+  gap: 6px;
+  margin-bottom: 8px;
+  padding-right: 38px; /* 右上の常設音ON/OFFボタンとの重なりを防止 */
 }
 
 .date-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-weight: 900;
-  font-size: 1.05rem;
+  font-size: 0.96rem;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .date-badge span#turn-year {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #fff;
-  padding: 2px 8px;
-  border-radius: 8px;
-  font-size: 0.78rem;
+  padding: 2px 7px;
+  border-radius: 7px;
+  font-size: 0.75rem;
   font-weight: 900;
   box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+}
+
+.date-badge span#turn-month-week {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Outfit', 'Zen Kaku Gothic New', sans-serif;
+  font-size: 0.94rem;
 }
 
 .target-univ-badge {
-  font-size: 0.73rem;
+  font-size: 0.7rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 9999px;
   color: #fef08a;
   font-weight: 800;
@@ -428,16 +443,21 @@ body::before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  flex: 0 1 auto;
+  max-width: 140px;
+  min-width: 0;
+  text-align: center;
 }
 
 .turn-count {
   font-family: 'Outfit', 'Zen Kaku Gothic New', sans-serif;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 9999px;
+  white-space: nowrap;
+  flex-shrink: 0;
   font-weight: 700;
   color: #cbd5e1;
 }
@@ -1750,23 +1770,53 @@ body::before {
   }
 
   .header-top-row {
-    padding-right: 40px; /* 右上のミュートボタンと重ならない */
+    padding-right: 36px; /* 右上のミュートボタンと重ならない */
     margin-bottom: 6px;
+    gap: 4px;
   }
 
   .date-badge {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .date-badge span#turn-year {
+    font-size: 0.72rem;
+    padding: 2px 5px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .date-badge span#turn-month-week {
+    font-size: 0.88rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .target-univ-badge {
-    font-size: 0.68rem;
-    padding: 2px 7px;
-    max-width: 130px;
+    font-size: 0.66rem;
+    padding: 2px 6px;
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .turn-count {
-    font-size: 0.68rem;
-    padding: 2px 7px;
+    font-size: 0.66rem;
+    padding: 2px 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .header-right-actions {
+    flex-shrink: 0;
+    gap: 4px;
   }
 
   .vital-grid {

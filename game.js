@@ -541,7 +541,7 @@ function resumeGame() {
   document.getElementById('main-game-screen').style.display = 'flex';
 
   renderUI();
-  setDialog('担任の先生', `${state.playerName}、前回の続き（${state.year}年目 ${state.month}月 ${state.week}週）から再開するぞ！集中して合格を目指そう！`);
+  setDialog('担任の先生', `${state.playerName}、前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から再開するぞ！集中して合格を目指そう！`);
 }
 
 // 「はじめからスタート」ボタン押下時（既存セーブの確認）
@@ -595,7 +595,7 @@ function updateTitleScreenUI() {
     if (contSection) contSection.style.display = 'block';
     if (contSub) {
       const univName = saved.targetUniv ? saved.targetUniv.name : '志望校未定';
-      contSub.textContent = `${saved.year}年目 ${saved.month}月 ${saved.week}週 • ${saved.playerName} (${univName})`;
+      contSub.textContent = `${saved.year}年生 ${saved.month}月 ${saved.week}週 • ${saved.playerName} (${univName})`;
     }
     if (startNewText) startNewText.textContent = 'はじめからスタート';
     if (nameInput && saved.playerName) nameInput.value = saved.playerName;
@@ -625,7 +625,7 @@ function openPauseModal(fromTitle = false) {
   if (current) {
     summaryCard.style.display = 'flex';
     document.getElementById('pause-summary-name').textContent = `${current.playerName} くん`;
-    document.getElementById('pause-summary-date').textContent = `${current.year}年目 ${current.month}月 ${current.week}週 (残り ${current.maxTurns - current.totalTurn + 1} 週)`;
+    document.getElementById('pause-summary-date').textContent = `${current.year}年生 ${current.month}月 ${current.week}週 (残り ${current.maxTurns - current.totalTurn + 1} 週)`;
     document.getElementById('pause-summary-univ').textContent = `志望校: ${current.targetUniv ? current.targetUniv.name : '未決定 (高3決定)'}`;
   } else {
     summaryCard.style.display = 'none';
@@ -665,7 +665,7 @@ function pauseReturnToTitle() {
 
 function confirmRestartGame() {
   playSound('click');
-  if (confirm('現在の高校生活データをすべて破棄して、1年目4月1週から最初からやり直しますか？')) {
+  if (confirm('現在の高校生活データをすべて破棄して、1年生4月1週から最初からやり直しますか？')) {
     clearSavedGame();
     closePauseModal();
     startGame();
@@ -743,7 +743,7 @@ function checkAutoResumeOnLoad() {
     document.getElementById('title-screen').style.display = 'none';
     document.getElementById('main-game-screen').style.display = 'flex';
     renderUI();
-    setDialog('担任の先生', `${state.playerName}、おかえり！前回の続き（${state.year}年目 ${state.month}月 ${state.week}週）から高校生活を再開するぞ！`);
+    setDialog('担任の先生', `${state.playerName}、おかえり！前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から高校生活を再開するぞ！`);
   } else {
     // タイトル画面を表示
     document.getElementById('title-screen').style.display = 'flex';
@@ -811,7 +811,7 @@ function switchTab(tabName) {
 }
 
 function renderUI() {
-  document.getElementById('turn-year').textContent = `${state.year}年目`;
+  document.getElementById('turn-year').textContent = `${state.year}年生`;
   document.getElementById('turn-month-week').textContent = `${state.month}月 ${state.week}週`;
   const remaining = state.maxTurns - state.totalTurn + 1;
   document.getElementById('turn-count').textContent = `残り ${remaining} 週`;
@@ -1854,7 +1854,7 @@ function runSchoolExam() {
     rewardText = 'やる気ダウン…';
   }
 
-  state.history.unshift(`${state.year}年${state.month}月 定期考査: 平均偏差値 ${avg} (${rankStr})`);
+  state.history.unshift(`${state.year}年生${state.month}月 定期考査: 平均偏差値 ${avg} (${rankStr})`);
 
   showEventModal(
     '📝 校内定期考査 結果発表！',
@@ -1883,7 +1883,7 @@ function runMockExam() {
   else if (diff >= -8) judge = 'D';
 
   const univName = state.targetUniv ? state.targetUniv.name : '志望大学';
-  state.history.unshift(`${state.year}年${state.month}月 全国模試: 【${judge}判定】 (偏差値 ${avg})`);
+  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (偏差値 ${avg})`);
 
   let traitMsg = '';
   if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.4) {
