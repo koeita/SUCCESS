@@ -1959,7 +1959,7 @@ body::before {
     position: relative;
     width: 100%;
     margin: 0;
-    padding: 6px 8px 6px;
+    padding: 6px 8px calc(env(safe-area-inset-bottom, 20px) + 72px);
     background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -1974,9 +1974,9 @@ body::before {
   }
 
   .btn-cmd {
-    height: 60px;
-    min-height: 60px;
-    padding: 5px 3px 5px;
+    height: 56px;
+    min-height: 56px;
+    padding: 4px 3px 4px;
     border-radius: 13px;
     box-sizing: border-box;
   }
@@ -2364,13 +2364,13 @@ body::before {
   }
 }
 
-/* PWA（ホーム画面追加）時のみノッチとホームバーを自動回避 */
+/* PWA（ホーム画面追加）時はSafariツールバーが存在しないためホームバー分のみに最適化 */
 @media (max-width: 600px) and (display-mode: standalone) {
   .game-container {
     padding-top: env(safe-area-inset-top, 0px);
   }
   .command-footer {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
   }
   .btn-mute-toggle {
     top: calc(env(safe-area-inset-top, 0px) + 8px);
