@@ -1672,6 +1672,8 @@ body::before {
     display: flex;
     flex-direction: column;
     overflow: visible;
+    padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 145px); /* 最下部固定カードの裏抜け防止 */
+    box-sizing: border-box;
   }
 
   .btn-mute-toggle {
@@ -1827,7 +1829,7 @@ body::before {
     padding: 10px 10px 12px;
     flex: 0 0 auto;
     height: auto;
-    min-height: auto;
+    min-height: 180px; /* タブ切り替え時の極端なガタつきを防止 */
     overflow: visible;
   }
 
@@ -1870,16 +1872,22 @@ body::before {
     font-size: 0.68rem;
   }
 
-  /* 行動コマンドフッター（最重要：Safari下部バーがあっても絶対に隠れないパディングと自然な余白） */
+  /* 行動コマンドフッター（最下部完全固定ドック：タブ切替時も絶対に上下に動かない） */
   .command-footer {
-    margin-top: 12px;
-    padding: 10px 8px calc(env(safe-area-inset-bottom, 12px) + 75px);
-    flex-shrink: 0;
-    background: #ffffff;
-    border-top: 1px solid #e2e8f0;
-    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.08);
-    position: relative;
-    z-index: 10;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin: 0;
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 12px) + 55px);
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.12);
+    z-index: 100;
+    box-sizing: border-box;
   }
 
   .command-grid {
