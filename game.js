@@ -1782,7 +1782,7 @@ function openPlayMenu() {
     <span class="icon">🎮</span>
     <div class="info">
       <div class="name">自宅の部屋でゲーム＆マンガ</div>
-      <div class="desc">費用: ¥0 • ストレス-30% / 体力+15 / やる気確定UP</div>
+      <div class="desc">費用: ¥0 • ストレス-30% / 体力+15 / やる気UP</div>
     </div>
   `;
   container.appendChild(btnHome);
@@ -1795,7 +1795,7 @@ function openPlayMenu() {
     <span class="icon">⛩️</span>
     <div class="info">
       <div class="name">学問神社でお参り＆合格祈願</div>
-      <div class="desc">費用: ¥500 • やる気絶好調確定 / ストレス-20% / 悪癖・赤特の低確率お祓い浄化(15%)</div>
+      <div class="desc">費用: ¥500 • やる気絶好調 / ストレス-20% / 赤特お祓い</div>
     </div>
   `;
   container.appendChild(btnShrine);
@@ -1821,7 +1821,7 @@ function openPlayMenu() {
     <span class="icon">🎤</span>
     <div class="info">
       <div class="name">カラオケで熱唱！大発散</div>
-      <div class="desc">費用: ¥1,200 • ストレス-50%大解消 / やる気絶好調確定 / 体力-5</div>
+      <div class="desc">費用: ¥1,200 • ストレス-50% / やる気絶好調 / 体力-5</div>
     </div>
   `;
   container.appendChild(btnKaraoke);
@@ -3029,27 +3029,28 @@ function runSchoolExam() {
   let schoolRank = '';
 
   let examReviewExp = 18;
+  const totalStudents = 240; // 校内学年総生徒数
   if (avg >= 75) {
-    schoolRank = '学年 5位以内 (上位 2%)';
+    schoolRank = `学年 5位 / ${totalStudents}人中 (上位2%・学年トップ層)`;
     rankStr = '学年トップクラス！全校に名前が轟く秀才！';
     if (state.motivation < 4) state.motivation++;
     state.money += 1000;
     examReviewExp = 35;
-    rewardText = '特別お小遣い +¥1,000 / 考査徹底復習: 全教科経験値 +35pt！';
+    rewardText = '特別お小遣い +¥1,000 / 考査復習: 全教科経験値 +35pt！';
   } else if (avg >= 60) {
-    schoolRank = '学年 25位 (上位 12%)';
+    schoolRank = `学年 25位 / ${totalStudents}人中 (上位10%・選抜クラス水準)`;
     rankStr = '成績優秀！先生や親から大きく褒められた！';
     if (state.motivation < 4) state.motivation++;
     state.money += 500;
     examReviewExp = 26;
     rewardText = '臨時お小遣い +¥500 / 考査復習: 全教科経験値 +26pt！';
   } else if (avg >= 45) {
-    schoolRank = '学年 95位 (平均レベル)';
+    schoolRank = `学年 95位 / ${totalStudents}人中 (平均レベル)`;
     rankStr = '学年平均レベル。基礎はしっかり定着している。';
     examReviewExp = 18;
     rewardText = '考査復習: 全教科経験値 +18pt！';
   } else {
-    schoolRank = '学年 178位 (下位 10%)';
+    schoolRank = `学年 195位 / ${totalStudents}人中 (下位レベル・要注意)`;
     rankStr = '赤点ギリギリ…補習の危機！';
     if (state.motivation > 0) state.motivation--;
     examReviewExp = 12;
@@ -3061,8 +3062,8 @@ function runSchoolExam() {
 
   showEventModal(
     '📝 校内定期考査 結果発表！',
-    `全教科のテストが返却された！\n4教科平均学力: ${avg} （${getRank(avg).rank}ランク）\n校内成績: 【${schoolRank}】\n\n${rankStr}`,
-    [`校内順位: ${schoolRank}`, `学内換算偏差値: ${dev}`, rewardText],
+    `全教科のテストが返却された！\n4教科平均学力: ${avg} （${getRank(avg).rank}ランク）\n\n${rankStr}`,
+    [`校内成績: 【 ${schoolRank} 】`, `学内換算偏差値: ${dev}`, rewardText],
     '📋'
   );
   setDialog('担任の先生', `定期テストの結果が出たぞ。校内成績は【${schoolRank}】だ！慢心せず次へ向けろ！`);
@@ -3656,9 +3657,11 @@ function finishExamBattle() {
       subKyotsuMsg = '📑 私大併願校の出願なし（第1志望一本勝負）';
     }
 
+    const targetLabel = target.shortName || target.name;
     const summaryRewards = [
-      `共通テスト得点: ${state.kyotsuScore}点 / 1000点（得点率: ${state.kyotsuRate}%）`,
-      `第1志望【${target.name}】共テリサーチ判定: 【 ${researchRank}判定 】（${researchDesc}）`,
+      `共通テスト得点: ${state.kyotsuScore}点 / 1000点 (得点率: ${state.kyotsuRate}%)`,
+      `第1志望【${targetLabel}】: 【 ${researchRank} 判定 】(目標: ${targetBorderRate}%)`,
+      `合格見込み: ${researchDesc}`,
       subKyotsuMsg
     ];
 
@@ -3886,8 +3889,29 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
     <button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>
   `;
 
-  const subStatusText = state.subUniv ? `${state.subUniv.name} (${state.subUnivPassed ? '合格 💮' : '不合格 ❌'})` : 'なし';
-  const koukiStatusText = state.kokuritsuKouki ? `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})` : '出願なし';
+  let subStatusText = 'なし';
+  if (state.subUniv) {
+    if (state.subUnivKyotsuPass) {
+      subStatusText = `${state.subUniv.name} (共テ利用合格 💮)`;
+    } else if (state.subUnivPassed) {
+      subStatusText = `${state.subUniv.name} (一般合格 💮)`;
+    } else if (state.subExamDone) {
+      subStatusText = `${state.subUniv.name} (不合格 ❌)`;
+    } else {
+      subStatusText = `${state.subUniv.name} (未受験)`;
+    }
+  }
+
+  let koukiStatusText = '出願なし';
+  if (state.kokuritsuKouki) {
+    if (state.firstChoicePassed) {
+      koukiStatusText = `${state.kokuritsuKouki.name}（前期合格のため受験辞退）`;
+    } else if (state.koukiExamDone) {
+      koukiStatusText = `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})`;
+    } else {
+      koukiStatusText = `${state.kokuritsuKouki.name}（未受験）`;
+    }
+  }
 
   // ゲーム終了フラグ（以降はターン進行・行動を一切受け付けない）
   state.gameOver = true;

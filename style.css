@@ -44,7 +44,7 @@ body {
   justify-content: center;
   align-items: center;
   padding: 12px;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -723,6 +723,7 @@ body::before {
   min-height: 0;
   height: auto;
   overflow-y: auto;
+  overflow-x: clip;
   box-sizing: border-box;
   animation: tabFadeIn 0.22s var(--ease-spring);
 }
@@ -1156,6 +1157,7 @@ body::before {
   flex-direction: column;
   max-height: 85dvh;
   overflow-y: auto;
+  overflow-x: clip;
 }
 
 .modal-overlay.active .modal-window {
@@ -1209,10 +1211,14 @@ body::before {
   gap: 8px;
   max-height: 56vh;
   overflow-y: auto;
-  padding-right: 2px;
+  overflow-x: clip;
+  padding: 2px;
+  box-sizing: border-box;
 }
 
 .study-card-btn {
+  width: 100%;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 14px;
@@ -1224,12 +1230,18 @@ body::before {
   text-align: left;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
   transition: all 0.16s var(--ease-spring);
+  overflow: hidden;
+}
+
+.study-card-btn .info {
+  flex: 1;
+  min-width: 0; /* Flexアイテムの横あふれ防止 */
 }
 
 .study-card-btn:hover {
   border-color: #3b82f6;
   background: #eff6ff;
-  transform: translateX(3px);
+  transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
 }
 
@@ -1271,6 +1283,7 @@ body::before {
   margin-top: 10px;
   max-height: 50vh;
   overflow-y: auto;
+  overflow-x: clip;
   padding-right: 4px;
 }
 
@@ -1291,7 +1304,7 @@ body::before {
 .choice-btn:hover {
   background: #2563eb;
   color: white;
-  transform: translateX(3px);
+  transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
@@ -1313,6 +1326,7 @@ body::before {
   padding: 8px 4px 12px;
   max-height: 58vh;
   overflow-y: auto;
+  overflow-x: clip;
 }
 
 .event-icon {
@@ -1333,10 +1347,14 @@ body::before {
 .event-rewards {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.82rem;
-  font-weight: 900;
-  color: #0284c7;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0369a1;
+  text-align: left;
+  padding: 2px 8px;
+  line-height: 1.42;
+  word-break: break-word;
 }
 
 .modal-footer {
@@ -1418,6 +1436,7 @@ body::before {
   min-height: 155px;
   max-height: 185px;
   overflow-y: auto;
+  overflow-x: clip;
   font-family: 'Zen Kaku Gothic New', monospace;
   font-size: 0.78rem;
   display: flex;
@@ -1452,6 +1471,7 @@ body::before {
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
+  overflow-x: clip;
 }
 
 .ob-history-card {
@@ -1959,6 +1979,7 @@ body::before {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+  overflow-x: clip;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -2396,3 +2417,19 @@ body::before {
 .rank-tag.rank-C { background: #f59e0b; }
 .rank-tag.rank-D { background: #f97316; }
 .rank-tag.rank-E { background: #ef4444; }
+
+/* 選択肢モーダル（上の案内文固定・選択肢ボタンリストのみスクロール） */
+#choice-modal .event-modal-body {
+  max-height: none;
+  overflow-y: visible;
+  padding: 4px 0 8px;
+}
+#choice-modal .choice-buttons-container {
+  max-height: 48vh;
+  overflow-y: auto;
+  overflow-x: clip;
+  overflow-x: clip;
+  padding: 4px 4px 4px 0;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
+}
