@@ -1469,9 +1469,18 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 280px;
+  max-height: min(52vh, 380px);
   overflow-y: auto;
   overflow-x: clip;
+  padding-right: 4px;
+}
+
+.ob-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+.ob-modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 .ob-history-card {

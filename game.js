@@ -1392,41 +1392,94 @@ function closeHowToPlayModal() {
   document.getElementById('how-to-modal').classList.remove('active');
 }
 
+function getOBList() {
+  try {
+    const listStr = localStorage.getItem('juken_success_ob_list');
+    if (listStr) {
+      const list = JSON.parse(listStr);
+      if (Array.isArray(list)) return list;
+    }
+    // 旧キーからの自動移行
+    const oldStr = localStorage.getItem('juken_success_ob');
+    if (oldStr) {
+      const oldOb = JSON.parse(oldStr);
+      if (oldOb && typeof oldOb === 'object') {
+        const migratedList = [{
+          id: Date.now() - 100000,
+          generation: 1,
+          dateStr: `${oldOb.year || new Date().getFullYear()}年合格`,
+          ...oldOb
+        }];
+        localStorage.setItem('juken_success_ob_list', JSON.stringify(migratedList));
+        return migratedList;
+      }
+    }
+  } catch (e) {
+    console.error('getOBList error:', e);
+  }
+  return [];
+}
+
+function clearOBListConfirm() {
+  playSound('click');
+  if (confirm('歴代OB名簿をすべて初期化しますか？\n（登録されたOB先輩データが消去されます）')) {
+    localStorage.removeItem('juken_success_ob_list');
+    localStorage.removeItem('juken_success_ob');
+    openOBRosterModal();
+    renderRelations();
+  }
+}
+
 function openOBRosterModal() {
   playSound('click');
   const body = document.getElementById('ob-modal-body');
   body.innerHTML = '';
 
-  const obDataStr = localStorage.getItem('juken_success_ob');
-  if (obDataStr) {
-    try {
-      const ob = JSON.parse(obDataStr);
+  const list = getOBList();
+  if (list && list.length > 0) {
+    let cardsHtml = '';
+    list.forEach((ob, idx) => {
+      const genNum = ob.generation || (list.length - idx);
       const bestName = ob.bestSubjectName || (ob.bestSubject ? getSubjectDisplayName(ob.bestSubject) : null);
       const bestRank = ob.bestScore ? getRank(ob.bestScore).rank : '';
-      const bestInfoHtml = bestName ? `<div class="univ" style="color:#0284c7; font-size:0.85rem; font-weight:800;">🔥 得意科目: ${bestName} ${ob.bestScore ? `(学力 ${ob.bestScore}・${bestRank}ランク)` : ''}</div>` : '';
+      const bestInfoHtml = bestName ? `<div class="univ" style="color:#0284c7; font-size:0.82rem; font-weight:800; margin-top:2px;">🔥 得意科目: ${bestName} ${ob.bestScore ? `(${ob.bestScore}点・${bestRank}ランク)` : ''}</div>` : '';
+      const dateText = ob.dateStr || (ob.year ? `${ob.year}年` : '');
 
-      body.innerHTML = `
+      cardsHtml += `
         <div class="ob-history-card">
           <div class="avatar">👨‍🎓</div>
           <div class="info">
-            <div class="name">${ob.name} 先輩</div>
-            <div class="univ">🌸 【${ob.univ}】 現役合格！</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="name">${ob.name} 先輩</span>
+              <span class="ob-badge" style="background:#e0f2fe; color:#0369a1; font-size:0.68rem; font-weight:800; padding:2px 6px; border-radius:4px; border:1px solid #bae6fd;">第${genNum}期生</span>
+            </div>
+            <div class="univ" style="margin-top:2px;">🌸 【${ob.univ}】 現役合格！</div>
             ${bestInfoHtml}
-            <div class="date">合格年: ${ob.year}年 / 習得特能数: ${ob.traitsCount}個</div>
+            <div class="date" style="margin-top:3px;">合格日: ${dateText} / 習得特能数: ${ob.traitsCount || 0}個</div>
           </div>
         </div>
-        <p style="font-size:0.75rem; color:#475569; margin-top:8px;">
-          ※登録された先輩は、2周目以降の高校生活で激励に現れ、得意科目【${bestName || '主要科目'}】の集中指導（+25pt）と他科目の基礎アドバイス（+6pt）をしてくれます！
-        </p>
       `;
-    } catch(e) {}
+    });
+
+    body.innerHTML = `
+      <div class="ob-list-summary" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; font-size:0.8rem; font-weight:800; color:#334155; border-bottom:1px solid #e2e8f0; margin-bottom:6px;">
+        <span>📜 歴代OB合格名簿: <span style="color:#2563eb;">${list.length}名 登録</span></span>
+        <button class="btn-clear-ob" onclick="clearOBListConfirm()" style="font-size:0.7rem; background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; border-radius:6px; padding:2px 8px; cursor:pointer; font-weight:700;">名簿初期化</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        ${cardsHtml}
+      </div>
+      <p style="font-size:0.75rem; color:#475569; margin-top:8px; line-height:1.45;">
+        ※登録された歴代のOB先輩たちは、2周目以降の高校生活中に<strong>ランダム抽選で家庭教師・激励</strong>に現れ、それぞれの得意科目に応じた集中指導（+25pt）と基礎アドバイス（+6pt）をしてくれます！
+      </p>
+    `;
   } else {
     body.innerHTML = `
-      <div style="text-align: center; padding: 20px 0; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+      <div style="text-align: center; padding: 24px 0; color: #64748b; font-size: 0.85rem; font-weight: 700;">
         <div style="font-size: 2.5rem; margin-bottom: 8px;">🎓</div>
         まだ合格実績データがありません。<br>
-        第一志望大学に合格してゲームをクリアすると、<br>
-        ここにあなたのキャラが栄光のOBとして登録されます！
+        大学に合格してゲームをクリアすると、<br>
+        ここにあなたのキャラが栄光の歴代OBとして何人でも登録されます！
       </div>
     `;
   }
@@ -1664,28 +1717,32 @@ function renderRelationsGrid() {
   }
   container.appendChild(shindoCard);
 
-  // 3. OB先輩
-  const obData = localStorage.getItem('juken_success_ob');
+  // 3. OB先輩（何人でも保存・名簿閲覧可能）
+  const obList = getOBList();
   const obCard = document.createElement('div');
-  if (obData) {
-    try {
-      const ob = JSON.parse(obData);
-      obCard.className = 'relation-card';
-      obCard.innerHTML = `
-        <div class="rel-avatar">👨‍🎓</div>
-        <div class="rel-info">
-          <div class="rel-name">${ob.name}先輩 (${ob.univ}合格OB)</div>
-          <div class="rel-desc">前周回クリアデータより来校！大量経験値やアドバイスをくれます。</div>
+  if (obList && obList.length > 0) {
+    const topOb = obList[0];
+    obCard.className = 'relation-card';
+    obCard.style.cursor = 'pointer';
+    obCard.title = 'クリックして歴代OB名簿を見る';
+    obCard.onclick = () => openOBRosterModal();
+    obCard.innerHTML = `
+      <div class="rel-avatar">👨‍🎓</div>
+      <div class="rel-info">
+        <div class="rel-name" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>歴代OB先輩 (${obList.length}名登録中)</span>
+          <span style="font-size:0.7rem; color:#2563eb; font-weight:700;">名簿を見る ▶</span>
         </div>
-      `;
-    } catch(e) {}
+        <div class="rel-desc">直近: 第${topOb.generation || obList.length}期 ${topOb.name}先輩 (${topOb.univ}合格)<br>歴代先輩がランダムに家庭教師として来校指導してくれます！</div>
+      </div>
+    `;
   } else {
     obCard.className = 'relation-card unmet';
     obCard.innerHTML = `
       <div class="rel-avatar">🎓</div>
       <div class="rel-info">
         <div class="rel-name">OBの先輩 (未登録)</div>
-        <div class="rel-desc">大学に合格してゲームをクリアすると、次周回でOBとして登場！</div>
+        <div class="rel-desc">大学に合格してゲームをクリアすると、歴代OBとして何人でも登録されます！</div>
       </div>
     `;
   }
@@ -2646,7 +2703,7 @@ function checkScheduledEvents() {
     }
   }
 
-  if (localStorage.getItem('juken_success_ob') && Math.random() < 0.04) {
+  if (getOBList().length > 0 && Math.random() < 0.04) {
     enqueueModal(() => triggerOBVisit());
     return;
   }
@@ -3311,13 +3368,13 @@ function triggerAmuletEvent() {
 }
 
 function triggerOBVisit() {
-  playSound('success');
-  let ob;
-  try {
-    ob = JSON.parse(localStorage.getItem('juken_success_ob'));
-  } catch(e) {}
-  if (!ob) return;
+  const list = getOBList();
+  if (!list || list.length === 0) return;
 
+  // 歴代登録OBの中からランダムに1人を抽選！
+  const ob = list[Math.floor(Math.random() * list.length)];
+
+  playSound('success');
   const bestSubj = ob.bestSubject || 'eng';
   const bestSubjName = ob.bestSubjectName || getSubjectDisplayName(bestSubj);
 
@@ -3331,9 +3388,11 @@ function triggerOBVisit() {
   });
   if (state.motivation < 4) state.motivation++;
 
+  const genText = ob.generation ? `第${ob.generation}期生の` : '';
+
   showEventModal(
-    `👨‍🎓 ${ob.name}先輩の激励訪問！`,
-    `前周回で見事【${ob.univ}】に合格した伝説の先輩が来校！\n「特に俺が得意だった【${bestSubjName}】の受験テクニックを伝授してやるぞ！」と熱血指導と参考書を差し入れてくれた！`,
+    `👨‍🎓 ${ob.name}先輩（${ob.univ}合格）の家庭教師指導！`,
+    `歴代OB名簿（全${list.length}名）の中から、見事【${ob.univ}】に合格した${genText}${ob.name}先輩が激励・家庭教師として駆けつけてくれた！\n\n「後輩のために、俺が得意だった【${bestSubjName}】の受験テクニックを直接伝授してやるぞ！」と熱血指導と参考書を差し入れてくれた！`,
     [
       `得意科目【${bestSubjName}】経験値 +25 pt！`,
       `他全教科 経験値 +6 pt！`,
@@ -4110,7 +4169,7 @@ function finishExamBattle() {
   renderUI();
 }
 
-// クリアデータをOB名簿として保存（次周回で先輩として登場）
+// クリアデータをOB名簿として保存（何人でも保存・歴代名簿へ追加）
 function saveClearOB(univName) {
   try {
     const keys = ['eng', 'math', 'jp', 'sci'];
@@ -4118,16 +4177,32 @@ function saveClearOB(univName) {
     keys.forEach(k => {
       if (state.subjects[k].score > state.subjects[bestSubject].score) bestSubject = k;
     });
-    const ob = {
-      name: state.playerName,
+
+    const list = getOBList();
+    const newGen = list.length + 1;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
+
+    const newOb = {
+      id: Date.now(),
+      generation: newGen,
+      name: state.playerName || '名無しの受験生',
       univ: univName,
-      year: new Date().getFullYear(),
+      year: now.getFullYear(),
+      dateStr: dateStr,
       traitsCount: state.traits.length,
+      traits: [...state.traits],
       bestSubject,
       bestSubjectName: getSubjectDisplayName(bestSubject),
       bestScore: state.subjects[bestSubject].score
     };
-    localStorage.setItem('juken_success_ob', JSON.stringify(ob));
+
+    // 最新のOBを先頭に追加（最大100人まで保存可能）
+    list.unshift(newOb);
+    if (list.length > 100) list.pop();
+
+    localStorage.setItem('juken_success_ob_list', JSON.stringify(list));
+    localStorage.setItem('juken_success_ob', JSON.stringify(newOb)); // 後方互換性
   } catch (e) {
     console.error('Failed to save OB data:', e);
   }
