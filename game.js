@@ -399,6 +399,14 @@ function createInitialState(playerName = '合格太郎') {
     course: '未定',
     club: '未定',
     targetUniv: null,
+    subUniv: null,
+    subUnivPassed: false,
+    subUnivKyotsuPass: false,
+    applicationsDone: false,
+    subExamDone: false,
+    kyotsuScore: 0,
+    kyotsuRate: 0,
+    kyotsuResearchRank: '',
 
     daijobuAppeared: false,
     kyotsuDone: false,
@@ -832,7 +840,12 @@ function openPauseModal(fromTitle = false) {
     summaryCard.style.display = 'flex';
     document.getElementById('pause-summary-name').textContent = `${current.playerName} くん`;
     document.getElementById('pause-summary-date').textContent = `${current.year}年生 ${current.month}月 ${current.week}週 (残り ${current.maxTurns - current.totalTurn + 1} 週)`;
-    document.getElementById('pause-summary-univ').textContent = `志望校: ${current.targetUniv ? current.targetUniv.name : '未決定 (高3決定)'}`;
+    let univSummary = `志望校: ${current.targetUniv ? current.targetUniv.name : '未決定 (高3決定)'}`;
+    if (current.subUniv) {
+      const passTag = current.subUnivPassed ? ' (💮合格)' : '';
+      univSummary += ` / 併願: ${current.subUniv.name}${passTag}`;
+    }
+    document.getElementById('pause-summary-univ').textContent = univSummary;
   } else {
     summaryCard.style.display = 'none';
   }
@@ -1034,7 +1047,13 @@ function renderUI() {
   const univBadge = document.getElementById('target-univ-badge');
   if (state.targetUniv) {
     const shortLabel = state.targetUniv.shortName || state.targetUniv.name;
-    univBadge.textContent = `志望: ${shortLabel} (${state.targetUniv.border})`;
+    let badgeText = `志望: ${shortLabel} (${state.targetUniv.border})`;
+    if (state.subUniv) {
+      const subLabel = state.subUniv.shortName || state.subUniv.name;
+      const statusIcon = state.subUnivPassed ? '💮' : (state.subExamDone ? '❌' : '📑');
+      badgeText += ` | 併願: ${statusIcon}${subLabel}`;
+    }
+    univBadge.textContent = badgeText;
   } else {
     univBadge.textContent = '志望校: 未決定 (高3春)';
   }
@@ -2031,6 +2050,13 @@ function checkScheduledEvents() {
     return;
   }
 
+  // 高3 12月2週：私大併願・すべり止め出願戦略
+  if (y === 3 && m === 12 && w === 2 && !state.applicationsDone) {
+    state.applicationsDone = true;
+    enqueueModal(() => triggerApplicationChoice());
+    return;
+  }
+
   if (y === 3 && m === 12 && w === 3 && !state.hasAmulet && state.friends.aoi.met && state.friends.aoi.affection >= 70) {
     enqueueModal(() => triggerAmuletEvent());
     return;
@@ -2039,6 +2065,13 @@ function checkScheduledEvents() {
   if (y === 3 && m === 1 && w === 3 && !state.kyotsuDone) {
     state.kyotsuDone = true;
     enqueueModal(() => startExamBattle('kyotsu'));
+    return;
+  }
+
+  // 高3 2月2週：私立大学個別日程入試（共テ利用合格時は免除）
+  if (y === 3 && m === 2 && w === 2 && !state.subExamDone) {
+    state.subExamDone = true;
+    enqueueModal(() => triggerSubExamEvent());
     return;
   }
 
@@ -2234,6 +2267,140 @@ function triggerTargetUnivChoice() {
   });
 
   showChoiceModal('🎓 志望校・学部を決定しよう！', '高校3年生の春。いよいよ受験する大学・学部のターゲットを定める時が来た！', options, '🏫');
+}
+
+function triggerApplicationChoice() {
+  const isBunkei = state.course === '文系';
+  const targetId = state.targetUniv ? state.targetUniv.id : '';
+  
+  // プレイヤーの文理コースに合致する私立大学（第1志望と同じものは除く）
+  let subCandidates = UNIV_LIST.filter(u => 
+    u.type === '私立' && 
+    (u.course === state.course || u.course === '共通') &&
+    u.id !== targetId
+  );
+
+  // もし該当がなければ全私大から
+  if (subCandidates.length === 0) {
+    subCandidates = UNIV_LIST.filter(u => u.type === '私立' && u.id !== targetId);
+  }
+
+  // ボーダー降順（難関から中堅・安全校へ）
+  subCandidates.sort((a, b) => b.border - a.border);
+
+  const options = subCandidates.map(u => {
+    const curDev = calcTargetDev(u);
+    const diff = (curDev - u.border).toFixed(1);
+    const diffPrefix = diff >= 0 ? `+${diff}` : `${diff}`;
+    let judge = 'C判定';
+    if (diff >= 3) judge = 'A判定 (安全圏)';
+    else if (diff >= 0) judge = 'B判定 (実力相応)';
+    else if (diff >= -4) judge = 'C判定 (ボーダー付近)';
+    else judge = 'D〜E判定 (チャレンジ)';
+
+    return {
+      title: `${u.name} (偏差値${u.border} / 現在${judge})`,
+      subtext: `傾斜偏差値: ${curDev} (${diffPrefix}) | 共通テスト利用 ＆ 2月個別日程併願`,
+      action: () => {
+        state.subUniv = u;
+        enqueueModal(() => {
+          showEventModal(
+            `📑 私大併願校の出願完了！`,
+            `【${u.name}】（ボーダー偏差値 ${u.border}）の出願手続きを完了した！\n\n1月の大学入学共通テストでは「共通テスト利用入試」にも同時出願！\n高得点を獲得できれば2月の個別試験前に合格を確定できるぞ！`,
+            [
+              `併願校: ${u.name}`,
+              `目標ボーダー: 偏差値 ${u.border}`,
+              `判定状況: ${judge}（傾斜偏差値 ${curDev}）`
+            ],
+            '📑'
+          );
+        });
+        setDialog('担任の先生', `【${u.name}】の出願だな！共通テスト利用と2月個別の2段構えでいこう！`);
+        renderUI();
+      }
+    };
+  });
+
+  // 背水の陣オプション
+  options.push({
+    title: '🔥 併願なし（第1志望一本勝負・背水の陣）',
+    subtext: '私大の併願は行わず、第1志望校のみに出願する。後戻りできない覚悟でやる気UP！',
+    action: () => {
+      state.subUniv = null;
+      state.motivation = Math.min(4, state.motivation + 1);
+      enqueueModal(() => {
+        showEventModal(
+          `🔥 背水の陣！第1志望一本勝負！`,
+          `私立大学の併願は一切行わず、第1志望【${state.targetUniv ? state.targetUniv.name : '志望校'}】のみに出願することを決断した！\n\n退路を断ったことで凄まじい集中力が湧き上がってきた！（やる気UP！）`,
+          [
+            '併願校: なし（出願せず）',
+            '背水の陣ボーナス: やる気+1'
+          ],
+          '🔥'
+        );
+      });
+      setDialog('担任の先生', `一本勝負か…！覚悟はいいな。その気迫で合格を勝ち取れ！`);
+      renderUI();
+    }
+  });
+
+  showChoiceModal(
+    '🎯 冬の出願戦略会議（私大併願校の決定）',
+    '高校3年 12月。いよいよ大学入試の出願シーズンが始まった！\n共通テスト利用入試および2月個別日程で併願する私立大学（すべり止め・併願校）を決定しよう！',
+    options,
+    '📑'
+  );
+}
+
+function triggerSubExamEvent() {
+  if (!state.subUniv) {
+    // 併願校なしの場合
+    enqueueModal(() => {
+      showEventModal(
+        '📖 二次試験直前・総仕上げ期間',
+        '私大併願校の受験はなく、2月下旬の第1志望・二次試験本番に向けて最後の総復習に専念した！',
+        ['体力を維持しつつ、最終確認を完了！'],
+        '📖'
+      );
+    });
+    setDialog(state.playerName, 'いよいよ次は第1志望の二次試験本番だ…！');
+    renderUI();
+    return;
+  }
+
+  // すでに共通テスト利用で合格済みの場合
+  if (state.subUnivKyotsuPass) {
+    playSound('success');
+    state.motivation = Math.min(4, state.motivation + 1);
+    state.stamina = state.maxStamina;
+    state.stress = Math.max(0, state.stress - 20);
+    enqueueModal(() => {
+      showEventModal(
+        '🎉 併願校合格確保済み！私大個別試験は免除！',
+        `共通テスト利用入試で見事【${state.subUniv.name}】の合格を確保しているため、2月の私大個別試験は受験不要！\n\nすべり止め校を確保した大きな精神的アドバンテージを得て、月末の第1志望本番に全集中できる！`,
+        [
+          `合格確保済み: ${state.subUniv.name}`,
+          '私大個別日程: 受験免除',
+          '安心感により やる気UP & 体力全快 & ストレス-20！'
+        ],
+        '👑'
+      );
+    });
+    setDialog('担任の先生', `すでに合格を1つ持っているのは大きな強みだ！この勢いで第1志望を突破しよう！`);
+    renderUI();
+    return;
+  }
+
+  // 共通テスト利用で受かっていない場合 ➔ 個別試験本番
+  enqueueModal(() => {
+    showEventModal(
+      '⚔️ 私大個別日程入試 本番！',
+      `併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）の個別日程入試が始まった！\n得意教科を活かした3教科の勝負！合格を勝ち取って浪人を回避せよ！`,
+      [`受験校: ${state.subUniv.name}`, `試験科目: 3教科記述`],
+      '🎓',
+      () => startExamBattle('private_sub')
+    );
+  });
 }
 
 function triggerDaijobuDoctor() {
@@ -2523,6 +2690,7 @@ let battleState = {
   examType: 'kyotsu',
   step: 0,
   maxSteps: 5,
+  maxScore: 500,
   score: 0
 };
 
@@ -2532,9 +2700,28 @@ function startExamBattle(type) {
   battleState.score = 0;
 
   const isKyotsu = type === 'kyotsu';
-  const title = isKyotsu ? '🔥 大学入学共通テスト 本番！' : '🎓 国公立二次試験 / 私大個別入試 本番！';
+  const isSubExam = type === 'private_sub';
+  
+  let title = '🎓 国公立二次試験 / 第1志望本番！';
+  let maxScore = 500;
+  let maxSteps = 5;
+
+  if (isKyotsu) {
+    title = '🔥 大学入学共通テスト 本番！';
+    maxScore = 500;
+    maxSteps = 5;
+  } else if (isSubExam) {
+    const subName = state.subUniv ? state.subUniv.name : '私立併願大学';
+    title = `⚔️ 私立大学個別入試 【${subName}】 本番！`;
+    maxScore = 300;
+    maxSteps = 3;
+  }
+
+  battleState.maxScore = maxScore;
+  battleState.maxSteps = maxSteps;
+
   document.getElementById('battle-exam-title').textContent = title;
-  document.getElementById('battle-current-score').textContent = `獲得得点: 0 / 500`;
+  document.getElementById('battle-current-score').textContent = `獲得得点: 0 / ${maxScore}`;
 
   const term = document.getElementById('exam-log-terminal');
   term.innerHTML = `<div class="log-line">=== ${title} ===</div><div class="log-line">試験会場の張り詰めた空気の中、試験開始のチャイムが鳴り響いた！</div>`;
@@ -2549,24 +2736,45 @@ function advanceExamBattle() {
   playSound('battle_hit');
   battleState.step++;
   const step = battleState.step;
+  const maxSteps = battleState.maxSteps || 5;
+  const maxScore = battleState.maxScore || 500;
 
   const isBunkeiBattle = state.course === '文系';
   const isRikeiBattle = state.course === '理系';
-  const sciQName = isBunkeiBattle ? '第4問：史料読解・論述（社会）' : (isRikeiBattle ? '第4問：実験考察・計算（理科）' : '第4問：実験・論述（理社）');
-  const q5Subj = isBunkeiBattle ? 'jp' : 'math';
-  const q5Name = isBunkeiBattle ? '第5問：最難関・総合論述問題（国語）' : '第5問：最難関・総合記述問題（数学）';
+  const isSubExam = battleState.examType === 'private_sub';
 
-  const questions = [
-    { name: '第1問：長文読解（英語）', subj: 'eng' },
-    { name: '第2問：微積・数列（数学）', subj: 'math' },
-    { name: '第3問：評論文・古文（国語）', subj: 'jp' },
-    { name: sciQName, subj: 'sci' },
-    { name: q5Name, subj: q5Subj }
-  ];
+  let questions = [];
+  if (isSubExam) {
+    if (isBunkeiBattle) {
+      questions = [
+        { name: '第1問：長文総合読解・要約（英語）', subj: 'eng' },
+        { name: '第2問：現代文・古文・論述（国語）', subj: 'jp' },
+        { name: '第3問：歴史・公民・史料考察（社会）', subj: 'sci' }
+      ];
+    } else {
+      questions = [
+        { name: '第1問：科学技術英語・読解（英語）', subj: 'eng' },
+        { name: '第2問：微分積分・数列ベクトル（数学）', subj: 'math' },
+        { name: '第3問：物理／化学・総合考察（理科）', subj: 'sci' }
+      ];
+    }
+  } else {
+    const sciQName = isBunkeiBattle ? '第4問：史料読解・論述（社会）' : (isRikeiBattle ? '第4問：実験考察・計算（理科）' : '第4問：実験・論述（理社）');
+    const q5Subj = isBunkeiBattle ? 'jp' : 'math';
+    const q5Name = isBunkeiBattle ? '第5問：最難関・総合論述問題（国語）' : '第5問：最難関・総合記述問題（数学）';
+
+    questions = [
+      { name: '第1問：長文読解（英語）', subj: 'eng' },
+      { name: '第2問：微積・数列（数学）', subj: 'math' },
+      { name: '第3問：評論文・古文（国語）', subj: 'jp' },
+      { name: sciQName, subj: 'sci' },
+      { name: q5Name, subj: q5Subj }
+    ];
+  }
 
   const q = questions[step - 1];
   document.getElementById('battle-subject-name').textContent = q.name;
-  document.getElementById('exam-progress-fill').style.width = `${(step / 5) * 100}%`;
+  document.getElementById('exam-progress-fill').style.width = `${(step / maxSteps) * 100}%`;
 
   const term = document.getElementById('exam-log-terminal');
   const baseScore = state.subjects[q.subj].score;
@@ -2614,13 +2822,13 @@ function advanceExamBattle() {
 
   gained = Math.max(10, Math.min(100, gained));
   battleState.score += gained;
-  document.getElementById('battle-current-score').textContent = `獲得得点: ${battleState.score} / 500`;
+  document.getElementById('battle-current-score').textContent = `獲得得点: ${battleState.score} / ${maxScore}`;
   triggerParticles(null, null, 12, 'star');
 
   term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
   term.scrollTop = term.scrollHeight;
 
-  if (step >= 5) {
+  if (step >= maxSteps) {
     document.getElementById('btn-battle-next').textContent = '試験終了！結果を確認 ▶';
     document.getElementById('btn-battle-next').onclick = () => finishExamBattle();
   } else {
@@ -2632,24 +2840,123 @@ function finishExamBattle() {
   document.getElementById('exam-battle-modal').classList.remove('active');
   isModalShowing = false;
   const isKyotsu = battleState.examType === 'kyotsu';
+  const isSubExam = battleState.examType === 'private_sub';
 
   if (isKyotsu) {
+    state.kyotsuScore = battleState.score;
+    state.kyotsuRate = Math.round((battleState.score / 500) * 100);
+
+    // 第1志望の共通テストリサーチ判定
+    const target = state.targetUniv || UNIV_LIST[0];
+    let targetBorderRate = 70;
+    if (target.border >= 75) targetBorderRate = 88;
+    else if (target.border >= 70) targetBorderRate = 83;
+    else if (target.border >= 65) targetBorderRate = 78;
+    else if (target.border >= 60) targetBorderRate = 73;
+    else if (target.border >= 55) targetBorderRate = 67;
+    else targetBorderRate = 60;
+
+    const diff = state.kyotsuRate - targetBorderRate;
+    let researchRank = 'C';
+    let researchDesc = '合格可能性 40%〜60%（五分五分）';
+    if (diff >= 5) { researchRank = 'A'; researchDesc = '合格可能性 80%以上（安全圏）'; }
+    else if (diff >= 2) { researchRank = 'B'; researchDesc = '合格可能性 60%〜80%（良好）'; }
+    else if (diff >= -2) { researchRank = 'C'; researchDesc = '合格可能性 40%〜60%（ボーダーライン）'; }
+    else if (diff >= -6) { researchRank = 'D'; researchDesc = '合格可能性 20%〜40%（要二次逆転）'; }
+    else { researchRank = 'E'; researchDesc = '合格可能性 20%以下（大逆転が必要）'; }
+    state.kyotsuResearchRank = researchRank;
+
+    // 併願校の「共通テスト利用入試」判定
+    let subKyotsuMsg = '';
+    if (state.subUniv) {
+      let subBorderRate = 68;
+      if (state.subUniv.border >= 65) subBorderRate = 86;
+      else if (state.subUniv.border >= 58) subBorderRate = 78;
+      else subBorderRate = 68;
+
+      const passed = state.kyotsuRate >= subBorderRate;
+      state.subUnivKyotsuPass = passed;
+      if (passed) {
+        state.subUnivPassed = true;
+        subKyotsuMsg = `💮【共テ利用 合格！】${state.subUniv.name} のボーダー（${subBorderRate}%）を突破し合格確定！2月の私大個別試験は免除されます！`;
+      } else {
+        subKyotsuMsg = `⚠️【共テ利用 不合格】${state.subUniv.name} のボーダー（${subBorderRate}%）に及ばず。2月2週の個別入試で合格を狙おう！`;
+      }
+    } else {
+      subKyotsuMsg = '📑 私大併願校の出願なし（第1志望一本勝負）';
+    }
+
+    const summaryRewards = [
+      `共通テスト得点: ${state.kyotsuScore}点 / 500点（得点率: ${state.kyotsuRate}%）`,
+      `第1志望【${target.name}】共テリサーチ判定: 【 ${researchRank}判定 】（${researchDesc}）`,
+      subKyotsuMsg
+    ];
+
     enqueueModal(() => {
       showEventModal(
-        '📝 共通テスト終了！自己採点結果',
-        `2日間の共通テストを戦い抜いた！\n獲得得点: 【 ${battleState.score} / 500 点 】\n(得点率: ${Math.round((battleState.score / 500) * 100)}%)\n\nいよいよ来月、運命の二次試験・個別入試だ！`,
-        [`共通テスト得点: ${battleState.score}点`],
-        '🎯',
+        '📝 共通テスト終了！自己採点＆共テ利用結果',
+        `2日間の共通テストを戦い抜いた！\n獲得得点: 【 ${battleState.score} / 500 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
+        summaryRewards,
+        state.subUnivKyotsuPass ? '🎉' : '🎯',
         () => advanceTurn()
       );
     });
-    setDialog('担任の先生', `よく戦った！共通テストの持ち点を活かして、2月の二次試験へ突っ走れ！`);
+
+    setDialog('担任の先生', `自己採点結果が出たぞ！${state.subUnivKyotsuPass ? '併願校を1つ確保できたのは大きいぞ！' : ''}第1志望は【${researchRank}判定】だ。2月の本番へ向けて全力で仕上げよう！`);
+
+  } else if (isSubExam) {
+    // 2月私大個別日程入試の結果
+    const targetSub = state.subUniv;
+    let baseDev = calcTargetDev(targetSub);
+    const scoreBonus = parseFloat(((battleState.score - 180) / 20).toFixed(1));
+    let finalSubDev = parseFloat((baseDev + scoreBonus).toFixed(1));
+    const passed = finalSubDev >= (targetSub.border - 1.0);
+    state.subUnivPassed = passed;
+
+    enqueueModal(() => {
+      if (passed) {
+        playSound('success');
+        triggerParticles(null, null, 25, 'gold');
+        showEventModal(
+          `🌸 【${targetSub.name}】 個別入試 合格発表！`,
+          `私大個別日程の合格発表掲示板に、自分の番号があった！\n【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）に見事正規合格！！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nこれで浪人は回避し、進学先をがっちり確保した！\n肩の荷が下り、月末の第1志望二次試験に恐れず立ち向かえる！`,
+          [
+            `合否結果: 【 合格 】`,
+            `試験得点: ${battleState.score}点 / 300点`,
+            `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`,
+            `心の余裕により ストレス -20 ＆ やる気UP！`
+          ],
+          '💮',
+          () => advanceTurn()
+        );
+        state.stress = Math.max(0, state.stress - 20);
+        state.motivation = Math.min(4, state.motivation + 1);
+      } else {
+        playSound('fail');
+        triggerScreenShake();
+        showEventModal(
+          `🍂 【${targetSub.name}】 個別入試 合格発表`,
+          `残念ながら【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）の合格者一覧に番号はなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n私大個別日程の狭き門に弾かれてしまったが、君の高校生活の集大成はここではない！\n月末の第1志望・二次試験本番で必ず雪辱を果たせ！`,
+          [
+            `合否結果: 【 不合格 】`,
+            `試験得点: ${battleState.score}点 / 300点`,
+            `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`
+          ],
+          '🍂',
+          () => advanceTurn()
+        );
+      }
+    });
+
+    setDialog(state.playerName, passed ? 'やった、受かった！これで思い切り第1志望に突撃できる！' : 'くそっ、落ちたか…！でも本命はこれからだ、絶対に受かってやる！');
+
   } else {
+    // 2月4週 国公立二次 / 第1志望本番
     enqueueModal(() => {
       showEventModal(
         '🎓 全試験日程 終了！！',
-        `高校3年間のすべてをぶつけた二次試験が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\nあとは3月の合格発表を待つのみだ……！`,
-        [`二次試験得点: ${battleState.score}点`],
+        `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\nあとは3月の運命の合格発表を待つのみだ……！`,
+        [`二次試験得点: ${battleState.score}点 / 500点`],
         '🌸',
         () => advanceTurn()
       );
@@ -2660,8 +2967,30 @@ function finishExamBattle() {
   renderUI();
 }
 
+function saveClearOB(univName) {
+  const subjKeys = ['eng', 'math', 'jp', 'sci'];
+  let bestSubj = 'eng';
+  let maxScore = -1;
+  subjKeys.forEach(s => {
+    if (state.subjects[s] && state.subjects[s].score > maxScore) {
+      maxScore = state.subjects[s].score;
+      bestSubj = s;
+    }
+  });
+
+  const obData = {
+    name: state.playerName,
+    univ: univName,
+    year: new Date().getFullYear(),
+    traitsCount: state.traits.length,
+    bestSubject: bestSubj,
+    bestSubjectName: getSubjectDisplayName(bestSubj),
+    bestScore: maxScore
+  };
+  localStorage.setItem('juken_success_ob', JSON.stringify(obData));
+}
+
 function triggerGameEnd() {
-  playSound('success');
   let avgAcademic = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
   let finalBonus = 0;
   if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
@@ -2672,49 +3001,42 @@ function triggerGameEnd() {
 
   const target = state.targetUniv || UNIV_LIST[0];
   let finalDev = calcTargetDev(target, finalBonus);
-  const isPassed = finalDev >= (target.border - 1.2);
-
-  let resultUnivName = isPassed ? target.name : '中堅私立大学';
-  if (!isPassed && finalDev < 43.0) resultUnivName = '浪人';
+  const isTargetPassed = finalDev >= (target.border - 1.2);
+  const isSubPassed = state.subUniv && state.subUnivPassed;
 
   let title = '';
   let desc = '';
+  let isWin = false;
+  let enrollUnivName = '';
 
-  if (isPassed) {
+  if (isTargetPassed) {
+    isWin = true;
+    enrollUnivName = target.name;
+    const subNote = isSubPassed ? `\n（※併願校【${state.subUniv.name}】もダブル合格達成！）` : '';
     title = `🌸 祝！【${target.name}】 現役合格！！ 🌸`;
-    desc = `掲示板に自分の受験番号を見つけた瞬間、涙があふれ出した！\n難関【${target.name}】（ボーダー偏差値 ${target.border}）の狭き門を見事に突破！\n志望学部の傾斜配点（最終偏差値 ${finalDev}）を味方につけ、栄光の合格を勝ち取った！\n晴れて夢のキャンパスライフが始まる！`;
+    desc = `掲示板に自分の受験番号を見つけた瞬間、大粒の涙があふれ出した！\n難関【${target.name}】（ボーダー偏差値 ${target.border}）の狭き門を見事に突破！\n志望学部の傾斜配点（最終偏差値 ${finalDev}）を味方につけ、栄光の第一志望合格を勝ち取った！${subNote}\n晴れて夢のキャンパスライフが幕を開ける！`;
 
-    // 最もスコアの高い得意科目を特定して保存
-    const subjKeys = ['eng', 'math', 'jp', 'sci'];
-    let bestSubj = 'eng';
-    let maxScore = -1;
-    subjKeys.forEach(s => {
-      if (state.subjects[s] && state.subjects[s].score > maxScore) {
-        maxScore = state.subjects[s].score;
-        bestSubj = s;
-      }
-    });
+    saveClearOB(target.name);
 
-    const obData = {
-      name: state.playerName,
-      univ: target.name,
-      year: new Date().getFullYear(),
-      traitsCount: state.traits.length,
-      bestSubject: bestSubj,
-      bestSubjectName: getSubjectDisplayName(bestSubj),
-      bestScore: maxScore
-    };
-    localStorage.setItem('juken_success_ob', JSON.stringify(obData));
-  } else if (resultUnivName === '浪人') {
-    title = '🍂 不合格……浪人決定 🍂';
-    desc = `悔しくも第1志望には届かなかった…だが君の挑戦は終わらない。\n予備校でもう1年牙を研ぎ、来年こそ栄冠を掴み取れ！`;
+  } else if (isSubPassed) {
+    // 第1志望不合格だが併願校合格（浪人回避）
+    isWin = true;
+    enrollUnivName = state.subUniv.name;
+    title = `🌸 【${state.subUniv.name}】 進学決定！ 🌸`;
+    desc = `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）の壁は厚く、惜しくも届かなかった……。\nしかし！12月に出願し実力で勝ち取った併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）への進学が決定！\n浪人をしっかりと回避し、春から新しいステージで充実した大学生活が始まる！\n大学で何を学び、どう花開かせるかは自分次第だ。胸を張って次の未来へ歩み出そう！`;
+
+    saveClearOB(state.subUniv.name);
+
   } else {
-    title = `🌸 【${resultUnivName}】 合格！ 🌸`;
-    desc = `第1志望には一歩及ばなかったが、併願大学に見事合格！\n大学で何を学ぶかは自分次第だ。胸を張って新しいスタートを切ろう！`;
+    // 全不合格 ➔ 浪人決定
+    isWin = false;
+    enrollUnivName = '浪人決定';
+    title = '🍂 届かなかった春……浪人決定 🍂';
+    desc = `全日程の合格発表が終了した。\n第1志望【${target.name}】${state.subUniv ? `および併願校【${state.subUniv.name}】` : ''}の壁は高く、合格通知を掴み取ることはできなかった……。\nだが高校3年間積み重ねた努力は決して色褪せない。\n「来年こそは絶対にあの憧れのキャンパスをくぐる！」\n悔し涙を拭い、予備校の門を叩いて新たな一年が始まる！`;
   }
 
   enqueueModal(() => {
-    if (isPassed) {
+    if (isWin) {
       playSound('fanfare');
       triggerParticles(null, null, 40, 'confetti');
       triggerScreenBounce();
@@ -2722,18 +3044,21 @@ function triggerGameEnd() {
       playSound('fail');
       triggerScreenShake();
     }
+
     const modalFooter = document.getElementById('event-modal-footer');
     modalFooter.innerHTML = `
       <button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>
     `;
 
+    const subStatusText = state.subUniv ? `${state.subUniv.name} (${state.subUnivPassed ? '合格 💮' : '不合格 ❌'})` : 'なし';
+
     showEventModal(
       title,
-      `${desc}\n\n【最終戦績】\n受験生: ${state.playerName}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番入試偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
+      `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrollUnivName}\n第1志望: ${target.name} (${isTargetPassed ? '合格' : '不合格'})\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
       [
-        isPassed ? '★ クリアデータをOB名簿に保存しました！次周回で家庭教師として登場します！' : 'タイトル画面からもう一度挑戦できます！'
+        isWin ? '★ クリアデータをOB名簿に保存しました！次周回で先輩として登場します！' : 'タイトル画面からもう一度挑戦できます！'
       ],
-      isPassed ? '🎓' : '📚'
+      isWin ? '🎓' : '📚'
     );
   });
 
