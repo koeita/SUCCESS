@@ -2286,11 +2286,11 @@ function checkScheduledEvents() {
     return;
   }
 
-  // 模試エントリー判定（高1・高2: 年2〜3回、高3: 4月, 8月, 11月, 12月）
+  // 模試エントリー判定（高1・高2: 年2〜3回、高3: 4月, 7月, 8月, 11月, 12月）
   const isMockWeek = (
     (y === 1 && w === 2 && (m === 6 || m === 11 || m === 1)) ||
     (y === 2 && w === 2 && (m === 6 || m === 11 || m === 2)) ||
-    (y === 3 && w === 2 && (m === 4 || m === 8 || m === 11 || m === 12))
+    (y === 3 && w === 2 && (m === 4 || m === 7 || m === 8 || m === 11 || m === 12))
   );
 
   const mockKey = `mock_done_${y}_${m}_${w}`;
@@ -3069,26 +3069,38 @@ function triggerMockEntry(y, m, w) {
 
   const options = [];
 
-  // 高3の8月・11月は「志望校冠模試」が主役！
+  // 高3 8月・11月: 「志望校冠模試」
   if (y === 3 && (m === 8 || m === 11)) {
+    const kanSeason = m === 8 ? '夏の陣' : '秋の決戦';
     options.push({
-      title: `🏛️ 【${kanName}】を受験する！`,
+      title: `🏛️ 【${kanName}（${kanSeason}）】を受験する！`,
       subtext: `志望校【${targetUnivName}】の出題形式・配点を完全模倣！A/B判定で特能【本番◯】や自信を獲得！（費用無料 / 体力-28）`,
-      action: () => executeMockExam('kan', kanName)
+      action: () => executeMockExam('kan', `${kanName}（${kanSeason}）`)
     });
   }
 
-  // 共通テスト型マーク模試
-  const markName = y === 3 && m === 12 ? '全統共通テストプレ模試（直前ファイナル）' : (y === 3 ? '全統共通テスト模試' : `第${m === 6 ? 1 : (m === 11 ? 2 : 3)}回 マーク模試`);
-  options.push({
-    title: `📊 【${markName}】を受験する`,
-    subtext: `新課程1000点満点換算！全教科の基礎バランス・共テ足切り判定を測定。（費用無料 / 体力-22）`,
-    action: () => executeMockExam('mark', markName)
-  });
+  // 共通テスト型マーク模試（高3は 4月、7月、12月に開催。8月は冠模試に集中！）
+  const isKyotsuMockMonth = (y === 3 && (m === 4 || m === 7 || m === 12)) || (y < 3);
+  if (isKyotsuMockMonth) {
+    let markName = '';
+    if (y === 3) {
+      if (m === 4) markName = '第1回 全統共通テスト模試（春季）';
+      else if (m === 7) markName = '第2回 全統共通テスト模試（夏の共テ模試）';
+      else markName = '全統共通テストプレ模試（直前ファイナル）';
+    } else {
+      markName = `第${m === 6 ? 1 : (m === 11 ? 2 : 3)}回 マーク模試`;
+    }
 
-  // 記述模試（高1〜高3）
+    options.push({
+      title: `📊 【${markName}】を受験する`,
+      subtext: `新課程1000点満点換算！全教科の基礎バランス・共テ足切り判定を測定。（費用無料 / 体力-22）`,
+      action: () => executeMockExam('mark', markName)
+    });
+  }
+
+  // 記述模試（12月の直前プレ以外で受験可能）
   if (!(y === 3 && m === 12)) {
-    const descName = y === 3 ? '全統記述模試（二次・私大実戦）' : `第${m === 6 ? 1 : 2}回 学力記述模試`;
+    const descName = y === 3 ? `全統記述模試（${m === 8 ? '夏期' : (m === 11 ? '秋期' : `${m}月`)}）` : `第${m === 6 ? 1 : 2}回 学力記述模試`;
     options.push({
       title: `📝 【${descName}】を受験する`,
       subtext: `論述・記述形式の難問演習！二次試験の記述力を鍛え、主要教科の経験値特大。（費用無料 / 体力-25）`,
