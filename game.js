@@ -1496,7 +1496,7 @@ function executeStudy(subject) {
   let stressCost = 7;
   if (subject === 'math') { stamCost = 18; stressCost = 9; }
   if (subject === 'jp') { stamCost = 12; stressCost = 5; }
-  if (subject === 'all') { stamCost = 24; stressCost = 12; }
+  if (subject === 'all') { stamCost = 22; stressCost = 10; }
 
   if (state.club === '運動部') stamCost += 3;
 
@@ -1567,18 +1567,26 @@ function executeStudy(subject) {
 
     if (subject === 'all') {
       const subjs = ['eng', 'math', 'jp', 'sci'];
+      const leveledUpSubjs = [];
       subjs.forEach(s => {
         let subjMult = 1.0;
         if (state.traits.includes('math_spark') && (s === 'math' || s === 'sci')) subjMult *= 1.25;
         if (state.traits.includes('humanities_spark') && (s === 'jp' || (isBunkei && s === 'sci') || s === 'eng')) subjMult *= 1.25;
-        const pts = Math.round((baseExp * 0.85) * motMulti * zoneBonus * subjMult);
+        // 総合演習は4教科に分散するため各科38%（単科18ptに対し約7pt・4教科合計で約1.5倍の総経験点）
+        const pts = Math.max(3, Math.round((baseExp * 0.38) * motMulti * zoneBonus * subjMult));
         const up = addExpToSubject(s, pts);
-        if (up > 0) anyLevelUp = true;
+        if (up > 0) {
+          anyLevelUp = true;
+          leveledUpSubjs.push(`${getSubjectDisplayName(s)}(${state.subjects[s].score})`);
+        }
       });
-      const avgPts = Math.round((baseExp * 0.85) * motMulti * zoneBonus);
+      const avgPts = Math.max(3, Math.round((baseExp * 0.38) * motMulti * zoneBonus));
       const gradeNotice = state.year > 1 ? `（${state.year}年生効率UP）` : '';
       rewardLines.push(`全科目経験値: 各 +${avgPts} pt 獲得！${gradeNotice}`);
       showFloatingText(`全科目 +${avgPts} pt`, null, null, 'exp');
+      if (leveledUpSubjs.length > 0) {
+        rewardLines.push(`🎉 【学力UP!】${leveledUpSubjs.join('・')}`);
+      }
     } else {
       let mult = 1.0;
       if (state.traits.includes('speed_reading') && (subject === 'eng' || subject === 'jp')) mult *= 1.25;
