@@ -492,7 +492,27 @@
       <!-- 音響設定 -->
       <div class="settings-section">
         <div class="settings-section-title">🔊 サウンド設定</div>
+
+        <!-- BGM 設定 -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-title">BGM (音楽)</div>
+            <div class="setting-desc">シーン別の心地よい背景音楽</div>
+          </div>
+          <button class="setting-toggle-btn active" id="setting-bgm-toggle" onclick="toggleSettingBGM()">ON</button>
+        </div>
+
+        <div class="setting-item slider-item">
+          <div class="setting-info">
+            <div class="setting-title">BGM 音量</div>
+          </div>
+          <div class="slider-control">
+            <input type="range" class="setting-slider" id="setting-bgm-slider" min="0" max="100" value="50" oninput="changeBGMVolume(this.value)">
+            <span class="slider-val" id="setting-bgm-val">50%</span>
+          </div>
+        </div>
         
+        <!-- SE 設定 -->
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-title">効果音 (SE)</div>

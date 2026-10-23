@@ -10,6 +10,8 @@ const SETTINGS_KEY = 'juken_success_settings';
 
 const defaultSettings = {
   isMuted: false,
+  isBgmMuted: false,
+  bgmVolume: 0.5,
   seVolume: 0.8,
   screenShake: true,
   particles: true
@@ -26,9 +28,9 @@ function loadSettings() {
   return { ...defaultSettings, isMuted: legacyMuted };
 }
 
-let settings = loadSettings();
+let settings = window.gameSettings = loadSettings();
 let isMuted = settings.isMuted;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function saveSettings() {
   try {
@@ -45,6 +47,7 @@ function toggleMute() {
   saveSettings();
   updateMuteUI();
   updateSettingsUI();
+  BGM.updateVolume();
   if (!isMuted) {
     playSound('click');
   }
@@ -66,6 +69,283 @@ function playHoverSound() {
     playSound('hover');
   }
 }
+
+
+// ========================================================
+// Web Audio API BGM 音響シンセサイザーエンジン（外部音源不要）
+// ========================================================
+const BGM = window.BGM = (() => {
+  let masterGain = null;
+  let currentTrackName = null;
+  let isPlaying = false;
+  let timerId = null;
+  let currentStep = 0;
+  let nextNoteTime = 0;
+
+  const NOTE_FREQ = {
+    'C3': 130.81, 'D3': 146.83, 'E3': 164.81, 'F3': 174.61, 'G3': 196.00, 'A3': 220.00, 'B3': 246.94,
+    'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'F4': 349.23, 'G4': 392.00, 'A4': 440.00, 'B4': 493.88,
+    'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46, 'G5': 783.99, 'A5': 880.00, 'B5': 987.77,
+    'C6': 1046.50
+  };
+
+  function initNodes() {
+    if (!masterGain) {
+      masterGain = audioCtx.createGain();
+      masterGain.connect(audioCtx.destination);
+      updateVolume();
+    }
+  }
+
+  function updateVolume() {
+    if (!masterGain) return;
+    const isMute = settings.isMuted || settings.isBgmMuted;
+    const vol = isMute ? 0 : (settings.bgmVolume !== undefined ? settings.bgmVolume : 0.5);
+    const now = audioCtx.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.linearRampToValueAtTime(vol * 0.28, now + 0.08);
+  }
+
+  // 優しいトーンの楽器音（ソフト三角波・ローパスフィルター）
+  const SEMITONES = {
+    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
+    'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+  };
+  function getNoteFreq(note) {
+    if (!note) return 0;
+    const match = note.match(/^([A-G][#b]?)([0-9])$/);
+    if (!match) return 440;
+    const name = match[1];
+    const octave = parseInt(match[2], 10);
+    const semitone = SEMITONES[name] !== undefined ? SEMITONES[name] : 0;
+    // A4 = 440Hz, A4 index = 4 * 12 + 9 = 57
+    const noteIndex = octave * 12 + semitone;
+    return 440 * Math.pow(2, (noteIndex - 57) / 12);
+  }
+
+  function playSynth(freq, time, dur, type = 'triangle', vol = 0.22, filterFreq = 1600) {
+    if (!freq || freq <= 0) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(filterFreq, time);
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, time);
+
+      gain.gain.setValueAtTime(0.001, time);
+      gain.gain.linearRampToValueAtTime(vol, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(vol * 0.5, time + Math.min(0.12, dur * 0.5));
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+      osc.connect(gain);
+      gain.connect(filter);
+      filter.connect(masterGain);
+
+      osc.start(time);
+      osc.stop(time + dur);
+    } catch (e) {}
+  }
+
+  // リズム・キック
+  function playKick(time, vol = 0.25) {
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(130, time);
+      osc.frequency.exponentialRampToValueAtTime(35, time + 0.1);
+
+      gain.gain.setValueAtTime(vol, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.1);
+    } catch (e) {}
+  }
+
+  // リズム・スネア/ハット
+  function playSnare(time, vol = 0.12) {
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, time);
+      osc.frequency.exponentialRampToValueAtTime(80, time + 0.07);
+
+      gain.gain.setValueAtTime(vol, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.07);
+    } catch (e) {}
+  }
+
+  // ================= 楽曲定義 (64ステップ 8分音符ループ) =================
+  const TRACKS = {
+    // 1. タイトル曲: 青春のスタート（F -> G -> Em -> Am）
+    title: {
+      tempo: 114,
+      steps: 64,
+      bass: [
+        'F3','F3','F3','F3','G3','G3','G3','G3','E3','E3','E3','E3','A3','A3','A3','A3',
+        'F3','F3','F3','F3','G3','G3','G3','G3','C3','C3','E3','G3','C4','C4','B3','G3',
+        'F3','F3','F3','F3','G3','G3','G3','G3','E3','E3','E3','E3','A3','A3','A3','A3',
+        'F3','F3','F3','F3','G3','G3','G3','G3','C3','E3','G3','B3','C4','C4','C4','C4'
+      ],
+      chords: [
+        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'B4',null,'E4',null,'A4',null,
+        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'C5',null,'E5',null,'G4',null,
+        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'B4',null,'E4',null,'A4',null,
+        'A4',null,'C5',null,'B4',null,'D5',null,'C5',null,'E5',null,'G5',null,'C5',null
+      ],
+      melody: [
+        'C5',null,'D5','E5','G5',null,'E5',null,'D5','C5','D5',null,'E5',null,null,null,
+        'A4',null,'C5',null,'D5','E5','D5',null,'C5',null,null,null,null,null,null,null,
+        'C5',null,'D5','E5','G5',null,'A5',null,'G5','E5','D5',null,'E5',null,null,null,
+        'F5','E5','D5','C5','D5',null,'E5',null,'C5',null,null,null,null,null,null,null
+      ]
+    },
+
+    // 2. 日常・勉強曲: Lo-Fi/カフェ自習室（FM7 -> G7 -> Em7 -> Am7）
+    daily: {
+      tempo: 82,
+      steps: 64,
+      bass: [
+        'F3',null,'F3',null,'G3',null,'G3',null,'E3',null,'E3',null,'A3',null,'A3',null,
+        'D3',null,'D3',null,'G3',null,'G3',null,'C3',null,'E3',null,'A3',null,'G3',null,
+        'F3',null,'F3',null,'G3',null,'G3',null,'E3',null,'E3',null,'A3',null,'A3',null,
+        'D3',null,'D3',null,'G3',null,'G3',null,'C3',null,'C3',null,'C3',null,null,null
+      ],
+      chords: [
+        'C4',null,'E4',null,'D4',null,'F4',null,'B3',null,'D4',null,'C4',null,'E4',null,
+        'F4',null,'A4',null,'F4',null,'B4',null,'E4',null,'G4',null,'E4',null,'A4',null,
+        'C4',null,'E4',null,'D4',null,'F4',null,'B3',null,'D4',null,'C4',null,'E4',null,
+        'F4',null,'A4',null,'F4',null,'B4',null,'E4',null,'G4',null,'C4',null,null,null
+      ],
+      melody: [
+        'E5',null,null,'D5','C5',null,'A4',null,'B4',null,'C5','D5','B4',null,null,null,
+        'A4',null,'C5',null,'D5',null,'E5',null,'G4',null,null,null,null,null,null,null,
+        'E5',null,null,'G5','A5',null,'G5',null,'D5',null,'E5','F5','E5',null,null,null,
+        'F5',null,'E5',null,'D5',null,'B4',null,'C5',null,null,null,null,null,null,null
+      ]
+    },
+
+    // 3. 試験バトル曲: 疾走感＆緊迫感（Am -> F -> G -> Em / キック＆スネア付き）
+    exam: {
+      tempo: 132,
+      steps: 64,
+      hasDrums: true,
+      bass: [
+        'A3','A3','C4','A3','F3','F3','A3','F3','G3','G3','B3','G3','E3','E3','G3','E3',
+        'F3','F3','A3','F3','D3','D3','F3','D3','E3','E3','G#3','E3','E3','E3','B3','E3',
+        'A3','A3','C4','A3','F3','F3','A3','F3','G3','G3','B3','G3','E3','E3','G3','E3',
+        'F3','F3','A3','F3','G3','G3','B3','G3','A3','A3','E3','A3','A3',null,null,null
+      ],
+      chords: [
+        'E4',null,'A4',null,'C4',null,'F4',null,'D4',null,'G4',null,'B3',null,'E4',null,
+        'C4',null,'F4',null,'A3',null,'D4',null,'B3',null,'E4',null,'G#4',null,'B4',null,
+        'E4',null,'A4',null,'C4',null,'F4',null,'D4',null,'G4',null,'B3',null,'E4',null,
+        'C4',null,'F4',null,'D4',null,'G4',null,'C4',null,'E4',null,'A4',null,null,null
+      ],
+      melody: [
+        'A5',null,'E5',null,'C5','D5','E5',null,'F5',null,'D5',null,'B4','C5','D5',null,
+        'C5',null,'A4',null,'D5',null,'B4',null,'B4',null,'G#4',null,'E4',null,null,null,
+        'A5',null,'B5',null,'C6',null,'B5',null,'G5',null,'A5',null,'E5',null,null,null,
+        'F5','E5','D5','C5','D5','E5','F5','G5','A5',null,null,null,null,null,null,null
+      ]
+    }
+  };
+
+  function scheduleStep(track, step, time) {
+    const stepDur = (60 / track.tempo) / 2;
+
+    // ドラム (試験バトル)
+    if (track.hasDrums) {
+      if (step % 4 === 0) playKick(time, 0.22);
+      if (step % 4 === 2) playSnare(time, 0.12);
+    }
+
+    // ベース
+    if (track.bass && track.bass[step]) {
+      const freq = getNoteFreq(track.bass[step]);
+      playSynth(freq, time, stepDur * 0.95, 'triangle', 0.24, 600);
+    }
+
+    // 伴奏コード
+    if (track.chords && track.chords[step]) {
+      const freq = getNoteFreq(track.chords[step]);
+      playSynth(freq, time, stepDur * 1.5, 'sine', 0.16, 1200);
+    }
+
+    // メロディ
+    if (track.melody && track.melody[step]) {
+      const freq = getNoteFreq(track.melody[step]);
+      playSynth(freq, time, stepDur * 1.2, 'triangle', 0.26, 1800);
+    }
+  }
+
+  function tick() {
+    if (!isPlaying || !currentTrackName) return;
+    const track = TRACKS[currentTrackName];
+    if (!track) return;
+
+    const stepDur = (60 / track.tempo) / 2;
+    while (nextNoteTime < audioCtx.currentTime + 0.25) {
+      scheduleStep(track, currentStep, nextNoteTime);
+      nextNoteTime += stepDur;
+      currentStep = (currentStep + 1) % track.steps;
+    }
+  }
+
+  function play(trackName) {
+    initNodes();
+    if (currentTrackName === trackName && isPlaying) return;
+
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    currentTrackName = trackName;
+    currentStep = 0;
+    nextNoteTime = audioCtx.currentTime + 0.05;
+
+    if (!isPlaying) {
+      isPlaying = true;
+      timerId = setInterval(tick, 45);
+    }
+    updateVolume();
+  }
+
+  function stop() {
+    if (!isPlaying) return;
+    isPlaying = false;
+    currentTrackName = null;
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
+
+  return {
+    play,
+    stop,
+    updateVolume,
+    getCurrentTrack: () => currentTrackName,
+    get currentTrack() { return currentTrackName; },
+    get isPlaying() { return isPlaying; },
+    get ctx() { return audioCtx; },
+    get masterGain() { return masterGain; }
+  };
+})();
 
 function playSound(type) {
   if (isMuted || settings.seVolume <= 0) return;
@@ -821,6 +1101,7 @@ function resumeGame() {
 
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'flex';
+  BGM.play('daily');
 
   renderUI();
   setDialog('担任の先生', `${state.playerName}、前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から再開するぞ！集中して合格を目指そう！`);
@@ -859,6 +1140,7 @@ function startGame() {
 
   document.getElementById('title-screen').style.display = 'none';
   document.getElementById('main-game-screen').style.display = 'flex';
+  BGM.play('daily');
 
   setDialog('担任の先生', `${state.playerName}、今日から高校生活が始まるぞ！3年後の志望校合格に向けて、毎日の積み重ねを大切にしよう！`);
   renderUI();
@@ -869,6 +1151,7 @@ function returnToTitle() {
   document.getElementById('event-modal').classList.remove('active');
   document.getElementById('main-game-screen').style.display = 'none';
   document.getElementById('title-screen').style.display = 'flex';
+  BGM.play('title');
   clearSavedGame(); // クリア後は新しい代を始めるためセーブ消去
   updateTitleScreenUI();
 }
@@ -960,6 +1243,7 @@ function pauseReturnToTitle() {
   closePauseModal();
   document.getElementById('main-game-screen').style.display = 'none';
   document.getElementById('title-screen').style.display = 'flex';
+  BGM.play('title');
   updateTitleScreenUI();
 }
 
@@ -970,6 +1254,23 @@ function confirmRestartGame() {
     closePauseModal();
     startGame();
   }
+}
+
+
+function toggleSettingBGM() {
+  settings.isBgmMuted = !settings.isBgmMuted;
+  saveSettings();
+  updateSettingsUI();
+  BGM.updateVolume();
+  playSound('click');
+}
+
+function changeBGMVolume(val) {
+  settings.bgmVolume = Math.max(0, Math.min(100, parseInt(val, 10))) / 100;
+  saveSettings();
+  const valEl = document.getElementById('setting-bgm-val');
+  if (valEl) valEl.textContent = `${Math.round(settings.bgmVolume * 100)}%`;
+  BGM.updateVolume();
 }
 
 function toggleSettingSE() {
@@ -1009,6 +1310,18 @@ function toggleSettingParticle() {
 }
 
 function updateSettingsUI() {
+  const bgmBtn = document.getElementById('setting-bgm-toggle');
+  if (bgmBtn) {
+    const isBgmMute = settings.isMuted || settings.isBgmMuted;
+    bgmBtn.textContent = isBgmMute ? 'OFF' : 'ON';
+    bgmBtn.classList.toggle('active', !isBgmMute);
+  }
+  const bgmSlider = document.getElementById('setting-bgm-slider');
+  const bgmVal = document.getElementById('setting-bgm-val');
+  const curBgmVol = settings.bgmVolume !== undefined ? settings.bgmVolume : 0.5;
+  if (bgmSlider) bgmSlider.value = Math.round(curBgmVol * 100);
+  if (bgmVal) bgmVal.textContent = `${Math.round(curBgmVol * 100)}%`;
+
   const seBtn = document.getElementById('setting-se-toggle');
   if (seBtn) {
     seBtn.textContent = settings.isMuted ? 'OFF' : 'ON';
@@ -1042,6 +1355,7 @@ function checkAutoResumeOnLoad() {
     state = saved;
     document.getElementById('title-screen').style.display = 'none';
     document.getElementById('main-game-screen').style.display = 'flex';
+  BGM.play('daily');
     renderUI();
     setDialog('担任の先生', `${state.playerName}、おかえり！前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から高校生活を再開するぞ！`);
     // 旧バージョンで4年生に進んでしまったセーブ等は即エンディングへ
@@ -1053,6 +1367,7 @@ function checkAutoResumeOnLoad() {
   } else {
     // タイトル画面を表示
     document.getElementById('title-screen').style.display = 'flex';
+  BGM.play('title');
     document.getElementById('main-game-screen').style.display = 'none';
     updateTitleScreenUI();
   }
@@ -3417,6 +3732,7 @@ function startExamBattle(type) {
   document.getElementById('btn-battle-next').onclick = () => advanceExamBattle();
 
   document.getElementById('exam-battle-modal').classList.add('active');
+  BGM.play('exam');
 }
 
 function advanceExamBattle() {
@@ -3616,6 +3932,7 @@ function advanceExamBattle() {
 function finishExamBattle() {
   document.getElementById('exam-battle-modal').classList.remove('active');
   isModalShowing = false;
+  BGM.play('daily');
   const isKyotsu = battleState.examType === 'kyotsu';
   const isSubExam = battleState.examType === 'private_sub';
   const isKouki = battleState.examType === 'kouki';
@@ -4050,3 +4367,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// ユーザーの初回画面操作時に AudioContext をアンロックし BGM を開始
+window.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  if (!BGM.getCurrentTrack()) {
+    const isTitle = document.getElementById('title-screen') && document.getElementById('title-screen').style.display !== 'none';
+    BGM.play(isTitle ? 'title' : 'daily');
+  }
+}, { once: false });
