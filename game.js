@@ -747,7 +747,7 @@ const MOTIVATIONS = [
   { label: '絶好調', class: 'great', multiplier: 1.3, failPenalty: -10 }
 ];
 
-const UNIV_LIST = [
+const UNIV_LIST = window.UNIV_LIST = [
   // --- 難関国立（旧帝大・最難関） ---
   {
     id: 'todai_sci',
@@ -3058,61 +3058,148 @@ function triggerSubExamEvent() {
   );
 }
 
+function calcKyotsuResearchJudge(univ) {
+  let borderRate = 60;
+  if (univ.border >= 75) borderRate = 88;
+  else if (univ.border >= 70) borderRate = 83;
+  else if (univ.border >= 65) borderRate = 78;
+  else if (univ.border >= 60) borderRate = 73;
+  else if (univ.border >= 55) borderRate = 67;
+
+  const diff = (state.kyotsuRate || 0) - borderRate;
+  if (diff >= 5) return { rank: 'A', desc: '80%以上(安全圏)' };
+  if (diff >= 2) return { rank: 'B', desc: '60%〜80%(良好)' };
+  if (diff >= -2) return { rank: 'C', desc: '40%〜60%(ボーダー)' };
+  if (diff >= -6) return { rank: 'D', desc: '20%〜40%(要二次逆転)' };
+  return { rank: 'E', desc: '20%以下(大逆転必要)' };
+}
+
 function triggerFinalApplicationChoice() {
-  const target = state.targetUniv || UNIV_LIST[0];
-  const isTargetKokuritsu = target.type === '国公立';
+  const currentTarget = state.targetUniv || UNIV_LIST[0];
+  const curJudge = calcKyotsuResearchJudge(currentTarget);
+  state.kyotsuResearchRank = curJudge.rank;
 
-  const options = [];
-
-  // 選択肢1: 初志貫徹！このまま出願
-  options.push({
-    title: `🔥 初志貫徹！第1志望【${target.name}】に前期出願する！`,
-    subtext: `共テ判定【${state.kyotsuResearchRank || '判定'}】。これまでの努力を信じて本命校に突撃！(やる気+1)`,
-    action: () => {
-      state.motivation = Math.min(4, state.motivation + 1);
-      showEventModal(
-        '🔥 初志貫徹の出願完了！',
-        `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）への前期日程出願を完了した！\n共テ判定は【${state.kyotsuResearchRank || 'C'}判定】だが、二次記述で逆転を狙う！`,
-        [`出願先: ${target.name}（前期日程）`, '覚悟を決めてやる気+1！'],
-        '🔥',
-        () => {
-          if (isTargetKokuritsu) {
-            triggerKoukiSelect();
-          } else {
-            renderUI();
+  const options = [
+    {
+      title: `🔥 初志貫徹！現在の第1志望【${currentTarget.name}】に前期出願する！`,
+      subtext: `共テ判定【${curJudge.rank}判定（${curJudge.desc}）】・目標ボーダー偏差値${currentTarget.border}。これまでの努力を信じて本命校に突撃！(やる気+1)`,
+      action: () => {
+        state.motivation = Math.min(4, state.motivation + 1);
+        showEventModal(
+          '🔥 初志貫徹の出願完了！',
+          `第1志望【${currentTarget.name}】（ボーダー偏差値 ${currentTarget.border}）への前期日程出願を完了した！\n共テ判定は【${curJudge.rank}判定】だが、二次記述で逆転を狙う！`,
+          [`出願先: ${currentTarget.name}（前期日程）`, '覚悟を決めてやる気+1！'],
+          '🔥',
+          () => {
+            if (currentTarget.type === '国公立') {
+              triggerKoukiSelect();
+            } else {
+              setDialog('担任の先生', `よし、覚悟は決まったな！本命【${currentTarget.name}】合格へ向けてラストスパートだ！`);
+              renderUI();
+            }
           }
+        );
+      }
+    },
+    {
+      title: '🔄 志望校を全選択肢から選びなおす（出願先変更）',
+      subtext: `共通テスト自己採点【${state.kyotsuScore}点 (${state.kyotsuRate}%)】をもとに、全ての大学・学部から前期出願先を再選択する！`,
+      action: () => {
+        triggerReselectTargetUniv();
+      }
+    }
+  ];
+
+  showChoiceModal(
+    '📑 共テリサーチ返却！国公立 前期・最終出願戦略',
+    `共通テスト自己採点結果: 【 ${state.kyotsuScore}点 (${state.kyotsuRate}%) 】\n現在の第1志望【${currentTarget.name}】のリサーチ判定: 【 ${curJudge.rank}判定 (${curJudge.desc}) 】\n\nここが出願締め切り前の最終決定！前期日程の出願先を確定させよう！`,
+    options,
+    '📑'
+  );
+}
+
+function triggerReselectTargetUniv() {
+  const currentTarget = state.targetUniv || UNIV_LIST[0];
+
+  // 国公立後期日程を除く全大学・学部リスト
+  const availableList = UNIV_LIST.filter(u => u.type !== '国公立後期');
+  // プレイヤーのコース（文系/理系/共通）に合致する大学を優先
+  const primaryList = availableList.filter(u => u.course === state.course || u.course === '共通');
+  const otherList = availableList.filter(u => u.course !== state.course && u.course !== '共通');
+  const sortedList = [...primaryList, ...otherList];
+
+  const options = sortedList.map(u => {
+    const isCurrent = u.id === currentTarget.id;
+    const curDev = calcTargetDev(u);
+    const diff = (curDev - u.border).toFixed(1);
+    const diffPrefix = diff >= 0 ? `+${diff}` : `${diff}`;
+    const judge = calcKyotsuResearchJudge(u);
+
+    const recTag = u.course === state.course ? ' ⭐' : '（文理外）';
+    const curTag = isCurrent ? ' 【現在の志望校】' : '';
+
+    const w = u.weights;
+    let weightDesc = [];
+    if (w.math >= 1.5 && w.sci >= 1.5) weightDesc.push('数理1.5倍');
+    else if (w.math === 0.0) weightDesc.push('英国社3教科');
+    else if (w.jp === 0.0) weightDesc.push('数理英3教科');
+    else if (w.eng >= 1.4 && w.jp >= 1.4) weightDesc.push('国英重視');
+    else weightDesc.push('全科目均等');
+
+    return {
+      title: `${u.name} (ボーダー: 偏差値${u.border})${recTag}${curTag}`,
+      subtext: `共テ判定:【${judge.rank}判定】(${judge.desc}) | 傾斜偏差値: ${curDev} (${diffPrefix}) | 配点: ${weightDesc.join('・')}`,
+      action: () => {
+        const isChanged = u.id !== currentTarget.id;
+        state.targetUniv = u;
+        state.kyotsuResearchRank = judge.rank;
+
+        let rewardText = '';
+        if (isChanged) {
+          state.stress = Math.max(0, state.stress - 15);
+          rewardText = '状況を見極めた戦略的変更により ストレス-15！';
+        } else {
+          state.motivation = Math.min(4, state.motivation + 1);
+          rewardText = '初志貫徹の強い決断！やる気+1！';
         }
-      );
+
+        showEventModal(
+          `📑 前期出願校 決定！【${u.name}】`,
+          `共通テストリサーチ結果【${judge.rank}判定】を踏まえ、前期日程の出願先を【${u.name}】（ボーダー偏差値 ${u.border}）に決定・出願した！\n\n二次試験本番に向けてラストスパートをかけよう！`,
+          [
+            `前期出願先: ${u.name}`,
+            `目標ボーダー: 偏差値 ${u.border}`,
+            `共テリサーチ判定: 【${judge.rank}判定】`,
+            rewardText
+          ],
+          '🏫',
+          () => {
+            if (u.type === '国公立') {
+              triggerKoukiSelect();
+            } else {
+              setDialog('担任の先生', `よし、前期出願校が決まったな！あとは本番に向けて全力を尽くすのみだ！`);
+              renderUI();
+            }
+          }
+        );
+      }
+    };
+  });
+
+  // 戻るボタン
+  options.push({
+    title: '↩️ 戻る（出願戦略メニューへ戻る）',
+    subtext: '出願戦略の選択メニューへ戻ります。',
+    action: () => {
+      triggerFinalApplicationChoice();
     }
   });
 
-  // 選択肢2: 国公立志望の場合、中堅・安全校への出願変更オプション
-  if (isTargetKokuritsu && target.border > 60) {
-    const saferUniv = UNIV_LIST.find(u => u.type === '国公立' && u.course === state.course && u.border <= 60);
-    if (saferUniv) {
-      options.push({
-        title: `🛡️ 志望校変更！手堅い国公立【${saferUniv.name}】へ変更する`,
-        subtext: `目標ボーダー偏差値 ${saferUniv.border}。手堅く現役合格を狙う現実的選択！(ストレス-15)`,
-        action: () => {
-          state.targetUniv = saferUniv;
-          state.stress = Math.max(0, state.stress - 15);
-          showEventModal(
-            '🛡️ 前期出願校の変更完了！',
-            `共通テストリサーチ結果を受け、前期日程の出願先を【${saferUniv.name}】（ボーダー偏差値 ${saferUniv.border}）へ変更した！\n合格の勝算が大幅にアップ！`,
-            [`変更後の第1志望: ${saferUniv.name}`, '精神的負担が和らぎ ストレス-15！'],
-            '🏫',
-            () => triggerKoukiSelect()
-          );
-        }
-      });
-    }
-  }
-
   showChoiceModal(
-    '📑 共テリサーチ返却！国公立 前期・後期 最終出願戦略',
-    `共通テスト自己採点結果: 【 ${state.kyotsuScore}点 (${state.kyotsuRate}%) 】\n第1志望【${target.name}】のリサーチ判定: 【 ${state.kyotsuResearchRank || '判定'} 】\n\n前期日程の出願先を確定させよう！`,
+    '🎯 前期出願先・志望校の再選択（全大学・学部）',
+    `【共通テスト自己採点: ${state.kyotsuScore}点 (${state.kyotsuRate}%)】\n各大学のリサーチ判定と傾斜偏差値を吟味して、前期日程の出願先を再決定しよう！`,
     options,
-    '📑'
+    '🏫'
   );
 }
 
