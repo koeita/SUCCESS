@@ -1480,7 +1480,7 @@ function openPlayMenu() {
       <span class="icon">🔒</span>
       <div class="info">
         <div class="name">ライバルとお出かけ (未解放)</div>
-        <div class="desc">模試などで優秀な成績を収めると…？</div>
+        <div class="desc">高1秋の文理選択後に現れるかも…？</div>
       </div>
     `;
   }
@@ -1818,7 +1818,8 @@ function checkScheduledEvents() {
     return;
   }
 
-  if (y === 1 && m === 5 && w === 4 && !state.friends.shindo.met) {
+  // 文理選択（高1 11月1週）の後に神童くんが登場（高1 11月2週〜）
+  if (((y === 1 && m === 11 && w >= 2) || (y === 1 && m > 11) || y > 1) && state.course !== '未定' && !state.friends.shindo.met) {
     enqueueModal(() => triggerShindoEncounter());
     return;
   }
@@ -1896,12 +1897,20 @@ function triggerShindoEncounter() {
   playSound('success');
   state.friends.shindo.met = true;
   state.friends.shindo.affection = 25;
-  addExpToSubject('math', 20);
+
+  const isBunkei = state.course === '文系';
+  const expSubj = isBunkei ? 'jp' : 'math';
+  const expName = isBunkei ? '国語' : '数学';
+  addExpToSubject(expSubj, 20);
+
+  const flavorText = isBunkei
+    ? '文理選択を終えた後、廊下で声をかけられた。\n「文系を選んだんだね。君の論理的思考や文章力、なかなか面白いよ。僕の名前は神童。良きライバルとしてよろしく」\n【神童くん】と「出かける」で切磋琢磨できるようになりました！'
+    : '文理選択を終えた後、廊下で声をかけられた。\n「理系を選んだんだね。君の数学の解法アプローチ、なかなか面白いよ。僕の名前は神童。良きライバルとしてよろしく」\n【神童くん】と「出かける」で切磋琢磨できるようになりました！';
 
   showEventModal(
     '📐 学年1位の秀才・神童くん現る',
-    '定期テストの順位表の前で声をかけられた。\n「君、なかなか面白い解き方をするね。僕の名前は神童。良きライバルとしてよろしく」\n【神童くん】と「息抜き」で情報交換できるようになりました！',
-    ['神童くん が交友関係に解放！', '数学経験値 +20 pt 獲得！'],
+    flavorText,
+    ['神童くん が交友関係に解放！', `${expName}経験値 +20 pt 獲得！`],
     '👦'
   );
   setDialog('神童くん', 'お互い高め合おう。次のテストも楽しみにしているよ。');
