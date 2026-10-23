@@ -77,6 +77,7 @@ function playHoverSound() {
 const BGM = window.BGM = (() => {
   let masterGain = null;
   let currentTrackName = null;
+  let pendingTrack = null;
   let isPlaying = false;
   let timerId = null;
   let currentStep = 0;
@@ -90,23 +91,28 @@ const BGM = window.BGM = (() => {
   };
 
   function initNodes() {
-    if (!masterGain) {
-      masterGain = audioCtx.createGain();
-      masterGain.connect(audioCtx.destination);
-      updateVolume();
+    if (!masterGain && audioCtx) {
+      try {
+        masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+        updateVolume();
+      } catch (e) {
+        console.warn('initNodes failed:', e);
+      }
     }
   }
 
   function updateVolume() {
-    if (!masterGain) return;
-    const isMute = settings.isMuted || settings.isBgmMuted;
-    const vol = isMute ? 0 : (settings.bgmVolume !== undefined ? settings.bgmVolume : 0.5);
-    const now = audioCtx.currentTime;
-    masterGain.gain.cancelScheduledValues(now);
-    masterGain.gain.linearRampToValueAtTime(vol * 0.28, now + 0.08);
+    if (!masterGain || !audioCtx) return;
+    try {
+      const isMute = settings.isMuted || settings.isBgmMuted;
+      const vol = isMute ? 0 : (settings.bgmVolume !== undefined ? settings.bgmVolume : 0.5);
+      const now = audioCtx.currentTime;
+      masterGain.gain.cancelScheduledValues(now);
+      masterGain.gain.linearRampToValueAtTime(vol * 0.28, now + 0.08);
+    } catch (e) {}
   }
 
-  // 優しいトーンの楽器音（ソフト三角波・ローパスフィルター）
   const SEMITONES = {
     'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
     'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
@@ -119,13 +125,12 @@ const BGM = window.BGM = (() => {
     const name = match[1];
     const octave = parseInt(match[2], 10);
     const semitone = SEMITONES[name] !== undefined ? SEMITONES[name] : 0;
-    // A4 = 440Hz, A4 index = 4 * 12 + 9 = 57
     const noteIndex = octave * 12 + semitone;
     return 440 * Math.pow(2, (noteIndex - 57) / 12);
   }
 
   function playSynth(freq, time, dur, type = 'triangle', vol = 0.22, filterFreq = 1600) {
-    if (!freq || freq <= 0) return;
+    if (!freq || freq <= 0 || !masterGain || !audioCtx) return;
     try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -151,8 +156,8 @@ const BGM = window.BGM = (() => {
     } catch (e) {}
   }
 
-  // リズム・キック
   function playKick(time, vol = 0.25) {
+    if (!masterGain || !audioCtx) return;
     try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -170,8 +175,8 @@ const BGM = window.BGM = (() => {
     } catch (e) {}
   }
 
-  // リズム・スネア/ハット
   function playSnare(time, vol = 0.12) {
+    if (!masterGain || !audioCtx) return;
     try {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -189,57 +194,39 @@ const BGM = window.BGM = (() => {
     } catch (e) {}
   }
 
-  // ================= 楽曲定義 (64ステップ 8分音符ループ) =================
   const TRACKS = {
-    // 1. タイトル曲: 青春のスタート（F -> G -> Em -> Am）
     title: {
       tempo: 114,
-      steps: 64,
-      bass: [
-        'F3','F3','F3','F3','G3','G3','G3','G3','E3','E3','E3','E3','A3','A3','A3','A3',
-        'F3','F3','F3','F3','G3','G3','G3','G3','C3','C3','E3','G3','C4','C4','B3','G3',
-        'F3','F3','F3','F3','G3','G3','G3','G3','E3','E3','E3','E3','A3','A3','A3','A3',
-        'F3','F3','F3','F3','G3','G3','G3','G3','C3','E3','G3','B3','C4','C4','C4','C4'
-      ],
-      chords: [
-        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'B4',null,'E4',null,'A4',null,
-        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'C5',null,'E5',null,'G4',null,
-        'A4',null,'C5',null,'B4',null,'D5',null,'G4',null,'B4',null,'E4',null,'A4',null,
-        'A4',null,'C5',null,'B4',null,'D5',null,'C5',null,'E5',null,'G5',null,'C5',null
-      ],
-      melody: [
-        'C5',null,'D5','E5','G5',null,'E5',null,'D5','C5','D5',null,'E5',null,null,null,
-        'A4',null,'C5',null,'D5','E5','D5',null,'C5',null,null,null,null,null,null,null,
-        'C5',null,'D5','E5','G5',null,'A5',null,'G5','E5','D5',null,'E5',null,null,null,
-        'F5','E5','D5','C5','D5',null,'E5',null,'C5',null,null,null,null,null,null,null
-      ]
-    },
-
-    // 2. 日常・勉強曲: Lo-Fi/カフェ自習室（FM7 -> G7 -> Em7 -> Am7）
-    daily: {
-      tempo: 82,
-      steps: 64,
+      steps: 32,
       bass: [
         'F3',null,'F3',null,'G3',null,'G3',null,'E3',null,'E3',null,'A3',null,'A3',null,
-        'D3',null,'D3',null,'G3',null,'G3',null,'C3',null,'E3',null,'A3',null,'G3',null,
+        'F3',null,'F3',null,'G3',null,'G3',null,'C4',null,'C4',null,'C4',null,null,null
+      ],
+      chords: [
+        'A3','C4','E4',null,'B3','D4','G4',null,'G3','B3','E4',null,'C4','E4','A4',null,
+        'A3','C4','F4',null,'B3','D4','G4',null,'C4','E4','G4',null,'C4','E4',null,null
+      ],
+      melody: [
+        'C5',null,'D5','E5','G5',null,'E5',null,'D5',null,'C5',null,'A4',null,'C5',null,
+        'D5',null,'E5','F5','E5',null,'D5',null,'C5',null,null,null,null,null,null,null
+      ]
+    },
+    daily: {
+      tempo: 82,
+      steps: 32,
+      bass: [
         'F3',null,'F3',null,'G3',null,'G3',null,'E3',null,'E3',null,'A3',null,'A3',null,
         'D3',null,'D3',null,'G3',null,'G3',null,'C3',null,'C3',null,'C3',null,null,null
       ],
       chords: [
-        'C4',null,'E4',null,'D4',null,'F4',null,'B3',null,'D4',null,'C4',null,'E4',null,
-        'F4',null,'A4',null,'F4',null,'B4',null,'E4',null,'G4',null,'E4',null,'A4',null,
-        'C4',null,'E4',null,'D4',null,'F4',null,'B3',null,'D4',null,'C4',null,'E4',null,
-        'F4',null,'A4',null,'F4',null,'B4',null,'E4',null,'G4',null,'C4',null,null,null
+        'A3','C4','E4',null,'B3','D4','F4',null,'G3','B3','D4',null,'C4','E4','G4',null,
+        'F3','A3','C4',null,'B3','D4','F4',null,'E3','G3','C4',null,'E3','G3',null,null
       ],
       melody: [
-        'E5',null,null,'D5','C5',null,'A4',null,'B4',null,'C5','D5','B4',null,null,null,
-        'A4',null,'C5',null,'D5',null,'E5',null,'G4',null,null,null,null,null,null,null,
         'E5',null,null,'G5','A5',null,'G5',null,'D5',null,'E5','F5','E5',null,null,null,
         'F5',null,'E5',null,'D5',null,'B4',null,'C5',null,null,null,null,null,null,null
       ]
     },
-
-    // 3. 試験バトル曲: 疾走感＆緊迫感（Am -> F -> G -> Em / キック＆スネア付き）
     exam: {
       tempo: 132,
       steps: 64,
@@ -268,25 +255,21 @@ const BGM = window.BGM = (() => {
   function scheduleStep(track, step, time) {
     const stepDur = (60 / track.tempo) / 2;
 
-    // ドラム (試験バトル)
     if (track.hasDrums) {
       if (step % 4 === 0) playKick(time, 0.22);
       if (step % 4 === 2) playSnare(time, 0.12);
     }
 
-    // ベース
     if (track.bass && track.bass[step]) {
       const freq = getNoteFreq(track.bass[step]);
       playSynth(freq, time, stepDur * 0.95, 'triangle', 0.24, 600);
     }
 
-    // 伴奏コード
     if (track.chords && track.chords[step]) {
       const freq = getNoteFreq(track.chords[step]);
       playSynth(freq, time, stepDur * 1.5, 'sine', 0.16, 1200);
     }
 
-    // メロディ
     if (track.melody && track.melody[step]) {
       const freq = getNoteFreq(track.melody[step]);
       playSynth(freq, time, stepDur * 1.2, 'triangle', 0.26, 1800);
@@ -294,25 +277,38 @@ const BGM = window.BGM = (() => {
   }
 
   function tick() {
-    if (!isPlaying || !currentTrackName) return;
+    if (!isPlaying || !currentTrackName || !audioCtx) return;
+    // iOS / Android: suspended またはアンロック前の状態では絶対にスケジュールを進めない
+    if (audioCtx.state !== 'running') return;
+
     const track = TRACKS[currentTrackName];
     if (!track) return;
 
+    // 時間ズレ（スリープ復帰・バックグラウンド復帰時）のオシレーター同時発火を防ぐ
+    if (nextNoteTime < audioCtx.currentTime) {
+      nextNoteTime = audioCtx.currentTime + 0.05;
+    }
+
     const stepDur = (60 / track.tempo) / 2;
-    while (nextNoteTime < audioCtx.currentTime + 0.25) {
+    let scheduledCount = 0;
+    while (nextNoteTime < audioCtx.currentTime + 0.25 && scheduledCount < 4) {
       scheduleStep(track, currentStep, nextNoteTime);
       nextNoteTime += stepDur;
       currentStep = (currentStep + 1) % track.steps;
+      scheduledCount++;
     }
   }
 
   function play(trackName) {
+    pendingTrack = trackName;
     initNodes();
-    if (currentTrackName === trackName && isPlaying) return;
 
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+    // オーディオコンテキストがまだ走っていない場合はアンロック待ち
+    if (!audioCtx || audioCtx.state !== 'running') {
+      return;
     }
+
+    if (currentTrackName === trackName && isPlaying) return;
 
     currentTrackName = trackName;
     currentStep = 0;
@@ -320,15 +316,28 @@ const BGM = window.BGM = (() => {
 
     if (!isPlaying) {
       isPlaying = true;
+      if (timerId) clearInterval(timerId);
       timerId = setInterval(tick, 45);
     }
     updateVolume();
+  }
+
+  function onAudioUnlocked() {
+    initNodes();
+    updateVolume();
+    if (pendingTrack) {
+      play(pendingTrack);
+    } else if (!isPlaying) {
+      const isTitle = document.getElementById('title-screen') && document.getElementById('title-screen').style.display !== 'none';
+      play(isTitle ? 'title' : 'daily');
+    }
   }
 
   function stop() {
     if (!isPlaying) return;
     isPlaying = false;
     currentTrackName = null;
+    pendingTrack = null;
     if (timerId) {
       clearInterval(timerId);
       timerId = null;
@@ -339,8 +348,9 @@ const BGM = window.BGM = (() => {
     play,
     stop,
     updateVolume,
-    getCurrentTrack: () => currentTrackName,
-    get currentTrack() { return currentTrackName; },
+    onAudioUnlocked,
+    getCurrentTrack: () => currentTrackName || pendingTrack,
+    get currentTrack() { return currentTrackName || pendingTrack; },
     get isPlaying() { return isPlaying; },
     get ctx() { return audioCtx; },
     get masterGain() { return masterGain; }
@@ -349,11 +359,11 @@ const BGM = window.BGM = (() => {
 
 function playSound(type) {
   if (isMuted || settings.seVolume <= 0) return;
+  if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
+    unlockAudio();
+  }
   const vol = settings.seVolume;
   try {
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
     const now = audioCtx.currentTime;
 
     if (type === 'click') {
@@ -4368,13 +4378,60 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ユーザーの初回画面操作時に AudioContext をアンロックし BGM を開始
-window.addEventListener('click', () => {
-  if (audioCtx.state === 'suspended') {
+// ========================================================
+// スマホ（iOS Safari / Android）対応: 堅牢なオーディオアンロック機構
+// ========================================================
+let isAudioUnlocked = false;
+
+function unlockAudio() {
+  if (!audioCtx) return;
+
+  if (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted') {
     audioCtx.resume();
   }
-  if (!BGM.getCurrentTrack()) {
-    const isTitle = document.getElementById('title-screen') && document.getElementById('title-screen').style.display !== 'none';
-    BGM.play(isTitle ? 'title' : 'daily');
+
+  // iOS WebKit 必須: 1サンプルの無音バッファを再生してハードウェア出力をアンロック
+  try {
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+  } catch (e) {}
+
+  if (audioCtx.state === 'running') {
+    isAudioUnlocked = true;
   }
-}, { once: false });
+
+  // BGMエンジンのアンロック通知（保留中のBGM開始）
+  if (window.BGM && window.BGM.onAudioUnlocked) {
+    window.BGM.onAudioUnlocked();
+  }
+}
+
+// 画面タッチ・クリックなどあらゆる初期操作で即時アンロック
+['touchstart', 'touchend', 'pointerdown', 'mousedown', 'keydown', 'click'].forEach(evt => {
+  window.addEventListener(evt, unlockAudio, { passive: true });
+});
+
+// スマホ画面スリープ・タブ復帰時の自動レジューム
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
+      audioCtx.resume().then(() => {
+        if (window.BGM && window.BGM.onAudioUnlocked) {
+          window.BGM.onAudioUnlocked();
+        }
+      }).catch(() => {});
+    }
+  }
+});
+window.addEventListener('pageshow', () => {
+  if (audioCtx && (audioCtx.state === 'suspended' || audioCtx.state === 'interrupted')) {
+    audioCtx.resume().then(() => {
+      if (window.BGM && window.BGM.onAudioUnlocked) {
+        window.BGM.onAudioUnlocked();
+      }
+    }).catch(() => {});
+  }
+});
