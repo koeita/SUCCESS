@@ -440,11 +440,165 @@ const MOTIVATIONS = [
 ];
 
 const UNIV_LIST = [
-  { id: 'todai', name: '東京大学・京都大学', border: 72, desc: '国内最高峰。全教科で圧倒的偏差値と金特が必要。' },
-  { id: 'waseda', name: '早稲田大学・慶應義塾大学', border: 66, desc: '最難関私立。特化型の高い学力と本番力が要求される。' },
-  { id: 'march', name: 'MARCH・関関同立', border: 58, desc: '人気難関私立。バランスの取れた学力で合格を狙う。' },
-  { id: 'kokuritsu', name: '地方国公立大学', border: 54, desc: '共通テスト重視。全教科で安定した得点力が必須。' },
-  { id: 'standard', name: '中堅私立大学', border: 46, desc: 'まずはここを確実に押さえる。基本問題が鍵。' }
+  // --- 難関国立（旧帝大・最難関） ---
+  {
+    id: 'todai_sci',
+    name: '東京大学 理科一類（工・理学部）',
+    shortName: '東大 理一',
+    type: '国公立',
+    course: '理系',
+    border: 73,
+    weights: { eng: 1.0, math: 1.6, jp: 0.8, sci: 1.7 },
+    desc: '日本最高峰の理系。数学・理科の圧倒的論証力と総合力が必須。'
+  },
+  {
+    id: 'todai_med',
+    name: '東京大学 理科三類（医学部）',
+    shortName: '東大 理三(医)',
+    type: '国公立',
+    course: '理系',
+    border: 78,
+    weights: { eng: 1.2, math: 1.5, jp: 1.0, sci: 1.5 },
+    desc: '国内最高峰の超難関。全教科でミスが許されない極限の戦い。'
+  },
+  {
+    id: 'todai_hum',
+    name: '東京大学 文科一類・二類（法・経済）',
+    shortName: '東大 文科(法経)',
+    type: '国公立',
+    course: '文系',
+    border: 72,
+    weights: { eng: 1.4, math: 1.0, jp: 1.4, sci: 1.2 },
+    desc: '日本屈指の文系最高峰。英語・国語・社会の卓越した記述力が鍵。'
+  },
+  {
+    id: 'kyodai_eng',
+    name: '京都大学 工学部・理学部',
+    shortName: '京大 工・理',
+    type: '国公立',
+    course: '理系',
+    border: 71,
+    weights: { eng: 1.0, math: 1.6, jp: 0.7, sci: 1.7 },
+    desc: '自由の学風。超難問数学・物理化学を突破する深い思考力が求められる。'
+  },
+  {
+    id: 'kyodai_law',
+    name: '京都大学 法学部・経済学部',
+    shortName: '京大 法・経',
+    type: '国公立',
+    course: '文系',
+    border: 70,
+    weights: { eng: 1.5, math: 0.8, jp: 1.5, sci: 1.2 },
+    desc: '難解な長文読解と論述勝負。国語・英語の極めて高度な記述力が必要。'
+  },
+
+  // --- 最難関私大（早慶） ---
+  {
+    id: 'waseda_pol',
+    name: '早稲田大学 政治経済学部',
+    shortName: '早稲田 政経',
+    type: '私立',
+    course: '文系',
+    border: 69,
+    weights: { eng: 1.5, math: 0.0, jp: 1.4, sci: 1.4 },
+    desc: '私大文系の最高峰。英国社3教科の超高度な読解力（数学不要）。'
+  },
+  {
+    id: 'keio_econ',
+    name: '慶應義塾大学 経済学部・法学部',
+    shortName: '慶應 経・法',
+    type: '私立',
+    course: '文系',
+    border: 68,
+    weights: { eng: 1.6, math: 0.0, jp: 1.3, sci: 1.4 },
+    desc: '私大屈指の名門。長文英語と社会・国語の完成度が問われる。'
+  },
+  {
+    id: 'waseda_sci',
+    name: '早稲田大学 先進・創造理工学部',
+    shortName: '早稲田 理工',
+    type: '私立',
+    course: '理系',
+    border: 67,
+    weights: { eng: 1.0, math: 1.6, jp: 0.0, sci: 1.6 },
+    desc: '私大理系トップ。数学・理科2科目の配点が高く、国語は不要。'
+  },
+
+  // --- 上位私大（MARCH・関関同立） ---
+  {
+    id: 'meiji_law',
+    name: '明治大学 法学部・商学部',
+    shortName: '明治 法・商',
+    type: '私立',
+    course: '文系',
+    border: 62,
+    weights: { eng: 1.5, math: 0.0, jp: 1.3, sci: 1.2 },
+    desc: 'MARCHの筆頭人気学部。英国社3教科の安定した得点力が合格の要。'
+  },
+  {
+    id: 'aoyama_lit',
+    name: '青山学院大学 文学部・国際政経',
+    shortName: '青学 文・国政',
+    type: '私立',
+    course: '文系',
+    border: 61,
+    weights: { eng: 1.7, math: 0.0, jp: 1.3, sci: 1.0 },
+    desc: '英語の配点が非常に高い。圧倒的な英語力があれば逆転可能。'
+  },
+  {
+    id: 'doshisha_sci',
+    name: '同志社大学 理工学部',
+    shortName: '同志社 理工',
+    type: '私立',
+    course: '理系',
+    border: 60,
+    weights: { eng: 1.0, math: 1.5, jp: 0.0, sci: 1.5 },
+    desc: '関西私大理系の雄。数理重視の3教科で確実にボーダー越えを狙う。'
+  },
+
+  // --- 中堅国公立 ---
+  {
+    id: 'chiiki_eng',
+    name: '地方国立大学 工学部（金沢・岡山・埼玉等）',
+    shortName: '地方国立 工学',
+    type: '国公立',
+    course: '理系',
+    border: 56,
+    weights: { eng: 1.0, math: 1.4, jp: 0.8, sci: 1.4 },
+    desc: '共通テスト5教科＋2次数理。手堅く理系就職・研究を目指す王道。'
+  },
+  {
+    id: 'chiiki_hum',
+    name: '地方国立大学 人文・経済学部',
+    shortName: '地方国立 文・経',
+    type: '国公立',
+    course: '文系',
+    border: 55,
+    weights: { eng: 1.2, math: 0.8, jp: 1.3, sci: 1.2 },
+    desc: '共通テストで全科目安定得点し、2次記述で国英を固めて合格を掴む。'
+  },
+
+  // --- 中堅私大（日東駒専・産近甲龍） ---
+  {
+    id: 'nichidai_hum',
+    name: '日本大学・東洋大学 文系学部',
+    shortName: '日東駒専 文系',
+    type: '私立',
+    course: '文系',
+    border: 50,
+    weights: { eng: 1.3, math: 0.0, jp: 1.3, sci: 1.0 },
+    desc: '基礎力が試される3教科入試。着実な基礎固めで堅実な合格を狙える。'
+  },
+  {
+    id: 'kindai_sci',
+    name: '近畿大学・東洋大学 理工学部',
+    shortName: '産近甲龍 理工',
+    type: '私立',
+    course: '理系',
+    border: 50,
+    weights: { eng: 1.0, math: 1.4, jp: 0.0, sci: 1.4 },
+    desc: '標準問題中心の3教科試験。数学と理科の基本を確実に解き切れば合格圏。'
+  }
 ];
 
 const TRAITS_MASTER = [
@@ -468,10 +622,31 @@ const TRAITS_MASTER = [
 
 // 学力パラメータ(0〜100)からリアルな全国偏差値(35〜75)を算出
 function calcDeviation(academicScore, bonus = 0) {
-  let dev = 50 + (academicScore - 50) * 0.38 + bonus;
+  let dev = 50 + (academicScore - 50) * 0.52 + bonus;
   dev = Math.max(30.0, Math.min(80.0, dev));
   return Math.round(dev * 10) / 10;
 }
+
+// 志望大学学部の傾斜配点(weights)を考慮した傾斜偏差値を算出
+function calcTargetDev(targetUniv, bonus = 0) {
+  if (!targetUniv || !targetUniv.weights) {
+    const avg = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
+    return calcDeviation(avg, bonus);
+  }
+  const w = targetUniv.weights;
+  let totalW = 0;
+  let weightedScore = 0;
+  ['eng', 'math', 'jp', 'sci'].forEach(s => {
+    const weight = w[s] !== undefined ? w[s] : 1.0;
+    if (weight > 0) {
+      weightedScore += state.subjects[s].score * weight;
+      totalW += weight;
+    }
+  });
+  const avg = totalW > 0 ? (weightedScore / totalW) : 50;
+  return calcDeviation(avg, bonus);
+}
+
 
 function getSubjectDisplayName(key) {
   if (key === 'eng') return '英語';
@@ -858,9 +1033,10 @@ function renderUI() {
 
   const univBadge = document.getElementById('target-univ-badge');
   if (state.targetUniv) {
-    univBadge.textContent = `志望: ${state.targetUniv.name} (${state.targetUniv.border})`;
+    const shortLabel = state.targetUniv.shortName || state.targetUniv.name;
+    univBadge.textContent = `志望: ${shortLabel} (${state.targetUniv.border})`;
   } else {
-    univBadge.textContent = '志望校: 未決定 (高3決定)';
+    univBadge.textContent = '志望校: 未決定 (高3春)';
   }
 
   document.getElementById('scene-course-badge').textContent = `コース: ${state.course} | 部活: ${state.club}`;
@@ -2018,25 +2194,46 @@ function triggerCourseChoice() {
 }
 
 function triggerTargetUnivChoice() {
-  const options = UNIV_LIST.map(u => ({
-    title: `${u.name} (ボーダー: 偏差値${u.border})`,
-    subtext: u.desc,
-    action: () => {
-      state.targetUniv = u;
-      enqueueModal(() => {
-        showEventModal(
-          `🎯 第1志望校決定！`,
-          `【${u.name}】を第一志望に設定した！\n目標ボーダーは偏差値【${u.border}】だ！`,
-          [`第1志望: ${u.name}`],
-          '🏫'
-        );
-      });
-      setDialog('担任の先生', `よし、高い目標を掲げたな！合格を勝ち取るために全力で行くぞ！`);
-      renderUI();
-    }
-  }));
+  const isBunkei = state.course === '文系';
+  // プレイヤーの文理コースに合致する大学学部を優先表示
+  const primaryList = UNIV_LIST.filter(u => u.course === state.course || u.course === '共通');
+  const otherList = UNIV_LIST.filter(u => u.course !== state.course && u.course !== '共通');
+  const sortedList = [...primaryList, ...otherList];
 
-  showChoiceModal('🎓 志望校を決定しよう！', '高校3年生の春。いよいよ受験する大学のターゲットを定める時が来た！', options, '🏫');
+  const options = sortedList.map(u => {
+    const w = u.weights;
+    let weightDesc = [];
+    if (w.math >= 1.5 && w.sci >= 1.5) weightDesc.push('数理1.5倍');
+    else if (w.math === 0.0) weightDesc.push('英国社3教科(数学なし)');
+    else if (w.jp === 0.0) weightDesc.push('数理英3教科(国語なし)');
+    else if (w.eng >= 1.4 && w.jp >= 1.4) weightDesc.push('国英重視');
+    else weightDesc.push('全科目均等');
+
+    const recTag = u.course === state.course ? ' ⭐' : '（文理外）';
+    return {
+      title: `${u.name} (ボーダー: 偏差値${u.border})${recTag}`,
+      subtext: `【${u.type}・${u.course}】配点: ${weightDesc.join('・')} / ${u.desc}`,
+      action: () => {
+        state.targetUniv = u;
+        enqueueModal(() => {
+          showEventModal(
+            `🎯 第1志望校・学部決定！`,
+            `【${u.name}】を第一志望に設定した！\n目標ボーダーは偏差値【${u.border}】だ！\n（${u.desc}）`,
+            [
+              `第1志望: ${u.name}`,
+              `目標ボーダー: 偏差値 ${u.border}`,
+              `入試方式: ${u.type}・${u.course}（配点: ${weightDesc.join('・')}）`
+            ],
+            '🏫'
+          );
+        });
+        setDialog('担任の先生', `よし、高い目標を掲げたな！合格を勝ち取るために全力で行くぞ！`);
+        renderUI();
+      }
+    };
+  });
+
+  showChoiceModal('🎓 志望校・学部を決定しよう！', '高校3年生の春。いよいよ受験する大学・学部のターゲットを定める時が来た！', options, '🏫');
 }
 
 function triggerDaijobuDoctor() {
@@ -2232,7 +2429,9 @@ function runMockExam() {
   // 当日のブレ (-0.8 ~ +0.8)
   let randomJitter = (Math.random() - 0.5) * 1.6;
 
-  let dev = calcDeviation(avgAcademic, motBonus + traitBonus + randomJitter);
+  const totalBonus = motBonus + traitBonus + randomJitter;
+  let generalDev = calcDeviation(avgAcademic, totalBonus);
+  let dev = state.targetUniv ? calcTargetDev(state.targetUniv, totalBonus) : generalDev;
 
   let targetBorder = state.targetUniv ? state.targetUniv.border : 58;
   let diff = dev - targetBorder;
@@ -2243,8 +2442,8 @@ function runMockExam() {
   else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
   else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
 
-  const univName = state.targetUniv ? state.targetUniv.name : '志望大学';
-  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (総合偏差値 ${dev})`);
+  const targetUnivName = state.targetUniv ? state.targetUniv.name : '志望大学';
+  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (志望学部傾斜 ${dev} / 総合 ${generalDev})`);
 
   let traitMsg = '';
   if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.4) {
@@ -2261,10 +2460,11 @@ function runMockExam() {
 
   showEventModal(
     '📊 全国統一マーク模試 帳票返却！',
-    `第1志望【${univName}】の合否判定が返却された！\n\n【判定結果】: 【 ${judge} 判定 】\n全国総合偏差値: ${dev} （目標ボーダー: ${targetBorder}）\n${probText}`,
+    `第1志望【${targetUnivName}】の合否判定が返却された！\n\n【判定結果】: 【 ${judge} 判定 】\n志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）\n全国総合偏差値: ${generalDev} （全科目均等）\n${probText}`,
     [
       `判定: ${judge}判定 (${probText})`,
-      `総合偏差値: ${dev} (平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
+      `志望学部 傾斜偏差値: ${dev} (目標ボーダー: ${targetBorder})`,
+      `全教科総合偏差値: ${generalDev} (平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
       reviewMsg,
       judge === 'A' || judge === 'B' ? 'やる気 絶好調！！' : 'ここからの追い上げが勝負！',
       traitMsg
@@ -2273,7 +2473,7 @@ function runMockExam() {
   );
 
   if (judge === 'A' || judge === 'B') state.motivation = 4;
-  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。目標の${univName}(ボーダー${targetBorder})に向けて弱点科目を重点補強しましょう！`);
+  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。目標の${targetUnivName}(ボーダー${targetBorder})に向けて弱点科目を重点補強しましょう！`);
   renderUI();
 }
 
@@ -2470,8 +2670,8 @@ function triggerGameEnd() {
   if (state.traits.includes('strong_exam')) finalBonus += 2.0;
   if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
 
-  let finalDev = calcDeviation(avgAcademic, finalBonus);
-  const target = state.targetUniv || UNIV_LIST[2];
+  const target = state.targetUniv || UNIV_LIST[0];
+  let finalDev = calcTargetDev(target, finalBonus);
   const isPassed = finalDev >= (target.border - 1.2);
 
   let resultUnivName = isPassed ? target.name : '中堅私立大学';
@@ -2482,7 +2682,7 @@ function triggerGameEnd() {
 
   if (isPassed) {
     title = `🌸 祝！【${target.name}】 現役合格！！ 🌸`;
-    desc = `掲示板に自分の受験番号を見つけた瞬間、涙があふれ出した！\n3年間の弛まぬ努力が最高の栄冠をもたらした！\n晴れて夢のキャンパスライフが始まる！`;
+    desc = `掲示板に自分の受験番号を見つけた瞬間、涙があふれ出した！\n難関【${target.name}】（ボーダー偏差値 ${target.border}）の狭き門を見事に突破！\n志望学部の傾斜配点（最終偏差値 ${finalDev}）を味方につけ、栄光の合格を勝ち取った！\n晴れて夢のキャンパスライフが始まる！`;
 
     // 最もスコアの高い得意科目を特定して保存
     const subjKeys = ['eng', 'math', 'jp', 'sci'];
