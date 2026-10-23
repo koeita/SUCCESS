@@ -456,7 +456,8 @@ const TRAITS_MASTER = [
   { id: 'review_master', name: '復習上手', desc: '模試やテストを受けた後の全科目経験値ボーナスUP', type: 'blue' },
 
   { id: 'miracle_pass', name: '逆転合格の奇跡', desc: '【金特】入試本番でE判定でも驚異的な底力を発揮する', type: 'gold' },
-  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数学・理科の難問が自動で部分点/正解に変化する', type: 'gold' },
+  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数学・理科の難問で圧倒的な解法突破力を発揮する', type: 'gold' },
+  { id: 'humanities_spark', name: '人文の閃き', desc: '【金特】国語・社会の難問で圧倒的な読解・論述力を発揮する', type: 'gold' },
   { id: 'lang_master', name: '言語の極意', desc: '【金特】英語・国語の長文読解で無類の安定感を誇る', type: 'gold' },
 
   { id: 'careless_mistake', name: 'ケアレスミス癖', desc: '【赤特】模試や本番で30%の確率で失点する', cureMoney: 2000, type: 'red' },
@@ -477,8 +478,9 @@ function getSubjectDisplayName(key) {
   if (key === 'math') return '数学';
   if (key === 'jp') return '国語';
   if (key === 'sci') {
-    const el = document.getElementById('subj-name-sci');
-    return el ? el.textContent : '理科/社会';
+    if (state.course === '文系') return '社会';
+    if (state.course === '理系') return '理科';
+    return '理社';
   }
   return key;
 }
@@ -885,10 +887,25 @@ function renderUI() {
   const moneyEl = document.getElementById('money-text');
   animateNumberValue(moneyEl, state.money, false, true);
 
-  const sciLabel = state.course === '理系' ? '理科(物化)' : (state.course === '文系' ? '社会(歴公)' : '理科/社会');
+  // 文理コースに応じた「数理の閃き」⇔「人文の閃き」自動同期
+  if (state.course === '文系') {
+    if (state.traits.includes('math_spark')) {
+      state.traits = state.traits.map(t => t === 'math_spark' ? 'humanities_spark' : t);
+    }
+  } else if (state.course === '理系') {
+    if (state.traits.includes('humanities_spark')) {
+      state.traits = state.traits.map(t => t === 'humanities_spark' ? 'math_spark' : t);
+    }
+  }
+
+  const sciLabel = state.course === '理系' ? '理科' : (state.course === '文系' ? '社会' : '理社');
   document.getElementById('subj-name-sci').textContent = sciLabel;
   const studySciLabel = document.getElementById('study-name-sci');
   if (studySciLabel) studySciLabel.textContent = `${sciLabel}の集中学習`;
+  const studySciDesc = document.getElementById('study-desc-sci');
+  if (studySciDesc) studySciDesc.textContent = `${sciLabel}の経験値大量獲得 (体力-15 / ストレス+7)`;
+  const studySciIcon = document.getElementById('study-icon-sci');
+  if (studySciIcon) studySciIcon.textContent = state.course === '文系' ? '📜' : '🔬';
 
   const subjs = ['eng', 'math', 'jp', 'sci'];
   subjs.forEach(s => {
@@ -1446,11 +1463,15 @@ function openPlayMenu() {
   if (state.friends.shindo.met) {
     btnShindo.className = 'study-card-btn';
     btnShindo.onclick = () => executePlay('shindo');
+    const isBunkeiMenu = state.course === '文系';
+    const shindoDesc = isBunkeiMenu
+      ? '費用: ¥900 • 友好度+15% / 国語+20pt・社会+15pt / ストレス-20%'
+      : '費用: ¥900 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-20%';
     btnShindo.innerHTML = `
       <span class="icon">👦</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
-        <div class="desc">費用: ¥900 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-20%</div>
+        <div class="desc">${shindoDesc}</div>
       </div>
     `;
   } else {
@@ -1650,14 +1671,25 @@ function executePlay(type) {
     state.friends.shindo.affection = Math.min(100, state.friends.shindo.affection + 15);
     if (state.motivation < 4) state.motivation++;
 
-    addExpToSubject('math', 20);
-    addExpToSubject('eng', 15);
+    const isBunkeiPlay = state.course === '文系';
+    if (isBunkeiPlay) {
+      addExpToSubject('jp', 20);
+      addExpToSubject('sci', 15);
+    } else {
+      addExpToSubject('math', 20);
+      addExpToSubject('eng', 15);
+    }
 
     let traitMsg = '';
-    if (state.friends.shindo.affection >= 60 && !state.traits.includes('math_spark')) {
-      state.traits.push('math_spark');
-      traitMsg = '✨ 金特【数理の閃き】を伝授された！';
+    const targetGold = isBunkeiPlay ? 'humanities_spark' : 'math_spark';
+    const goldName = isBunkeiPlay ? '人文の閃き' : '数理の閃き';
+    if (state.friends.shindo.affection >= 60 && !state.traits.includes(targetGold)) {
+      state.traits.push(targetGold);
+      traitMsg = `✨ 金特【${goldName}】を伝授された！`;
     }
+
+    const expText1 = isBunkeiPlay ? '国語 経験値 +20 pt' : '数学 経験値 +20 pt';
+    const expText2 = isBunkeiPlay ? '社会 経験値 +15 pt' : '英語 経験値 +15 pt';
 
     enqueueModal(() => {
       showEventModal(
@@ -1665,8 +1697,8 @@ function executePlay(type) {
         '難問の解法テクニックや効率的な学習プランについて熱い議論を交わした！',
         [
           `神童の友好度 +15% (現在:${state.friends.shindo.affection}%)`,
-          '数学 経験値 +20 pt',
-          '英語 経験値 +15 pt',
+          expText1,
+          expText2,
           'ストレス -20% 解消',
           'やる気アップ ⤴',
           'お小遣い -¥900',
@@ -1922,22 +1954,30 @@ function triggerCourseChoice() {
     [
       {
         title: '文系コース（国語・英語・社会重視）',
-        subtext: '国英偏差値+2。理社が「社会(歴史・公民)」に変化。',
+        subtext: '国英偏差値+2。科目が「社会」へ変化し、金特が「人文の閃き」になります。',
         action: () => {
           state.course = '文系';
           state.subjects.jp.score += 2;
           state.subjects.eng.score += 2;
+          if (state.traits.includes('math_spark')) {
+            state.traits = state.traits.map(t => t === 'math_spark' ? 'humanities_spark' : t);
+            showFloatingText('金特が【人文の閃き】へ変化！', null, null, 'heal');
+          }
           setDialog('進路指導', '文系だな！現代文の論理力と英語・社会の記述を鍛えよう！');
           renderUI();
         }
       },
       {
         title: '理系コース（数学・英語・理科重視）',
-        subtext: '数理偏差値+2。理社が「理科(物理・化学)」に変化。',
+        subtext: '数理偏差値+2。科目が「理科」へ変化し、金特が「数理の閃き」になります。',
         action: () => {
           state.course = '理系';
           state.subjects.math.score += 2;
           state.subjects.sci.score += 2;
+          if (state.traits.includes('humanities_spark')) {
+            state.traits = state.traits.map(t => t === 'humanities_spark' ? 'math_spark' : t);
+            showFloatingText('金特が【数理の閃き】へ変化！', null, null, 'heal');
+          }
           setDialog('進路指導', '理系だな！数学の思考力と理科の論証力が鍵だ！');
           renderUI();
         }
@@ -1988,7 +2028,7 @@ function triggerDaijobuDoctor() {
               state.subjects[s].score += 7;
             });
             state.motivation = 4;
-            const goldTrait = state.course === '理系' ? 'math_spark' : 'miracle_pass';
+            const goldTrait = state.course === '文系' ? 'humanities_spark' : (state.course === '理系' ? 'math_spark' : 'miracle_pass');
             if (!state.traits.includes(goldTrait)) state.traits.push(goldTrait);
 
             enqueueModal(() => {
@@ -2273,12 +2313,18 @@ function advanceExamBattle() {
   battleState.step++;
   const step = battleState.step;
 
+  const isBunkeiBattle = state.course === '文系';
+  const isRikeiBattle = state.course === '理系';
+  const sciQName = isBunkeiBattle ? '第4問：史料読解・論述（社会）' : (isRikeiBattle ? '第4問：実験考察・計算（理科）' : '第4問：実験・論述（理社）');
+  const q5Subj = isBunkeiBattle ? 'jp' : 'math';
+  const q5Name = isBunkeiBattle ? '第5問：最難関・総合論述問題（国語）' : '第5問：最難関・総合記述問題（数学）';
+
   const questions = [
     { name: '第1問：長文読解（英語）', subj: 'eng' },
     { name: '第2問：微積・数列（数学）', subj: 'math' },
     { name: '第3問：評論文・古文（国語）', subj: 'jp' },
-    { name: '第4問：実験・論述（理社）', subj: 'sci' },
-    { name: '第5問：最難関・総合記述問題', subj: 'math' }
+    { name: sciQName, subj: 'sci' },
+    { name: q5Name, subj: q5Subj }
   ];
 
   const q = questions[step - 1];
@@ -2296,6 +2342,12 @@ function advanceExamBattle() {
   if (state.traits.includes('math_spark') && (q.subj === 'math' || q.subj === 'sci')) {
     gained += 25;
     term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」が発動！！難問の突破口を瞬時に閃いた！</div>`;
+    triggerParticles(null, null, 20, 'gold');
+    triggerScreenBounce();
+  }
+  if (state.traits.includes('humanities_spark') && (q.subj === 'jp' || q.subj === 'sci' || q.subj === 'eng')) {
+    gained += 25;
+    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」が発動！！深遠な読解と論述で難問を完全攻略！</div>`;
     triggerParticles(null, null, 20, 'gold');
     triggerScreenBounce();
   }
@@ -2372,6 +2424,8 @@ function triggerGameEnd() {
   let avgAcademic = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
   let finalBonus = 0;
   if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
+  if (state.traits.includes('math_spark')) finalBonus += 3.0;
+  if (state.traits.includes('humanities_spark')) finalBonus += 3.0;
   if (state.traits.includes('strong_exam')) finalBonus += 2.0;
   if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
 
