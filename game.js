@@ -1143,7 +1143,7 @@ function renderUI() {
     }
     univBadge.textContent = badgeText;
   } else {
-    univBadge.textContent = '志望校: 未決定 (高3春)';
+    univBadge.textContent = '志望校: 未設定';
   }
 
   document.getElementById('scene-course-badge').textContent = `コース: ${state.course} | 部活: ${state.club}`;
@@ -1186,11 +1186,11 @@ function renderUI() {
   if (state.specialtySubjects) {
     sciSubtext = `(${state.specialtySubjects.name})`;
   }
-  document.getElementById('subj-name-sci').textContent = sciSubtext ? `${sciLabel} ${sciSubtext}` : sciLabel;
+  document.getElementById('subj-name-sci').textContent = sciLabel;
   const studySciLabel = document.getElementById('study-name-sci');
   if (studySciLabel) studySciLabel.textContent = sciSubtext ? `${sciLabel}（${state.specialtySubjects.name}）の集中学習` : `${sciLabel}の集中学習`;
   const studySciDesc = document.getElementById('study-desc-sci');
-  if (studySciDesc) studySciDesc.textContent = sciSubtext ? `${state.specialtySubjects.name}の経験値大量獲得 (体力-15 / ストレス+7)` : `${sciLabel}の経験値大量獲得 (体力-15 / ストレス+7)`;
+  if (studySciDesc) studySciDesc.textContent = sciSubtext ? `${state.specialtySubjects.name}の経験値を獲得 (体力-15 / ストレス+7)` : `${sciLabel}の経験値を獲得 (体力-15 / ストレス+7)`;
   const studySciIcon = document.getElementById('study-icon-sci');
   if (studySciIcon) studySciIcon.textContent = state.course === '文系' ? '📜' : '🔬';
 
@@ -1499,12 +1499,26 @@ function openStudyMenu() {
 
 function renderStudyMenu() {
   if (!state) return;
+
+  // 専門科目・コースに応じた理社ラベルの同期
+  const isBunkei = state.course === '文系';
+  const sciLabel = state.course === '理系' ? '理科' : (isBunkei ? '社会' : '理社');
+  const sciSubtext = state.specialtySubjects ? `（${state.specialtySubjects.name}）` : '';
+  const studySciLabel = document.getElementById('study-name-sci');
+  if (studySciLabel) studySciLabel.textContent = `${sciLabel}${sciSubtext}の集中学習`;
+  const studySciDesc = document.getElementById('study-desc-sci');
+  if (studySciDesc) {
+    const targetName = state.specialtySubjects ? state.specialtySubjects.name : sciLabel;
+    studySciDesc.textContent = `${targetName}の経験値を獲得 (体力-15 / ストレス+7)`;
+  }
+  const studySciIcon = document.getElementById('study-icon-sci');
+  if (studySciIcon) studySciIcon.textContent = isBunkei ? '📜' : '🔬';
+
   const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
   const extraBtn = document.getElementById('study-btn-kyotsu-extra');
   if (extraBtn) {
     if (isKyotsuPeriod) {
       extraBtn.style.display = 'flex';
-      const isBunkei = state.course === '文系';
       const subName = isBunkei ? '理科基礎' : '社会';
       const nameEl = document.getElementById('study-name-kyotsu-extra');
       const descEl = document.getElementById('study-desc-kyotsu-extra');
@@ -3069,8 +3083,8 @@ function triggerMockEntry(y, m, w) {
 
   const options = [];
 
-  // 高3 8月・11月: 「志望校冠模試」
-  if (y === 3 && (m === 8 || m === 11)) {
+  // 高3 8月・11月: 「志望校冠模試」（志望校設定済みの場合のみ受験可能）
+  if (y === 3 && (m === 8 || m === 11) && state.targetUniv) {
     const kanSeason = m === 8 ? '夏の陣' : '秋の決戦';
     options.push({
       title: `🏛️ 【${kanName}（${kanSeason}）】を受験する！`,
@@ -3245,16 +3259,45 @@ function executeMockExam(mockType, mockTitle) {
       traitMsg
     ].filter(Boolean);
   } else {
-    modalDesc = `全国模試の成績表が返却された！\n志望校未定のため、全国総合偏差値と各大学群の合格到達度水準を診断！\n\n（体力 -${stamCost} / ストレス +8%）`;
+    modalDesc = `全国模試の成績表が返却された！\n志望校未定のため、全国総合偏差値と大学群別の合格到達度水準を診断！\n\n（体力 -${stamCost} / ストレス +8%）`;
+    const gridHtml = `
+      <div class="group-judge-grid">
+        <div class="judge-badge-card">
+          <div class="group-name">🏆 最難関 (東大・京大・医進)</div>
+          <div class="group-result">
+            <span class="group-target">目標:72</span>
+            <span class="rank-tag rank-${judgeTop}">${judgeTop} 判定</span>
+          </div>
+        </div>
+        <div class="judge-badge-card">
+          <div class="group-name">🏛️ 難関上位 (早慶・旧帝大)</div>
+          <div class="group-result">
+            <span class="group-target">目標:64</span>
+            <span class="rank-tag rank-${judgeHigh}">${judgeHigh} 判定</span>
+          </div>
+        </div>
+        <div class="judge-badge-card">
+          <div class="group-name">🎓 上位校 (MARCH・関関同立)</div>
+          <div class="group-result">
+            <span class="group-target">目標:56</span>
+            <span class="rank-tag rank-${judgeUpper}">${judgeUpper} 判定</span>
+          </div>
+        </div>
+        <div class="judge-badge-card">
+          <div class="group-name">🏫 中堅校 (日東駒専・中堅)</div>
+          <div class="group-result">
+            <span class="group-target">目標:48</span>
+            <span class="rank-tag rank-${judgeMid}">${judgeMid} 判定</span>
+          </div>
+        </div>
+      </div>
+    `;
     rewards = [
       `全国総合偏差値: ${generalDev} (4教科平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
-      mockType === 'mark' ? `共テ1000点換算得点: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : null,
-      `🏆 最難関(東大・京大・医進/目標72): 【 ${judgeTop} 判定 】`,
-      `🏛️ 難関上位(早慶・旧帝大・上位国立/目標64): 【 ${judgeHigh} 判定 】`,
-      `🎓 上位校(MARCH・関関同立・国公立/目標56): 【 ${judgeUpper} 判定 】`,
-      `🏫 中堅校(日東駒専・中堅国公立/目標48): 【 ${judgeMid} 判定 】`,
+      mockType === 'mark' ? `共テ1000点換算: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : null,
+      gridHtml,
       reviewMsg,
-      isHighResult ? '好成績により やる気 絶好調！！' : '日々の積み重ねで上位大学群を目指そう！',
+      isHighResult ? '好成績により やる気 絶好調！！' : '日々の学習で上位大学群を目指そう！',
       traitMsg
     ].filter(Boolean);
   }
@@ -3890,7 +3933,11 @@ function showEventModal(title, text, rewards = [], icon = '🎉', onConfirm = nu
   rewardsEl.innerHTML = '';
   rewards.forEach(r => {
     const item = document.createElement('div');
-    item.textContent = `▶ ${r}`;
+    if (typeof r === 'string' && r.trim().startsWith('<')) {
+      item.innerHTML = r;
+    } else {
+      item.textContent = `▶ ${r}`;
+    }
     rewardsEl.appendChild(item);
   });
 
