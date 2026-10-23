@@ -408,6 +408,13 @@ function createInitialState(playerName = '合格太郎') {
     kyotsuRate: 0,
     kyotsuResearchRank: '',
 
+    kokuritsuKouki: null,
+    kokuritsuKoukiPassed: false,
+    finalAppDone: false,
+    koukiExamDone: false,
+    firstChoicePassed: false,
+    zenkiResultDone: false,
+
     daijobuAppeared: false,
     kyotsuDone: false,
     secondaryDone: false,
@@ -606,6 +613,48 @@ const UNIV_LIST = [
     border: 50,
     weights: { eng: 1.0, math: 1.4, jp: 0.0, sci: 1.4 },
     desc: '標準問題中心の3教科試験。数学と理科の基本を確実に解き切れば合格圏。'
+  },
+
+  // --- 国公立大学 後期日程 ---
+  {
+    id: 'nankan_kouki_sci',
+    name: '難関国公立大学 理系後期（東工大・千葉・神戸等）',
+    shortName: '難関国立 後期(理)',
+    type: '国公立後期',
+    course: '理系',
+    border: 66,
+    weights: { eng: 1.0, math: 1.8, jp: 0.0, sci: 1.8 },
+    desc: '募集人数が極少の狭き門。数理特化のハイレベル記述勝負！'
+  },
+  {
+    id: 'chiiki_eng_kouki',
+    name: '地方国立大学 理工学部後期日程',
+    shortName: '地方国立 後期(工)',
+    type: '国公立後期',
+    course: '理系',
+    border: 58,
+    weights: { eng: 0.8, math: 1.6, jp: 0.0, sci: 1.6 },
+    desc: '前期不合格者の受け皿となる激戦区。数学・理科の記述で逆転を狙う。'
+  },
+  {
+    id: 'nankan_kouki_hum',
+    name: '難関国公立大学 文系後期（一橋・神戸・横国等）',
+    shortName: '難関国立 後期(文)',
+    type: '国公立後期',
+    course: '文系',
+    border: 67,
+    weights: { eng: 1.6, math: 0.0, jp: 1.6, sci: 1.0 },
+    desc: '最難関の後期枠。圧倒的な英語力と論述小論文で逆転を狙う。'
+  },
+  {
+    id: 'chiiki_hum_kouki',
+    name: '地方国立大学 人文・社会学部後期日程',
+    shortName: '地方国立 後期(文)',
+    type: '国公立後期',
+    course: '文系',
+    border: 57,
+    weights: { eng: 1.4, math: 0.0, jp: 1.5, sci: 1.0 },
+    desc: '小論文と英語の記述勝負。前期のリベンジを期す受験生が集う。'
   }
 ];
 
@@ -1047,11 +1096,16 @@ function renderUI() {
   const univBadge = document.getElementById('target-univ-badge');
   if (state.targetUniv) {
     const shortLabel = state.targetUniv.shortName || state.targetUniv.name;
-    let badgeText = `志望: ${shortLabel} (${state.targetUniv.border})`;
+    let badgeText = `本命: ${shortLabel} (${state.targetUniv.border})`;
     if (state.subUniv) {
       const subLabel = state.subUniv.shortName || state.subUniv.name;
       const statusIcon = state.subUnivPassed ? '💮' : (state.subExamDone ? '❌' : '📑');
-      badgeText += ` | 併願: ${statusIcon}${subLabel}`;
+      badgeText += ` | 私大: ${statusIcon}${subLabel}`;
+    }
+    if (state.kokuritsuKouki) {
+      const koukiLabel = state.kokuritsuKouki.shortName || state.kokuritsuKouki.name;
+      const statusIcon = state.kokuritsuKoukiPassed ? '💮' : (state.koukiExamDone ? '❌' : '📑');
+      badgeText += ` | 後期: ${statusIcon}${koukiLabel}`;
     }
     univBadge.textContent = badgeText;
   } else {
@@ -2068,6 +2122,13 @@ function checkScheduledEvents() {
     return;
   }
 
+  // 高3 1月4週：国公立前期・後期 最終出願決定（共テリサーチを受けた出願変更＆後期校決定）
+  if (y === 3 && m === 1 && w === 4 && !state.finalAppDone) {
+    state.finalAppDone = true;
+    enqueueModal(() => triggerFinalApplicationChoice());
+    return;
+  }
+
   // 高3 2月2週：私立大学個別日程入試（共テ利用合格時は免除）
   if (y === 3 && m === 2 && w === 2 && !state.subExamDone) {
     state.subExamDone = true;
@@ -2075,9 +2136,24 @@ function checkScheduledEvents() {
     return;
   }
 
+  // 高3 2月4週：国公立前期日程 / 二次試験本番
   if (y === 3 && m === 2 && w === 4 && !state.secondaryDone) {
     state.secondaryDone = true;
     enqueueModal(() => startExamBattle('secondary'));
+    return;
+  }
+
+  // 高3 3月1週：国公立前期日程 合否発表
+  if (y === 3 && m === 3 && w === 1 && !state.zenkiResultDone) {
+    state.zenkiResultDone = true;
+    enqueueModal(() => triggerZenkiResultEvent());
+    return;
+  }
+
+  // 高3 3月2週：国公立後期日程 本番（前期不合格かつ後期出願者）
+  if (y === 3 && m === 3 && w === 2 && state.kokuritsuKouki && !state.koukiExamDone && !state.firstChoicePassed) {
+    state.koukiExamDone = true;
+    enqueueModal(() => triggerKoukiExamEvent());
     return;
   }
 
@@ -2228,9 +2304,10 @@ function triggerCourseChoice() {
 
 function triggerTargetUnivChoice() {
   const isBunkei = state.course === '文系';
-  // プレイヤーの文理コースに合致する大学学部を優先表示
-  const primaryList = UNIV_LIST.filter(u => u.course === state.course || u.course === '共通');
-  const otherList = UNIV_LIST.filter(u => u.course !== state.course && u.course !== '共通');
+  // プレイヤーの文理コースに合致する大学学部を優先表示（国公立後期日程は除く）
+  const availableList = UNIV_LIST.filter(u => u.type !== '国公立後期');
+  const primaryList = availableList.filter(u => u.course === state.course || u.course === '共通');
+  const otherList = availableList.filter(u => u.course !== state.course && u.course !== '共通');
   const sortedList = [...primaryList, ...otherList];
 
   const options = sortedList.map(u => {
@@ -2399,6 +2476,243 @@ function triggerSubExamEvent() {
       [`受験校: ${state.subUniv.name}`, `試験科目: 3教科記述`],
       '🎓',
       () => startExamBattle('private_sub')
+    );
+  });
+}
+
+function triggerFinalApplicationChoice() {
+  const target = state.targetUniv || UNIV_LIST[0];
+  const isTargetKokuritsu = target.type === '国公立';
+
+  const options = [];
+
+  // 選択肢1: 初志貫徹！このまま出願
+  options.push({
+    title: `🔥 初志貫徹！第1志望【${target.name}】に前期出願する！`,
+    subtext: `共テ判定【${state.kyotsuResearchRank || '判定'}】。これまでの努力を信じて本命校に突撃！(やる気+1)`,
+    action: () => {
+      state.motivation = Math.min(4, state.motivation + 1);
+      enqueueModal(() => {
+        showEventModal(
+          '🔥 初志貫徹の出願完了！',
+          `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）への前期日程出願を完了した！\n共テ判定は【${state.kyotsuResearchRank || 'C'}判定】だが、二次記述で逆転を狙う！`,
+          [`出願先: ${target.name}（前期日程）`, '覚悟を決めてやる気+1！'],
+          '🔥'
+        );
+      });
+      if (isTargetKokuritsu) {
+        triggerKoukiSelect();
+      } else {
+        renderUI();
+      }
+    }
+  });
+
+  // 選択肢2: 国公立志望の場合、中堅・安全校への出願変更オプション
+  if (isTargetKokuritsu && target.border > 60) {
+    const saferUniv = UNIV_LIST.find(u => u.type === '国公立' && u.course === state.course && u.border <= 60);
+    if (saferUniv) {
+      options.push({
+        title: `🛡️ 志望校変更！手堅い国公立【${saferUniv.name}】へ変更する`,
+        subtext: `目標ボーダー偏差値 ${saferUniv.border}。手堅く現役合格を狙う現実的選択！(ストレス-15)`,
+        action: () => {
+          state.targetUniv = saferUniv;
+          state.stress = Math.max(0, state.stress - 15);
+          enqueueModal(() => {
+            showEventModal(
+              '🛡️ 前期出願校の変更完了！',
+              `共通テストリサーチ結果を受け、前期日程の出願先を【${saferUniv.name}】（ボーダー偏差値 ${saferUniv.border}）へ変更した！\n合格の勝算が大幅にアップ！`,
+              [`変更後の第1志望: ${saferUniv.name}`, '精神的負担が和らぎ ストレス-15！'],
+              '🏫'
+            );
+          });
+          triggerKoukiSelect();
+        }
+      });
+    }
+  }
+
+  showChoiceModal(
+    '📑 共テリサーチ返却！国公立 前期・後期 最終出願戦略',
+    `共通テスト自己採点結果: 【 ${state.kyotsuScore}点 (${state.kyotsuRate}%) 】\n第1志望【${target.name}】のリサーチ判定: 【 ${state.kyotsuResearchRank || '判定'} 】\n\n前期日程の出願先を確定させよう！`,
+    options,
+    '📑'
+  );
+}
+
+function triggerKoukiSelect() {
+  const isBunkei = state.course === '文系';
+  const koukiCandidates = UNIV_LIST.filter(u => u.type === '国公立後期' && (u.course === state.course || u.course === '共通'));
+  koukiCandidates.sort((a, b) => b.border - a.border);
+
+  const options = koukiCandidates.map(u => {
+    const curDev = calcTargetDev(u);
+    const diff = (curDev - u.border).toFixed(1);
+    const diffPrefix = diff >= 0 ? `+${diff}` : `${diff}`;
+    return {
+      title: `${u.name} (ボーダー偏差値 ${u.border})`,
+      subtext: `傾斜偏差値: ${curDev} (${diffPrefix}) | 前期不合格時のラストチャンス`,
+      action: () => {
+        state.kokuritsuKouki = u;
+        enqueueModal(() => {
+          showEventModal(
+            '📑 国公立 後期日程 出願完了！',
+            `【${u.name}】（ボーダー偏差値 ${u.border}）への後期日程出願を完了した！\nもし2月下旬の前期日程で涙を呑むことになっても、3月中旬にこの後期日程で最後の逆転を狙える！`,
+            [`後期出願校: ${u.name}`, `ボーダー偏差値: ${u.border}`],
+            '📑'
+          );
+        });
+        setDialog('担任の先生', `よし、これで前期・後期の2段構えが完成したな！本命の前期突破を目指して全力を尽くせ！`);
+        renderUI();
+      }
+    };
+  });
+
+  options.push({
+    title: '⚠️ 国公立後期は出願しない（前期一本勝負）',
+    subtext: '後期日程の出願は行わず、前期および私大併願のみで勝負する。',
+    action: () => {
+      state.kokuritsuKouki = null;
+      renderUI();
+    }
+  });
+
+  enqueueModal(() => {
+    showChoiceModal(
+      '🏛️ 国公立 後期日程の出願先決定',
+      '国公立大学の後期日程（3月中旬実施）は、前期不合格者が挑む最後の逆転枠だ！\n出願する後期日程大学を1校決定しよう！',
+      options,
+      '🏛️'
+    );
+  });
+}
+
+function triggerZenkiResultEvent() {
+  const target = state.targetUniv || UNIV_LIST[0];
+  let finalBonus = 0;
+  if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
+  if (state.traits.includes('math_spark')) finalBonus += 3.0;
+  if (state.traits.includes('humanities_spark')) finalBonus += 3.0;
+  if (state.traits.includes('strong_exam')) finalBonus += 2.0;
+  if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
+
+  let finalDev = calcTargetDev(target, finalBonus);
+  const isPassed = finalDev >= (target.border - 1.2);
+  state.firstChoicePassed = isPassed;
+
+  if (isPassed) {
+    enqueueModal(() => {
+      playSound('fanfare');
+      triggerParticles(null, null, 40, 'confetti');
+      showEventModal(
+        `🌸 祝！【${target.name}】 前期日程 合格発表！ 🌸`,
+        `合格者受験番号一覧の中に、自分の番号が確かにあった！\n第1志望【${target.name}】（ボーダー偏差値 ${target.border}）に見事現役合格！！\n高校3年間のすべての努力が最高の形で報われた！`,
+        [
+          `前期日程合否: 【 合格 💮 】`,
+          `最終傾斜偏差値: ${finalDev} (目標ボーダー: ${target.border})`,
+          '堂々の第1志望合格！栄光の大学生活へ進もう！'
+        ],
+        '🎓',
+        () => triggerGameEnd()
+      );
+    });
+    setDialog('担任の先生', `受かったぞ！！本当によく頑張った！おめでとう！！`);
+    renderUI();
+    return;
+  }
+
+  // 前期不合格の場合
+  playSound('fail');
+  triggerScreenShake();
+
+  const hasSubPass = state.subUniv && state.subUnivPassed;
+  const hasKouki = state.kokuritsuKouki !== null;
+
+  if (hasSubPass && hasKouki) {
+    const options = [
+      {
+        title: `⚔️ 諦めない！国公立後期【${state.kokuritsuKouki.name}】にすべてを賭ける！`,
+        subtext: `私立の合格権利を保持したまま、3月2週の国公立後期日程にラストチャンスで挑む！(やる気UP)`,
+        action: () => {
+          state.motivation = Math.min(4, state.motivation + 1);
+          enqueueModal(() => {
+            showEventModal(
+              '🔥 背水の陣！後期日程への挑戦！',
+              `私立合格の安心感を胸に、3月2週の国公立後期日程【${state.kokuritsuKouki.name}】へ挑むことを決断した！\n最後の最後まで粘り強く栄冠を掴み取れ！`,
+              [`受験校: ${state.kokuritsuKouki.name}`, 'ラストチャンスへ向け やる気UP！'],
+              '⚔️',
+              () => advanceTurn()
+            );
+          });
+          setDialog(state.playerName, 'まだ終わりじゃない！後期日程で絶対に合格を掴み取ってやる！');
+          renderUI();
+        }
+      },
+      {
+        title: `🌸 私立併願校【${state.subUniv.name}】への進学を決定する`,
+        subtext: `これ以上無理はせず、合格を確保した名門私大への進学を確定して受験を終える。`,
+        action: () => {
+          enqueueModal(() => {
+            showEventModal(
+              `🌸 【${state.subUniv.name}】 進学確定！`,
+              `実力で勝ち取った併願校【${state.subUniv.name}】への進学を決定し、受験生活を晴れやかに終了した！`,
+              [`進学先: ${state.subUniv.name}`, '浪人回避・新たなスタート！'],
+              '🌸',
+              () => triggerGameEnd()
+            );
+          });
+        }
+      }
+    ];
+
+    enqueueModal(() => {
+      showChoiceModal(
+        `🍂 【${target.name}】 前期不合格……進路の決断`,
+        `無情にも第1志望【${target.name}】（ボーダー偏差値 ${target.border}）の合格者一覧に番号はなかった……。\nしかし、私立併願校【${state.subUniv.name}】の合格は確保している！\n\n後期日程に挑戦するか、私立への進学を決めるか選択しよう！`,
+        options,
+        '⚖️'
+      );
+    });
+
+  } else if (hasKouki) {
+    enqueueModal(() => {
+      showEventModal(
+        `🍂 【${target.name}】 前期日程 不合格……`,
+        `第1志望【${target.name}】の壁は厚く、涙を呑む結果となった……。\nだがまだチャンスはある！3月2週の国公立後期日程【${state.kokuritsuKouki.name}】が君を待っている！\n涙を拭いて、最後の栄光を掴み取れ！`,
+        [
+          `前期日程合否: 【 不合格 ❌ 】`,
+          `残された道: 国公立後期日程【${state.kokuritsuKouki.name}】へ突入！`
+        ],
+        '⚔️',
+        () => advanceTurn()
+      );
+    });
+    setDialog('担任の先生', `まだだ！後期日程が残っている！ここで諦めたら終わりだぞ、立ち上がれ！`);
+
+  } else {
+    enqueueModal(() => {
+      showEventModal(
+        `🍂 【${target.name}】 不合格……全日程終了`,
+        `全力を尽くしたが、第1志望の合格通知には届かなかった……。すべての入試日程が終了した。`,
+        [`前期日程合否: 【 不合格 ❌ 】`],
+        '🍂',
+        () => triggerGameEnd()
+      );
+    });
+  }
+
+  renderUI();
+}
+
+function triggerKoukiExamEvent() {
+  const koukiUniv = state.kokuritsuKouki;
+  enqueueModal(() => {
+    showEventModal(
+      '🔥 国公立大学 後期日程 本番！',
+      `泣いても笑ってもこれが高校3年間のラストバトル！\n後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）の試験開始ベルが鳴り響いた！\n残されたすべての情熱を解答用紙にぶつけろ！`,
+      [`受験校: ${koukiUniv.name}`, `試験科目: 総合論述・専門記述（300点満点）`],
+      '🎓',
+      () => startExamBattle('kouki')
     );
   });
 }
@@ -2701,8 +3015,9 @@ function startExamBattle(type) {
 
   const isKyotsu = type === 'kyotsu';
   const isSubExam = type === 'private_sub';
+  const isKouki = type === 'kouki';
   
-  let title = '🎓 国公立二次試験 / 第1志望本番！';
+  let title = '🎓 国公立二次試験（前期日程）/ 第1志望本番！';
   let maxScore = 500;
   let maxSteps = 5;
 
@@ -2713,6 +3028,11 @@ function startExamBattle(type) {
   } else if (isSubExam) {
     const subName = state.subUniv ? state.subUniv.name : '私立併願大学';
     title = `⚔️ 私立大学個別入試 【${subName}】 本番！`;
+    maxScore = 300;
+    maxSteps = 3;
+  } else if (isKouki) {
+    const koukiName = state.kokuritsuKouki ? state.kokuritsuKouki.name : '国公立後期大学';
+    title = `🔥 国公立大学 後期日程 【${koukiName}】 本番！`;
     maxScore = 300;
     maxSteps = 3;
   }
@@ -2742,6 +3062,7 @@ function advanceExamBattle() {
   const isBunkeiBattle = state.course === '文系';
   const isRikeiBattle = state.course === '理系';
   const isSubExam = battleState.examType === 'private_sub';
+  const isKouki = battleState.examType === 'kouki';
 
   let questions = [];
   if (isSubExam) {
@@ -2756,6 +3077,20 @@ function advanceExamBattle() {
         { name: '第1問：科学技術英語・読解（英語）', subj: 'eng' },
         { name: '第2問：微分積分・数列ベクトル（数学）', subj: 'math' },
         { name: '第3問：物理／化学・総合考察（理科）', subj: 'sci' }
+      ];
+    }
+  } else if (isKouki) {
+    if (isBunkeiBattle) {
+      questions = [
+        { name: '第1問：超長文読解・英文論述（英語）', subj: 'eng' },
+        { name: '第2問：多角的読解・総合小論文（国語）', subj: 'jp' },
+        { name: '第3問：歴史的思索・課題解決論述（社会）', subj: 'sci' }
+      ];
+    } else {
+      questions = [
+        { name: '第1問：先端科学英語・専門読解（英語）', subj: 'eng' },
+        { name: '第2問：難関微積・証明総合問題（数学）', subj: 'math' },
+        { name: '第3問：物理／化学・考察実験総合（理科）', subj: 'sci' }
       ];
     }
   } else {
@@ -2841,6 +3176,7 @@ function finishExamBattle() {
   isModalShowing = false;
   const isKyotsu = battleState.examType === 'kyotsu';
   const isSubExam = battleState.examType === 'private_sub';
+  const isKouki = battleState.examType === 'kouki';
 
   if (isKyotsu) {
     state.kyotsuScore = battleState.score;
@@ -2950,13 +3286,57 @@ function finishExamBattle() {
 
     setDialog(state.playerName, passed ? 'やった、受かった！これで思い切り第1志望に突撃できる！' : 'くそっ、落ちたか…！でも本命はこれからだ、絶対に受かってやる！');
 
+  } else if (isKouki) {
+    // 3月2週 国公立後期日程の結果
+    const koukiUniv = state.kokuritsuKouki;
+    let baseDev = calcTargetDev(koukiUniv);
+    const scoreBonus = parseFloat(((battleState.score - 180) / 20).toFixed(1));
+    let finalKoukiDev = parseFloat((baseDev + scoreBonus).toFixed(1));
+    const passed = finalKoukiDev >= (koukiUniv.border - 1.0);
+    state.kokuritsuKoukiPassed = passed;
+
+    enqueueModal(() => {
+      if (passed) {
+        playSound('fanfare');
+        triggerParticles(null, null, 35, 'gold');
+        showEventModal(
+          `🌸 【${koukiUniv.name}】 後期日程 奇跡の逆転合格！！ 🌸`,
+          `掲示板の番号を見た瞬間、膝から崩れ落ちて号泣した！\n超高倍率の国公立後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）を見事に突破！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n前期不合格のどん底から不屈の闘志で奇跡の逆転合格を掴み取った！`,
+          [
+            `後期合否: 【 合格 💮 】`,
+            `獲得得点: ${battleState.score}点 / 300点`,
+            `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`,
+            '不屈の精神により 栄光の国公立進学決定！'
+          ],
+          '🎓',
+          () => triggerGameEnd()
+        );
+      } else {
+        playSound('fail');
+        triggerScreenShake();
+        showEventModal(
+          `🍂 【${koukiUniv.name}】 後期日程 不合格……`,
+          `全力を尽くして解答用紙を埋めたが、超高倍率の後期日程の壁は破れなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nだが、最後の1秒まで逃げずに戦い抜いた君の勇姿は、何者にも代えがたい宝物だ！`,
+          [
+            `後期合否: 【 不合格 ❌ 】`,
+            `獲得得点: ${battleState.score}点 / 300点`,
+            `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`
+          ],
+          '🍂',
+          () => triggerGameEnd()
+        );
+      }
+    });
+
+    setDialog(state.playerName, passed ? 'やった…！後期で受かった…！奇跡を起こしたんだ…！' : 'やり切った……。悔いはない、すべてを出し切ったんだ。');
+
   } else {
-    // 2月4週 国公立二次 / 第1志望本番
+    // 2月4週 国公立前期 / 第1志望本番
     enqueueModal(() => {
       showEventModal(
-        '🎓 全試験日程 終了！！',
-        `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\nあとは3月の運命の合格発表を待つのみだ……！`,
-        [`二次試験得点: ${battleState.score}点 / 500点`],
+        '🎓 前期日程・本命入試 終了！！',
+        `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\n来週3月1週の運命の合格発表を待とう……！`,
+        [`試験得点: ${battleState.score}点 / 500点`],
         '🌸',
         () => advanceTurn()
       );
@@ -2967,30 +3347,49 @@ function finishExamBattle() {
   renderUI();
 }
 
-function saveClearOB(univName) {
-  const subjKeys = ['eng', 'math', 'jp', 'sci'];
-  let bestSubj = 'eng';
-  let maxScore = -1;
-  subjKeys.forEach(s => {
-    if (state.subjects[s] && state.subjects[s].score > maxScore) {
-      maxScore = state.subjects[s].score;
-      bestSubj = s;
+function triggerGameEnd() {
+  // 合格した大学リストを収集
+  const passedList = [];
+  if (state.firstChoicePassed && state.targetUniv) passedList.push(state.targetUniv);
+  if (state.kokuritsuKoukiPassed && state.kokuritsuKouki) passedList.push(state.kokuritsuKouki);
+  if (state.subUnivPassed && state.subUniv) passedList.push(state.subUniv);
+
+  // 重複除去
+  const uniquePassed = [];
+  const ids = new Set();
+  passedList.forEach(u => {
+    if (!ids.has(u.id)) {
+      ids.add(u.id);
+      uniquePassed.push(u);
     }
   });
 
-  const obData = {
-    name: state.playerName,
-    univ: univName,
-    year: new Date().getFullYear(),
-    traitsCount: state.traits.length,
-    bestSubject: bestSubj,
-    bestSubjectName: getSubjectDisplayName(bestSubj),
-    bestScore: maxScore
-  };
-  localStorage.setItem('juken_success_ob', JSON.stringify(obData));
+  if (uniquePassed.length > 1) {
+    // 複数合格！進学先選択画面
+    const options = uniquePassed.map(u => ({
+      title: `🎓 【${u.name}】 に進学する！`,
+      subtext: `区分: ${u.type}・${u.course} | ボーダー偏差値: ${u.border}`,
+      action: () => finalizeEnrollment(u, uniquePassed)
+    }));
+
+    enqueueModal(() => {
+      playSound('fanfare');
+      showChoiceModal(
+        '🎓 歓喜の進路決定！進学先大学を選択しよう！',
+        `おめでとうございます！君の努力が実を結び、複数の大学から合格通知を勝ち取りました！\nこれから4年間を過ごす運命のキャンパスを選択してください！`,
+        options,
+        '🌸'
+      );
+    });
+    return;
+  }
+
+  // 1校のみ、または0校（浪人）
+  const singleUniv = uniquePassed.length === 1 ? uniquePassed[0] : null;
+  finalizeEnrollment(singleUniv, uniquePassed);
 }
 
-function triggerGameEnd() {
+function finalizeEnrollment(enrolledUniv, allPassed) {
   let avgAcademic = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
   let finalBonus = 0;
   if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
@@ -3001,38 +3400,25 @@ function triggerGameEnd() {
 
   const target = state.targetUniv || UNIV_LIST[0];
   let finalDev = calcTargetDev(target, finalBonus);
-  const isTargetPassed = finalDev >= (target.border - 1.2);
-  const isSubPassed = state.subUniv && state.subUnivPassed;
 
   let title = '';
   let desc = '';
-  let isWin = false;
-  let enrollUnivName = '';
+  let isWin = enrolledUniv !== null;
 
-  if (isTargetPassed) {
-    isWin = true;
-    enrollUnivName = target.name;
-    const subNote = isSubPassed ? `\n（※併願校【${state.subUniv.name}】もダブル合格達成！）` : '';
-    title = `🌸 祝！【${target.name}】 現役合格！！ 🌸`;
-    desc = `掲示板に自分の受験番号を見つけた瞬間、大粒の涙があふれ出した！\n難関【${target.name}】（ボーダー偏差値 ${target.border}）の狭き門を見事に突破！\n志望学部の傾斜配点（最終偏差値 ${finalDev}）を味方につけ、栄光の第一志望合格を勝ち取った！${subNote}\n晴れて夢のキャンパスライフが幕を開ける！`;
+  if (enrolledUniv) {
+    state.finalEnrolledUniv = enrolledUniv;
+    saveClearOB(enrolledUniv.name);
 
-    saveClearOB(target.name);
-
-  } else if (isSubPassed) {
-    // 第1志望不合格だが併願校合格（浪人回避）
-    isWin = true;
-    enrollUnivName = state.subUniv.name;
-    title = `🌸 【${state.subUniv.name}】 進学決定！ 🌸`;
-    desc = `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）の壁は厚く、惜しくも届かなかった……。\nしかし！12月に出願し実力で勝ち取った併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）への進学が決定！\n浪人をしっかりと回避し、春から新しいステージで充実した大学生活が始まる！\n大学で何を学び、どう花開かせるかは自分次第だ。胸を張って次の未来へ歩み出そう！`;
-
-    saveClearOB(state.subUniv.name);
-
+    if (enrolledUniv.id === target.id) {
+      title = `🌸 祝！【${enrolledUniv.name}】 現役合格！！ 🌸`;
+      desc = `高校3年間のすべての努力が最高の結果となって結実した！\n難関【${enrolledUniv.name}】（ボーダー偏差値 ${enrolledUniv.border}）へ堂々進学決定！\n輝かしい未来のキャンパスライフが幕を開ける！`;
+    } else {
+      title = `🌸 【${enrolledUniv.name}】 進学決定！！ 🌸`;
+      desc = `熾烈を極めた受験戦争を戦い抜き、実力で勝ち取った【${enrolledUniv.name}】（ボーダー偏差値 ${enrolledUniv.border}）への進学が決定！\n大学で何を学び、どう成長するかは自分次第だ。胸を張って新しいスタートを切ろう！`;
+    }
   } else {
-    // 全不合格 ➔ 浪人決定
-    isWin = false;
-    enrollUnivName = '浪人決定';
     title = '🍂 届かなかった春……浪人決定 🍂';
-    desc = `全日程の合格発表が終了した。\n第1志望【${target.name}】${state.subUniv ? `および併願校【${state.subUniv.name}】` : ''}の壁は高く、合格通知を掴み取ることはできなかった……。\nだが高校3年間積み重ねた努力は決して色褪せない。\n「来年こそは絶対にあの憧れのキャンパスをくぐる！」\n悔し涙を拭い、予備校の門を叩いて新たな一年が始まる！`;
+    desc = `全力を尽くして挑んだ受験戦線だったが、無情にも合格通知は届かなかった……。\nだが高校3年間積み重ねた努力は決して消え去りはしない。\n「来年こそは必ず憧れのキャンパスをくぐる！」\n悔し涙を拭い、予備校の門を叩いて新たな一年が始まる！`;
   }
 
   enqueueModal(() => {
@@ -3051,10 +3437,11 @@ function triggerGameEnd() {
     `;
 
     const subStatusText = state.subUniv ? `${state.subUniv.name} (${state.subUnivPassed ? '合格 💮' : '不合格 ❌'})` : 'なし';
+    const koukiStatusText = state.kokuritsuKouki ? `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})` : '出願なし';
 
     showEventModal(
       title,
-      `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrollUnivName}\n第1志望: ${target.name} (${isTargetPassed ? '合格' : '不合格'})\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
+      `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrolledUniv ? enrolledUniv.name : '浪人決定'}\n第1志望(前期): ${target.name} (${state.firstChoicePassed ? '合格 💮' : '不合格 ❌'})\n国公立後期: ${koukiStatusText}\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
       [
         isWin ? '★ クリアデータをOB名簿に保存しました！次周回で先輩として登場します！' : 'タイトル画面からもう一度挑戦できます！'
       ],
