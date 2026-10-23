@@ -670,8 +670,8 @@ const TRAITS_MASTER = [
   { id: 'review_master', name: '復習上手', desc: '模試やテストを受けた後の全科目経験値ボーナスUP', type: 'blue' },
 
   { id: 'miracle_pass', name: '逆転合格の奇跡', desc: '【金特】入試本番でE判定でも驚異的な底力を発揮する', type: 'gold' },
-  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数理の学習経験値+25%！本番で学力比例の閃きクリティカル（得点×1.35倍）発動', type: 'gold' },
-  { id: 'humanities_spark', name: '人文の閃き', desc: '【金特】文系科目の学習経験値+25%！本番で学力比例の閃きクリティカル（得点×1.35倍）発動', type: 'gold' },
+  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数理の学習経験値+15%！本番で確率閃きクリティカル発動！', type: 'gold' },
+  { id: 'humanities_spark', name: '人文の閃き', desc: '【金特】文系科目の学習経験値+15%！本番で確率閃きクリティカル発動！', type: 'gold' },
   { id: 'lang_master', name: '言語の極意', desc: '【金特】英語・国語の長文読解で無類の安定感を誇る', type: 'gold' },
 
   { id: 'careless_mistake', name: 'ケアレスミス癖', desc: '【赤特】模試や本番で30%の確率で失点する', cureMoney: 2000, type: 'red' },
@@ -1641,8 +1641,8 @@ function executeStudy(subject) {
       const leveledUpSubjs = [];
       subjs.forEach(s => {
         let subjMult = 1.0;
-        if (state.traits.includes('math_spark') && (s === 'math' || s === 'sci')) subjMult *= 1.25;
-        if (state.traits.includes('humanities_spark') && (s === 'jp' || (isBunkei && s === 'sci') || s === 'eng')) subjMult *= 1.25;
+        if (state.traits.includes('math_spark') && (s === 'math' || s === 'sci')) subjMult *= 1.15;
+        if (state.traits.includes('humanities_spark') && (s === 'jp' || (isBunkei && s === 'sci') || s === 'eng')) subjMult *= 1.15;
         // 総合演習は4教科に分散するため各科38%（単科18ptに対し約7pt・4教科合計で約1.5倍の総経験点）
         const pts = Math.max(3, Math.round((baseExp * 0.38) * motMulti * zoneBonus * subjMult));
         const up = addExpToSubject(s, pts);
@@ -1663,12 +1663,12 @@ function executeStudy(subject) {
       if (state.traits.includes('speed_reading') && (subject === 'eng' || subject === 'jp')) mult *= 1.25;
       if (state.club === '文化部' && (subject === 'eng' || subject === 'jp')) mult *= 1.2;
 
-      // 金特パッシブ: 該当教科の学習経験値 +25% UP
+      // 金特パッシブ: 該当教科の学習経験値 +15% UP（案A調整）
       if (state.traits.includes('math_spark') && (subject === 'math' || subject === 'sci')) {
-        mult *= 1.25;
+        mult *= 1.15;
       }
       if (state.traits.includes('humanities_spark') && (subject === 'jp' || (isBunkei && subject === 'sci') || subject === 'eng')) {
-        mult *= 1.25;
+        mult *= 1.15;
       }
 
       const gainedExp = Math.round(baseExp * motMulti * zoneBonus * mult);
@@ -2781,8 +2781,8 @@ function triggerZenkiResultEvent() {
   const target = state.targetUniv || UNIV_LIST[0];
   let finalBonus = 0;
   if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
-  if (state.traits.includes('math_spark')) finalBonus += 3.0;
-  if (state.traits.includes('humanities_spark')) finalBonus += 3.0;
+  if (state.traits.includes('math_spark')) finalBonus += 1.5;
+  if (state.traits.includes('humanities_spark')) finalBonus += 1.5;
   if (state.traits.includes('strong_exam')) finalBonus += 2.0;
   if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
 
@@ -3516,19 +3516,26 @@ function advanceExamBattle() {
     gained += b;
     term.innerHTML += `<div class="log-line trait">【青特】「本番に強い」が発動！プレッシャーを味方につけた！(+${b}点)</div>`;
   }
+  // 金特「数理の閃き」「人文の閃き」: 確率クリティカル発動（基本45%・やる気連動、案A調整）
+  const sparkTriggerRate = 0.45 + (state.motivation >= 4 ? 0.15 : (state.motivation === 3 ? 0.05 : (state.motivation === 1 ? -0.10 : (state.motivation === 0 ? -0.20 : 0))));
+
   if (state.traits.includes('math_spark') && (q.subj === 'math' || q.subj === 'sci')) {
-    const sparkBonus = Math.round(gained * 0.35) + (qMax === 200 ? 12 : 8);
-    gained += sparkBonus;
-    term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」クリティカル発動！！難問を完全掌握！(+${sparkBonus}点)</div>`;
-    triggerParticles(null, null, 25, 'gold');
-    triggerScreenBounce();
+    if (Math.random() < sparkTriggerRate) {
+      const sparkBonus = Math.round(gained * 0.15) + (qMax === 200 ? 6 : 4);
+      gained += sparkBonus;
+      term.innerHTML += `<div class="log-line trait">✨【金特】「数理の閃き」クリティカル発動！！難問の解法を瞬時に見抜いた！(+${sparkBonus}点)</div>`;
+      triggerParticles(null, null, 25, 'gold');
+      triggerScreenBounce();
+    }
   }
   if (state.traits.includes('humanities_spark') && (q.subj === 'jp' || q.subj === 'sci' || q.subj === 'eng')) {
-    const sparkBonus = Math.round(gained * 0.35) + (qMax === 200 ? 12 : 8);
-    gained += sparkBonus;
-    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」クリティカル発動！！深い論理と思考力！(+${sparkBonus}点)</div>`;
-    triggerParticles(null, null, 25, 'gold');
-    triggerScreenBounce();
+    if (Math.random() < sparkTriggerRate) {
+      const sparkBonus = Math.round(gained * 0.15) + (qMax === 200 ? 6 : 4);
+      gained += sparkBonus;
+      term.innerHTML += `<div class="log-line trait">✨【金特】「人文の閃き」クリティカル発動！！鋭い論理的直感が冴え渡った！(+${sparkBonus}点)</div>`;
+      triggerParticles(null, null, 25, 'gold');
+      triggerScreenBounce();
+    }
   }
   if (state.traits.includes('lang_master') && (q.subj === 'eng' || q.subj === 'jp')) {
     const b = qMax === 200 ? 25 : 20;
@@ -3847,8 +3854,8 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
   let avgAcademic = (state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score) / 4;
   let finalBonus = 0;
   if (state.traits.includes('miracle_pass')) finalBonus += 4.5;
-  if (state.traits.includes('math_spark')) finalBonus += 3.0;
-  if (state.traits.includes('humanities_spark')) finalBonus += 3.0;
+  if (state.traits.includes('math_spark')) finalBonus += 1.5;
+  if (state.traits.includes('humanities_spark')) finalBonus += 1.5;
   if (state.traits.includes('strong_exam')) finalBonus += 2.0;
   if (state.traits.includes('weak_exam')) finalBonus -= 2.0;
 
