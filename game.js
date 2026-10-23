@@ -729,25 +729,39 @@ function getRank(score) {
 }
 
 // ================= モーダル＆イベントキューシステム =================
-// 複数のモーダルやイベントが重なっても順番に1つずつ表示する仕組み
+// 複数のモーダルやイベントが重なっても順番に1つずつ安全に表示する仕組み
 const modalQueue = [];
 let isModalShowing = false;
 
+function isAnyModalActive() {
+  const ev = document.getElementById('event-modal');
+  const ch = document.getElementById('choice-modal');
+  const ex = document.getElementById('exam-battle-modal');
+  return (ev && ev.classList.contains('active')) ||
+         (ch && ch.classList.contains('active')) ||
+         (ex && ex.classList.contains('active'));
+}
+
 function enqueueModal(modalFn) {
   modalQueue.push(modalFn);
-  if (!isModalShowing) {
+  if (!isAnyModalActive()) {
     showNextModal();
   }
 }
 
 function showNextModal() {
+  if (isAnyModalActive()) {
+    return;
+  }
   if (modalQueue.length === 0) {
     isModalShowing = false;
     return;
   }
   isModalShowing = true;
   const nextFn = modalQueue.shift();
-  nextFn();
+  if (nextFn) {
+    nextFn();
+  }
 }
 
 // ================= セーブ＆ロード・ポーズメニュー・スタート画面処理 =================
@@ -755,6 +769,7 @@ function showNextModal() {
 // オートセーブ
 function autoSaveGame() {
   if (!state) return;
+  if (state.gameOver) return; // 終了済みのデータは保存しない
   state.inGame = true;
   state.savedAt = Date.now();
   try {
@@ -803,6 +818,13 @@ function resumeGame() {
 
   renderUI();
   setDialog('担任の先生', `${state.playerName}、前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から再開するぞ！集中して合格を目指そう！`);
+
+  // 旧バージョンで4年生に進んでしまったセーブ、または期間満了セーブは即エンディングへ
+  if (state.gameOver || state.year > 3 || state.totalTurn > state.maxTurns) {
+    state.gameOver = false;
+    if (state.year > 3) { state.year = 3; state.month = 3; state.week = 4; }
+    triggerGameEnd();
+  }
 }
 
 // 「はじめからスタート」ボタン押下時（既存セーブの確認）
@@ -1016,6 +1038,12 @@ function checkAutoResumeOnLoad() {
     document.getElementById('main-game-screen').style.display = 'flex';
     renderUI();
     setDialog('担任の先生', `${state.playerName}、おかえり！前回の続き（${state.year}年生 ${state.month}月 ${state.week}週）から高校生活を再開するぞ！`);
+    // 旧バージョンで4年生に進んでしまったセーブ等は即エンディングへ
+    if (state.year > 3 || state.totalTurn > state.maxTurns) {
+      state.gameOver = false;
+      if (state.year > 3) { state.year = 3; state.month = 3; state.week = 4; }
+      triggerGameEnd();
+    }
   } else {
     // タイトル画面を表示
     document.getElementById('title-screen').style.display = 'flex';
@@ -1332,6 +1360,16 @@ function setDialog(speaker, message) {
 }
 
 function advanceTurn() {
+  // 進学先確定（ゲーム終了）後はターンを一切進めない
+  if (state.gameOver) {
+    showGameOverAgain();
+    return;
+  }
+  // 高校3年3月4週を終えたら学年を進めずにエンディングへ
+  if (state.year >= 3 && state.month === 3 && state.week >= 4) {
+    triggerGameEnd();
+    return;
+  }
   state.totalTurn++;
   state.week++;
   if (state.week > 4) {
@@ -1340,6 +1378,11 @@ function advanceTurn() {
     if (state.month > 12) {
       state.month = 1; // 12月の次は1月（同じ学年）
     } else if (state.month === 4) {
+      if (state.year >= 3) {
+        // 高校3年3月4週終了。4年生には進まず、直ちに卒業・ゲーム終了へ！
+        triggerGameEnd();
+        return;
+      }
       state.year++; // 3月4週の次（4月1週）に学年が上がる！
     }
   }
@@ -1398,7 +1441,7 @@ function advanceTurn() {
 
   renderUI();
 
-  if (state.totalTurn > state.maxTurns) {
+  if (state.totalTurn > state.maxTurns || state.year > 3) {
     triggerGameEnd();
     return;
   }
@@ -2432,14 +2475,12 @@ function triggerApplicationChoice() {
 function triggerSubExamEvent() {
   if (!state.subUniv) {
     // 併願校なしの場合
-    enqueueModal(() => {
-      showEventModal(
-        '📖 二次試験直前・総仕上げ期間',
-        '私大併願校の受験はなく、2月下旬の第1志望・二次試験本番に向けて最後の総復習に専念した！',
-        ['体力を維持しつつ、最終確認を完了！'],
-        '📖'
-      );
-    });
+    showEventModal(
+      '📖 二次試験直前・総仕上げ期間',
+      '私大併願校の受験はなく、2月下旬の第1志望・二次試験本番に向けて最後の総復習に専念した！',
+      ['体力を維持しつつ、最終確認を完了！'],
+      '📖'
+    );
     setDialog(state.playerName, 'いよいよ次は第1志望の二次試験本番だ…！');
     renderUI();
     return;
@@ -2451,33 +2492,29 @@ function triggerSubExamEvent() {
     state.motivation = Math.min(4, state.motivation + 1);
     state.stamina = state.maxStamina;
     state.stress = Math.max(0, state.stress - 20);
-    enqueueModal(() => {
-      showEventModal(
-        '🎉 併願校合格確保済み！私大個別試験は免除！',
-        `共通テスト利用入試で見事【${state.subUniv.name}】の合格を確保しているため、2月の私大個別試験は受験不要！\n\nすべり止め校を確保した大きな精神的アドバンテージを得て、月末の第1志望本番に全集中できる！`,
-        [
-          `合格確保済み: ${state.subUniv.name}`,
-          '私大個別日程: 受験免除',
-          '安心感により やる気UP & 体力全快 & ストレス-20！'
-        ],
-        '👑'
-      );
-    });
+    showEventModal(
+      '🎉 併願校合格確保済み！私大個別試験は免除！',
+      `共通テスト利用入試で見事【${state.subUniv.name}】の合格を確保しているため、2月の私大個別試験は受験不要！\n\nすべり止め校を確保した大きな精神的アドバンテージを得て、月末の第1志望本番に全集中できる！`,
+      [
+        `合格確保済み: ${state.subUniv.name}`,
+        '私大個別日程: 受験免除',
+        '安心感により やる気UP & 体力全快 & ストレス-20！'
+      ],
+      '👑'
+    );
     setDialog('担任の先生', `すでに合格を1つ持っているのは大きな強みだ！この勢いで第1志望を突破しよう！`);
     renderUI();
     return;
   }
 
   // 共通テスト利用で受かっていない場合 ➔ 個別試験本番
-  enqueueModal(() => {
-    showEventModal(
-      '⚔️ 私大個別日程入試 本番！',
-      `併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）の個別日程入試が始まった！\n得意教科を活かした3教科の勝負！合格を勝ち取って浪人を回避せよ！`,
-      [`受験校: ${state.subUniv.name}`, `試験科目: 3教科記述`],
-      '🎓',
-      () => startExamBattle('private_sub')
-    );
-  });
+  showEventModal(
+    '⚔️ 私大個別日程入試 本番！',
+    `併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）の個別日程入試が始まった！\n得意教科を活かした3教科の勝負！合格を勝ち取って浪人を回避せよ！`,
+    [`受験校: ${state.subUniv.name}`, `試験科目: 3教科記述`],
+    '🎓',
+    () => startExamBattle('private_sub')
+  );
 }
 
 function triggerFinalApplicationChoice() {
@@ -2492,19 +2529,19 @@ function triggerFinalApplicationChoice() {
     subtext: `共テ判定【${state.kyotsuResearchRank || '判定'}】。これまでの努力を信じて本命校に突撃！(やる気+1)`,
     action: () => {
       state.motivation = Math.min(4, state.motivation + 1);
-      enqueueModal(() => {
-        showEventModal(
-          '🔥 初志貫徹の出願完了！',
-          `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）への前期日程出願を完了した！\n共テ判定は【${state.kyotsuResearchRank || 'C'}判定】だが、二次記述で逆転を狙う！`,
-          [`出願先: ${target.name}（前期日程）`, '覚悟を決めてやる気+1！'],
-          '🔥'
-        );
-      });
-      if (isTargetKokuritsu) {
-        triggerKoukiSelect();
-      } else {
-        renderUI();
-      }
+      showEventModal(
+        '🔥 初志貫徹の出願完了！',
+        `第1志望【${target.name}】（ボーダー偏差値 ${target.border}）への前期日程出願を完了した！\n共テ判定は【${state.kyotsuResearchRank || 'C'}判定】だが、二次記述で逆転を狙う！`,
+        [`出願先: ${target.name}（前期日程）`, '覚悟を決めてやる気+1！'],
+        '🔥',
+        () => {
+          if (isTargetKokuritsu) {
+            triggerKoukiSelect();
+          } else {
+            renderUI();
+          }
+        }
+      );
     }
   });
 
@@ -2518,15 +2555,13 @@ function triggerFinalApplicationChoice() {
         action: () => {
           state.targetUniv = saferUniv;
           state.stress = Math.max(0, state.stress - 15);
-          enqueueModal(() => {
-            showEventModal(
-              '🛡️ 前期出願校の変更完了！',
-              `共通テストリサーチ結果を受け、前期日程の出願先を【${saferUniv.name}】（ボーダー偏差値 ${saferUniv.border}）へ変更した！\n合格の勝算が大幅にアップ！`,
-              [`変更後の第1志望: ${saferUniv.name}`, '精神的負担が和らぎ ストレス-15！'],
-              '🏫'
-            );
-          });
-          triggerKoukiSelect();
+          showEventModal(
+            '🛡️ 前期出願校の変更完了！',
+            `共通テストリサーチ結果を受け、前期日程の出願先を【${saferUniv.name}】（ボーダー偏差値 ${saferUniv.border}）へ変更した！\n合格の勝算が大幅にアップ！`,
+            [`変更後の第1志望: ${saferUniv.name}`, '精神的負担が和らぎ ストレス-15！'],
+            '🏫',
+            () => triggerKoukiSelect()
+          );
         }
       });
     }
@@ -2554,14 +2589,12 @@ function triggerKoukiSelect() {
       subtext: `傾斜偏差値: ${curDev} (${diffPrefix}) | 前期不合格時のラストチャンス`,
       action: () => {
         state.kokuritsuKouki = u;
-        enqueueModal(() => {
-          showEventModal(
-            '📑 国公立 後期日程 出願完了！',
-            `【${u.name}】（ボーダー偏差値 ${u.border}）への後期日程出願を完了した！\nもし2月下旬の前期日程で涙を呑むことになっても、3月中旬にこの後期日程で最後の逆転を狙える！`,
-            [`後期出願校: ${u.name}`, `ボーダー偏差値: ${u.border}`],
-            '📑'
-          );
-        });
+        showEventModal(
+          '📑 国公立 後期日程 出願完了！',
+          `【${u.name}】（ボーダー偏差値 ${u.border}）への後期日程出願を完了した！\nもし2月下旬の前期日程で涙を呑むことになっても、3月中旬にこの後期日程で最後の逆転を狙える！`,
+          [`後期出願校: ${u.name}`, `ボーダー偏差値: ${u.border}`],
+          '📑'
+        );
         setDialog('担任の先生', `よし、これで前期・後期の2段構えが完成したな！本命の前期突破を目指して全力を尽くせ！`);
         renderUI();
       }
@@ -2577,14 +2610,12 @@ function triggerKoukiSelect() {
     }
   });
 
-  enqueueModal(() => {
-    showChoiceModal(
-      '🏛️ 国公立 後期日程の出願先決定',
-      '国公立大学の後期日程（3月中旬実施）は、前期不合格者が挑む最後の逆転枠だ！\n出願する後期日程大学を1校決定しよう！',
-      options,
-      '🏛️'
-    );
-  });
+  showChoiceModal(
+    '🏛️ 国公立 後期日程の出願先決定',
+    '国公立大学の後期日程（3月中旬実施）は、前期不合格者が挑む最後の逆転枠だ！\n出願する後期日程大学を1校決定しよう！',
+    options,
+    '🏛️'
+  );
 }
 
 function triggerZenkiResultEvent() {
@@ -2601,21 +2632,19 @@ function triggerZenkiResultEvent() {
   state.firstChoicePassed = isPassed;
 
   if (isPassed) {
-    enqueueModal(() => {
-      playSound('fanfare');
-      triggerParticles(null, null, 40, 'confetti');
-      showEventModal(
-        `🌸 祝！【${target.name}】 前期日程 合格発表！ 🌸`,
-        `合格者受験番号一覧の中に、自分の番号が確かにあった！\n第1志望【${target.name}】（ボーダー偏差値 ${target.border}）に見事現役合格！！\n高校3年間のすべての努力が最高の形で報われた！`,
-        [
-          `前期日程合否: 【 合格 💮 】`,
-          `最終傾斜偏差値: ${finalDev} (目標ボーダー: ${target.border})`,
-          '堂々の第1志望合格！栄光の大学生活へ進もう！'
-        ],
-        '🎓',
-        () => triggerGameEnd()
-      );
-    });
+    playSound('fanfare');
+    triggerParticles(null, null, 40, 'confetti');
+    showEventModal(
+      `🌸 祝！【${target.name}】 前期日程 合格発表！ 🌸`,
+      `合格者受験番号一覧の中に、自分の番号が確かにあった！\n第1志望【${target.name}】（ボーダー偏差値 ${target.border}）に見事現役合格！！\n高校3年間のすべての努力が最高の形で報われた！`,
+      [
+        `前期日程合否: 【 合格 💮 】`,
+        `最終傾斜偏差値: ${finalDev} (目標ボーダー: ${target.border})`,
+        '堂々の第1志望合格！栄光の大学生活へ進もう！'
+      ],
+      '🎓',
+      () => triggerGameEnd()
+    );
     setDialog('担任の先生', `受かったぞ！！本当によく頑張った！おめでとう！！`);
     renderUI();
     return;
@@ -2635,15 +2664,13 @@ function triggerZenkiResultEvent() {
         subtext: `私立の合格権利を保持したまま、3月2週の国公立後期日程にラストチャンスで挑む！(やる気UP)`,
         action: () => {
           state.motivation = Math.min(4, state.motivation + 1);
-          enqueueModal(() => {
-            showEventModal(
-              '🔥 背水の陣！後期日程への挑戦！',
-              `私立合格の安心感を胸に、3月2週の国公立後期日程【${state.kokuritsuKouki.name}】へ挑むことを決断した！\n最後の最後まで粘り強く栄冠を掴み取れ！`,
-              [`受験校: ${state.kokuritsuKouki.name}`, 'ラストチャンスへ向け やる気UP！'],
-              '⚔️',
-              () => advanceTurn()
-            );
-          });
+          showEventModal(
+            '🔥 背水の陣！後期日程への挑戦！',
+            `私立合格の安心感を胸に、3月2週の国公立後期日程【${state.kokuritsuKouki.name}】へ挑むことを決断した！\n最後の最後まで粘り強く栄冠を掴み取れ！`,
+            [`受験校: ${state.kokuritsuKouki.name}`, 'ラストチャンスへ向け やる気UP！'],
+            '⚔️',
+            () => advanceTurn()
+          );
           setDialog(state.playerName, 'まだ終わりじゃない！後期日程で絶対に合格を掴み取ってやる！');
           renderUI();
         }
@@ -2652,53 +2679,45 @@ function triggerZenkiResultEvent() {
         title: `🌸 私立併願校【${state.subUniv.name}】への進学を決定する`,
         subtext: `これ以上無理はせず、合格を確保した名門私大への進学を確定して受験を終える。`,
         action: () => {
-          enqueueModal(() => {
-            showEventModal(
-              `🌸 【${state.subUniv.name}】 進学確定！`,
-              `実力で勝ち取った併願校【${state.subUniv.name}】への進学を決定し、受験生活を晴れやかに終了した！`,
-              [`進学先: ${state.subUniv.name}`, '浪人回避・新たなスタート！'],
-              '🌸',
-              () => triggerGameEnd()
-            );
-          });
+          showEventModal(
+            `🌸 【${state.subUniv.name}】 進学確定！`,
+            `実力で勝ち取った併願校【${state.subUniv.name}】への進学を決定し、受験生活を晴れやかに終了した！`,
+            [`進学先: ${state.subUniv.name}`, '浪人回避・新たなスタート！'],
+            '🌸',
+            () => triggerGameEnd()
+          );
         }
       }
     ];
 
-    enqueueModal(() => {
-      showChoiceModal(
-        `🍂 【${target.name}】 前期不合格……進路の決断`,
-        `無情にも第1志望【${target.name}】（ボーダー偏差値 ${target.border}）の合格者一覧に番号はなかった……。\nしかし、私立併願校【${state.subUniv.name}】の合格は確保している！\n\n後期日程に挑戦するか、私立への進学を決めるか選択しよう！`,
-        options,
-        '⚖️'
-      );
-    });
+    showChoiceModal(
+      `🍂 【${target.name}】 前期不合格……進路の決断`,
+      `無情にも第1志望【${target.name}】（ボーダー偏差値 ${target.border}）の合格者一覧に番号はなかった……。\nしかし、私立併願校【${state.subUniv.name}】の合格は確保している！\n\n後期日程に挑戦するか、私立への進学を決めるか選択しよう！`,
+      options,
+      '⚖️'
+    );
 
   } else if (hasKouki) {
-    enqueueModal(() => {
-      showEventModal(
-        `🍂 【${target.name}】 前期日程 不合格……`,
-        `第1志望【${target.name}】の壁は厚く、涙を呑む結果となった……。\nだがまだチャンスはある！3月2週の国公立後期日程【${state.kokuritsuKouki.name}】が君を待っている！\n涙を拭いて、最後の栄光を掴み取れ！`,
-        [
-          `前期日程合否: 【 不合格 ❌ 】`,
-          `残された道: 国公立後期日程【${state.kokuritsuKouki.name}】へ突入！`
-        ],
-        '⚔️',
-        () => advanceTurn()
-      );
-    });
+    showEventModal(
+      `🍂 【${target.name}】 前期日程 不合格……`,
+      `第1志望【${target.name}】の壁は厚く、涙を呑む結果となった……。\nだがまだチャンスはある！3月2週の国公立後期日程【${state.kokuritsuKouki.name}】が君を待っている！\n涙を拭いて、最後の栄光を掴み取れ！`,
+      [
+        `前期日程合否: 【 不合格 ❌ 】`,
+        `残された道: 国公立後期日程【${state.kokuritsuKouki.name}】へ突入！`
+      ],
+      '⚔️',
+      () => advanceTurn()
+    );
     setDialog('担任の先生', `まだだ！後期日程が残っている！ここで諦めたら終わりだぞ、立ち上がれ！`);
 
   } else {
-    enqueueModal(() => {
-      showEventModal(
-        `🍂 【${target.name}】 不合格……全日程終了`,
-        `全力を尽くしたが、第1志望の合格通知には届かなかった……。すべての入試日程が終了した。`,
-        [`前期日程合否: 【 不合格 ❌ 】`],
-        '🍂',
-        () => triggerGameEnd()
-      );
-    });
+    showEventModal(
+      `🍂 【${target.name}】 不合格……全日程終了`,
+      `全力を尽くしたが、第1志望の合格通知には届かなかった……。すべての入試日程が終了した。`,
+      [`前期日程合否: 【 不合格 ❌ 】`],
+      '🍂',
+      () => triggerGameEnd()
+    );
   }
 
   renderUI();
@@ -2706,15 +2725,13 @@ function triggerZenkiResultEvent() {
 
 function triggerKoukiExamEvent() {
   const koukiUniv = state.kokuritsuKouki;
-  enqueueModal(() => {
-    showEventModal(
-      '🔥 国公立大学 後期日程 本番！',
-      `泣いても笑ってもこれが高校3年間のラストバトル！\n後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）の試験開始ベルが鳴り響いた！\n残されたすべての情熱を解答用紙にぶつけろ！`,
-      [`受験校: ${koukiUniv.name}`, `試験科目: 総合論述・専門記述（300点満点）`],
-      '🎓',
-      () => startExamBattle('kouki')
-    );
-  });
+  showEventModal(
+    '🔥 国公立大学 後期日程 本番！',
+    `泣いても笑ってもこれが高校3年間のラストバトル！\n後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）の試験開始ベルが鳴り響いた！\n残されたすべての情熱を解答用紙にぶつけろ！`,
+    [`受験校: ${koukiUniv.name}`, `試験科目: 総合論述・専門記述（300点満点）`],
+    '🎓',
+    () => startExamBattle('kouki')
+  );
 }
 
 function triggerDaijobuDoctor() {
@@ -3228,15 +3245,13 @@ function finishExamBattle() {
       subKyotsuMsg
     ];
 
-    enqueueModal(() => {
-      showEventModal(
-        '📝 共通テスト終了！自己採点＆共テ利用結果',
-        `2日間の共通テストを戦い抜いた！\n獲得得点: 【 ${battleState.score} / 500 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
-        summaryRewards,
-        state.subUnivKyotsuPass ? '🎉' : '🎯',
-        () => advanceTurn()
-      );
-    });
+    showEventModal(
+      '📝 共通テスト終了！自己採点＆共テ利用結果',
+      `2日間の共通テストを戦い抜いた！\n獲得得点: 【 ${battleState.score} / 500 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
+      summaryRewards,
+      state.subUnivKyotsuPass ? '🎉' : '🎯',
+      () => advanceTurn()
+    );
 
     setDialog('担任の先生', `自己採点結果が出たぞ！${state.subUnivKyotsuPass ? '併願校を1つ確保できたのは大きいぞ！' : ''}第1志望は【${researchRank}判定】だ。2月の本番へ向けて全力で仕上げよう！`);
 
@@ -3249,40 +3264,38 @@ function finishExamBattle() {
     const passed = finalSubDev >= (targetSub.border - 1.0);
     state.subUnivPassed = passed;
 
-    enqueueModal(() => {
-      if (passed) {
-        playSound('success');
-        triggerParticles(null, null, 25, 'gold');
-        showEventModal(
-          `🌸 【${targetSub.name}】 個別入試 合格発表！`,
-          `私大個別日程の合格発表掲示板に、自分の番号があった！\n【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）に見事正規合格！！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nこれで浪人は回避し、進学先をがっちり確保した！\n肩の荷が下り、月末の第1志望二次試験に恐れず立ち向かえる！`,
-          [
-            `合否結果: 【 合格 】`,
-            `試験得点: ${battleState.score}点 / 300点`,
-            `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`,
-            `心の余裕により ストレス -20 ＆ やる気UP！`
-          ],
-          '💮',
-          () => advanceTurn()
-        );
-        state.stress = Math.max(0, state.stress - 20);
-        state.motivation = Math.min(4, state.motivation + 1);
-      } else {
-        playSound('fail');
-        triggerScreenShake();
-        showEventModal(
-          `🍂 【${targetSub.name}】 個別入試 合格発表`,
-          `残念ながら【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）の合格者一覧に番号はなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n私大個別日程の狭き門に弾かれてしまったが、君の高校生活の集大成はここではない！\n月末の第1志望・二次試験本番で必ず雪辱を果たせ！`,
-          [
-            `合否結果: 【 不合格 】`,
-            `試験得点: ${battleState.score}点 / 300点`,
-            `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`
-          ],
-          '🍂',
-          () => advanceTurn()
-        );
-      }
-    });
+    if (passed) {
+      playSound('success');
+      triggerParticles(null, null, 25, 'gold');
+      showEventModal(
+        `🌸 【${targetSub.name}】 個別入試 合格発表！`,
+        `私大個別日程の合格発表掲示板に、自分の番号があった！\n【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）に見事正規合格！！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nこれで浪人は回避し、進学先をがっちり確保した！\n肩の荷が下り、月末の第1志望二次試験に恐れず立ち向かえる！`,
+        [
+          `合否結果: 【 合格 】`,
+          `試験得点: ${battleState.score}点 / 300点`,
+          `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`,
+          `心の余裕により ストレス -20 ＆ やる気UP！`
+        ],
+        '💮',
+        () => advanceTurn()
+      );
+      state.stress = Math.max(0, state.stress - 20);
+      state.motivation = Math.min(4, state.motivation + 1);
+    } else {
+      playSound('fail');
+      triggerScreenShake();
+      showEventModal(
+        `🍂 【${targetSub.name}】 個別入試 合格発表`,
+        `残念ながら【${targetSub.name}】（ボーダー偏差値 ${targetSub.border}）の合格者一覧に番号はなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n私大個別日程の狭き門に弾かれてしまったが、君の高校生活の集大成はここではない！\n月末の第1志望・二次試験本番で必ず雪辱を果たせ！`,
+        [
+          `合否結果: 【 不合格 】`,
+          `試験得点: ${battleState.score}点 / 300点`,
+          `算出偏差値: ${finalSubDev} (ボーダー: ${targetSub.border})`
+        ],
+        '🍂',
+        () => advanceTurn()
+      );
+    }
 
     setDialog(state.playerName, passed ? 'やった、受かった！これで思い切り第1志望に突撃できる！' : 'くそっ、落ちたか…！でも本命はこれからだ、絶対に受かってやる！');
 
@@ -3295,59 +3308,82 @@ function finishExamBattle() {
     const passed = finalKoukiDev >= (koukiUniv.border - 1.0);
     state.kokuritsuKoukiPassed = passed;
 
-    enqueueModal(() => {
-      if (passed) {
-        playSound('fanfare');
-        triggerParticles(null, null, 35, 'gold');
-        showEventModal(
-          `🌸 【${koukiUniv.name}】 後期日程 奇跡の逆転合格！！ 🌸`,
-          `掲示板の番号を見た瞬間、膝から崩れ落ちて号泣した！\n超高倍率の国公立後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）を見事に突破！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n前期不合格のどん底から不屈の闘志で奇跡の逆転合格を掴み取った！`,
-          [
-            `後期合否: 【 合格 💮 】`,
-            `獲得得点: ${battleState.score}点 / 300点`,
-            `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`,
-            '不屈の精神により 栄光の国公立進学決定！'
-          ],
-          '🎓',
-          () => triggerGameEnd()
-        );
-      } else {
-        playSound('fail');
-        triggerScreenShake();
-        showEventModal(
-          `🍂 【${koukiUniv.name}】 後期日程 不合格……`,
-          `全力を尽くして解答用紙を埋めたが、超高倍率の後期日程の壁は破れなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nだが、最後の1秒まで逃げずに戦い抜いた君の勇姿は、何者にも代えがたい宝物だ！`,
-          [
-            `後期合否: 【 不合格 ❌ 】`,
-            `獲得得点: ${battleState.score}点 / 300点`,
-            `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`
-          ],
-          '🍂',
-          () => triggerGameEnd()
-        );
-      }
-    });
+    if (passed) {
+      playSound('fanfare');
+      triggerParticles(null, null, 35, 'gold');
+      showEventModal(
+        `🌸 【${koukiUniv.name}】 後期日程 奇跡の逆転合格！！ 🌸`,
+        `掲示板の番号を見た瞬間、膝から崩れ落ちて号泣した！\n超高倍率の国公立後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）を見事に突破！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n前期不合格のどん底から不屈の闘志で奇跡の逆転合格を掴み取った！`,
+        [
+          `後期合否: 【 合格 💮 】`,
+          `獲得得点: ${battleState.score}点 / 300点`,
+          `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`,
+          '不屈の精神により 栄光の国公立進学決定！'
+        ],
+        '🎓',
+        () => triggerGameEnd()
+      );
+    } else {
+      playSound('fail');
+      triggerScreenShake();
+      showEventModal(
+        `🍂 【${koukiUniv.name}】 後期日程 不合格……`,
+        `全力を尽くして解答用紙を埋めたが、超高倍率の後期日程の壁は破れなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nだが、最後の1秒まで逃げずに戦い抜いた君の勇姿は、何者にも代えがたい宝物だ！`,
+        [
+          `後期合否: 【 不合格 ❌ 】`,
+          `獲得得点: ${battleState.score}点 / 300点`,
+          `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`
+        ],
+        '🍂',
+        () => triggerGameEnd()
+      );
+    }
 
     setDialog(state.playerName, passed ? 'やった…！後期で受かった…！奇跡を起こしたんだ…！' : 'やり切った……。悔いはない、すべてを出し切ったんだ。');
 
   } else {
     // 2月4週 国公立前期 / 第1志望本番
-    enqueueModal(() => {
-      showEventModal(
-        '🎓 前期日程・本命入試 終了！！',
-        `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\n来週3月1週の運命の合格発表を待とう……！`,
-        [`試験得点: ${battleState.score}点 / 500点`],
-        '🌸',
-        () => advanceTurn()
-      );
-    });
+    showEventModal(
+      '🎓 前期日程・本命入試 終了！！',
+      `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\n来週3月1週の運命の合格発表を待とう……！`,
+      [`試験得点: ${battleState.score}点 / 500点`],
+      '🌸',
+      () => advanceTurn()
+    );
     setDialog(state.playerName, 'やれるだけのことは全部やった…！あとは合格発表を待つのみだ！');
   }
 
   renderUI();
 }
 
+// クリアデータをOB名簿として保存（次周回で先輩として登場）
+function saveClearOB(univName) {
+  try {
+    const keys = ['eng', 'math', 'jp', 'sci'];
+    let bestSubject = keys[0];
+    keys.forEach(k => {
+      if (state.subjects[k].score > state.subjects[bestSubject].score) bestSubject = k;
+    });
+    const ob = {
+      name: state.playerName,
+      univ: univName,
+      year: new Date().getFullYear(),
+      traitsCount: state.traits.length,
+      bestSubject,
+      bestSubjectName: getSubjectDisplayName(bestSubject),
+      bestScore: state.subjects[bestSubject].score
+    };
+    localStorage.setItem('juken_success_ob', JSON.stringify(ob));
+  } catch (e) {
+    console.error('Failed to save OB data:', e);
+  }
+}
+
 function triggerGameEnd() {
+  if (state.gameOver) {
+    showGameOverAgain();
+    return;
+  }
   // 合格した大学リストを収集
   const passedList = [];
   if (state.firstChoicePassed && state.targetUniv) passedList.push(state.targetUniv);
@@ -3372,15 +3408,13 @@ function triggerGameEnd() {
       action: () => finalizeEnrollment(u, uniquePassed)
     }));
 
-    enqueueModal(() => {
-      playSound('fanfare');
-      showChoiceModal(
-        '🎓 歓喜の進路決定！進学先大学を選択しよう！',
-        `おめでとうございます！君の努力が実を結び、複数の大学から合格通知を勝ち取りました！\nこれから4年間を過ごす運命のキャンパスを選択してください！`,
-        options,
-        '🌸'
-      );
-    });
+    playSound('fanfare');
+    showChoiceModal(
+      '🎓 歓喜の進路決定！進学先大学を選択しよう！',
+      `おめでとうございます！君の努力が実を結び、複数の大学から合格通知を勝ち取りました！\nこれから4年間を過ごす運命のキャンパスを選択してください！`,
+      options,
+      '🌸'
+    );
     return;
   }
 
@@ -3421,35 +3455,51 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
     desc = `全力を尽くして挑んだ受験戦線だったが、無情にも合格通知は届かなかった……。\nだが高校3年間積み重ねた努力は決して消え去りはしない。\n「来年こそは必ず憧れのキャンパスをくぐる！」\n悔し涙を拭い、予備校の門を叩いて新たな一年が始まる！`;
   }
 
-  enqueueModal(() => {
-    if (isWin) {
-      playSound('fanfare');
-      triggerParticles(null, null, 40, 'confetti');
-      triggerScreenBounce();
-    } else {
-      playSound('fail');
-      triggerScreenShake();
-    }
+  if (isWin) {
+    playSound('fanfare');
+    triggerParticles(null, null, 40, 'confetti');
+    triggerScreenBounce();
+  } else {
+    playSound('fail');
+    triggerScreenShake();
+  }
 
-    const modalFooter = document.getElementById('event-modal-footer');
-    modalFooter.innerHTML = `
-      <button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>
-    `;
+  const modalFooter = document.getElementById('event-modal-footer');
+  modalFooter.innerHTML = `
+    <button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>
+  `;
 
-    const subStatusText = state.subUniv ? `${state.subUniv.name} (${state.subUnivPassed ? '合格 💮' : '不合格 ❌'})` : 'なし';
-    const koukiStatusText = state.kokuritsuKouki ? `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})` : '出願なし';
+  const subStatusText = state.subUniv ? `${state.subUniv.name} (${state.subUnivPassed ? '合格 💮' : '不合格 ❌'})` : 'なし';
+  const koukiStatusText = state.kokuritsuKouki ? `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})` : '出願なし';
 
-    showEventModal(
-      title,
-      `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrolledUniv ? enrolledUniv.name : '浪人決定'}\n第1志望(前期): ${target.name} (${state.firstChoicePassed ? '合格 💮' : '不合格 ❌'})\n国公立後期: ${koukiStatusText}\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`,
-      [
-        isWin ? '★ クリアデータをOB名簿に保存しました！次周回で先輩として登場します！' : 'タイトル画面からもう一度挑戦できます！'
-      ],
-      isWin ? '🎓' : '📚'
-    );
-  });
+  // ゲーム終了フラグ（以降はターン進行・行動を一切受け付けない）
+  state.gameOver = true;
+  modalQueue.length = 0;
+  isModalShowing = false;
+  currentModalCallback = null;
+
+  const endText = `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrolledUniv ? enrolledUniv.name : '浪人決定'}\n第1志望(前期): ${target.name} (${state.firstChoicePassed ? '合格 💮' : '不合格 ❌'})\n国公立後期: ${koukiStatusText}\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`;
+  const endRewards = [
+    isWin ? '★ クリアデータをOB名簿に保存しました！次周回で先輩として登場します！' : 'タイトル画面からもう一度挑戦できます！'
+  ];
+  state.endingData = { title, text: endText, rewards: endRewards, icon: isWin ? '🎓' : '📚' };
+
+  // 終了後にリロードして続きから再開されないようセーブを消去
+  clearSavedGame();
+
+  showEventModal(title, endText, endRewards, isWin ? '🎓' : '📚');
 
   setDialog('担任の先生', `3年間の高校生活、本当によく頑張ったな！君のこれからの人生に大いなる幸あれ！`);
+}
+
+// 終了後に何らかの操作が行われた場合、エンディング画面を再表示する
+function showGameOverAgain() {
+  const d = state.endingData;
+  if (d) {
+    showEventModal(d.title, d.text, d.rewards, d.icon);
+  } else {
+    showEventModal('🎓 高校生活終了', '高校3年間の受験生活は終了しました。タイトル画面から新しい代を始めよう！', [], '🎓');
+  }
 }
 
 // 汎用イベントモーダル
@@ -3471,7 +3521,10 @@ function showEventModal(title, text, rewards = [], icon = '🎉', onConfirm = nu
   });
 
   const modalFooter = document.getElementById('event-modal-footer');
-  if (state.totalTurn <= state.maxTurns) {
+  if (state && state.gameOver) {
+    // ゲーム終了後はタイトルへ戻るボタンのみ（OKで閉じて続行できないようにする）
+    modalFooter.innerHTML = `<button class="btn-confirm" onclick="returnToTitle()">タイトル画面に戻る</button>`;
+  } else {
     modalFooter.innerHTML = `<button class="btn-confirm" onclick="closeEventModal()">OK</button>`;
   }
 
