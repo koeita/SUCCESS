@@ -3421,9 +3421,9 @@ function advanceExamBattle() {
     const sciLabel = spec ? spec.name : (isBunkeiBattle ? '社会2科目' : '理科2科目');
     const fukuLabel = isBunkeiBattle ? '理科基礎' : '社会';
     questions = [
-      { name: '第1問：外国語・英語（R 100点 ＋ L 100点）', subj: 'eng', max: 200 },
-      { name: '第2問：数学（数I・A 100点 ＋ 数II・B・C 100点）', subj: 'math', max: 200 },
-      { name: '第3問：国語（現代文 110点 ＋ 古文漢文 90点）', subj: 'jp', max: 200 },
+      { name: '第1問：外国語・英語（R 100点 ＋ L 100点）', subj: 'eng', max: 200, isEnglishTwo: true },
+      { name: '第2問：数学（数I・A 100点 ＋ 数II・B・C 100点）', subj: 'math', max: 200, isMathTwo: true },
+      { name: '第3問：国語（現代文 110点 ＋ 古文漢文 90点）', subj: 'jp', max: 200, isJpTwo: true },
       { name: `第4問：専門選択2科目【${sciLabel}】（各100点）`, subj: 'sci', max: 200, isTwoSubjects: true },
       { name: `第5問：新課程！【情報I 100点 ＋ ${fukuLabel} 100点】`, subj: 'sub_extra', max: 200, isExtraTwo: true }
     ];
@@ -3513,30 +3513,43 @@ function advanceExamBattle() {
   document.getElementById('battle-current-score').textContent = `獲得得点: ${battleState.score} / ${maxScore}`;
   triggerParticles(null, null, 12, 'star');
 
-  // 専門2科目の個別採点ログ出力
-  if (q.isTwoSubjects && state.specialtySubjects) {
+  // 大問得点の2科目分割ヘルパー（絶対に各大問・科目の満点を超えないように制限）
+  function splitExamScore(total, max1, max2, baseRatio = 0.5, maxDiff = 8) {
+    const diff = Math.floor((Math.random() - 0.5) * 2 * maxDiff);
+    let s1 = Math.round(total * baseRatio) + diff;
+    const minS1 = Math.max(0, total - max2);
+    const maxS1 = Math.min(max1, total);
+    s1 = Math.max(minS1, Math.min(maxS1, s1));
+    const s2 = total - s1;
+    return [s1, s2];
+  }
+
+  term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+
+  // 科目別・内訳ログ出力
+  if (q.isEnglishTwo) {
+    const [sR, sL] = splitExamScore(gained, 100, 100, 0.5, 6);
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【リーディング】 ${sR}点 / 100点</div><div class="log-line sub-detail">　└ 【リスニング】 ${sL}点 / 100点</div>`;
+  } else if (q.isMathTwo) {
+    const [s1A, s2BC] = splitExamScore(gained, 100, 100, 0.5, 6);
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【数学I・A】 ${s1A}点 / 100点</div><div class="log-line sub-detail">　└ 【数学II・B・C】 ${s2BC}点 / 100点</div>`;
+  } else if (q.isJpTwo) {
+    const [sGen, sKo] = splitExamScore(gained, 110, 90, 110 / 200, 6);
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【現代文】 ${sGen}点 / 110点</div><div class="log-line sub-detail">　└ 【古文・漢文】 ${sKo}点 / 90点</div>`;
+  } else if (q.isTwoSubjects) {
     const spec = state.specialtySubjects;
-    const diff = Math.floor((Math.random() - 0.5) * 8);
-    const s1 = Math.max(15, Math.min(100, Math.round(gained * 0.5) + diff));
-    const s2 = gained - s1;
-    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
-    term.innerHTML += `<div class="log-line sub-detail">　├ 【${spec.sub1}】 ${s1}点 / 100点</div><div class="log-line sub-detail">　└ 【${spec.sub2}】 ${s2}点 / 100点</div>`;
+    const name1 = spec ? spec.sub1 : (isBunkeiBattle ? '社会第1解答科目' : '理科第1解答科目');
+    const name2 = spec ? spec.sub2 : (isBunkeiBattle ? '社会第2解答科目' : '理科第2解答科目');
+    const [s1, s2] = splitExamScore(gained, 100, 100, 0.5, 8);
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【${name1}】 ${s1}点 / 100点</div><div class="log-line sub-detail">　└ 【${name2}】 ${s2}点 / 100点</div>`;
   } else if (q.isExtraTwo) {
     const fukuName = state.course === '文系' ? '理科基礎' : '社会';
-    const diff = Math.floor((Math.random() - 0.5) * 8);
-    const sInfo = Math.max(15, Math.min(100, Math.round(gained * 0.5) + diff));
-    const sFuku = gained - sInfo;
-    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+    const [sInfo, sFuku] = splitExamScore(gained, 100, 100, 0.5, 8);
     term.innerHTML += `<div class="log-line sub-detail">　├ 【情報I】 ${sInfo}点 / 100点</div><div class="log-line sub-detail">　└ 【${fukuName}】 ${sFuku}点 / 100点</div>`;
   } else if (q.isSecondaryTwo && state.specialtySubjects) {
     const spec = state.specialtySubjects;
-    const diff = Math.floor((Math.random() - 0.5) * 4);
-    const s1 = Math.max(5, Math.min(50, Math.round(gained * 0.5) + diff));
-    const s2 = gained - s1;
-    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+    const [s1, s2] = splitExamScore(gained, 50, 50, 0.5, 4);
     term.innerHTML += `<div class="log-line sub-detail">　├ 【${spec.sub1}】 ${s1}点 / 50点</div><div class="log-line sub-detail">　└ 【${spec.sub2}】 ${s2}点 / 50点</div>`;
-  } else {
-    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
   }
 
   term.scrollTop = term.scrollHeight;
