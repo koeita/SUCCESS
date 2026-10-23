@@ -398,6 +398,9 @@ function createInitialState(playerName = '合格太郎') {
 
     course: '未定',
     club: '未定',
+    specialtySubjects: null, // 専門科目組み合わせ（例: { sub1: '物理', sub2: '化学', name: '物理・化学' }）
+    subExtraScore: 35,       // 情報I・副教科（理系社会/文系理科基礎）の共テ対策度（0〜100）
+    kyotsuPeriodActive: false, // 高3 11月以降の共通テスト直前対策期間フラグ
     targetUniv: null,
     subUniv: null,
     subUnivPassed: false,
@@ -710,6 +713,9 @@ function getSubjectDisplayName(key) {
   if (key === 'math') return '数学';
   if (key === 'jp') return '国語';
   if (key === 'sci') {
+    if (state.specialtySubjects) {
+      return `${state.specialtySubjects.category}（${state.specialtySubjects.name}）`;
+    }
     if (state.course === '文系') return '社会';
     if (state.course === '理系') return '理科';
     return '理社';
@@ -1175,12 +1181,16 @@ function renderUI() {
     }
   }
 
-  const sciLabel = state.course === '理系' ? '理科' : (state.course === '文系' ? '社会' : '理社');
-  document.getElementById('subj-name-sci').textContent = sciLabel;
+  let sciLabel = state.course === '理系' ? '理科' : (state.course === '文系' ? '社会' : '理社');
+  let sciSubtext = '';
+  if (state.specialtySubjects) {
+    sciSubtext = `(${state.specialtySubjects.name})`;
+  }
+  document.getElementById('subj-name-sci').textContent = sciSubtext ? `${sciLabel} ${sciSubtext}` : sciLabel;
   const studySciLabel = document.getElementById('study-name-sci');
-  if (studySciLabel) studySciLabel.textContent = `${sciLabel}の集中学習`;
+  if (studySciLabel) studySciLabel.textContent = sciSubtext ? `${sciLabel}（${state.specialtySubjects.name}）の集中学習` : `${sciLabel}の集中学習`;
   const studySciDesc = document.getElementById('study-desc-sci');
-  if (studySciDesc) studySciDesc.textContent = `${sciLabel}の経験値大量獲得 (体力-15 / ストレス+7)`;
+  if (studySciDesc) studySciDesc.textContent = sciSubtext ? `${state.specialtySubjects.name}の経験値大量獲得 (体力-15 / ストレス+7)` : `${sciLabel}の経験値大量獲得 (体力-15 / ストレス+7)`;
   const studySciIcon = document.getElementById('study-icon-sci');
   if (studySciIcon) studySciIcon.textContent = state.course === '文系' ? '📜' : '🔬';
 
@@ -1209,6 +1219,24 @@ function renderUI() {
   renderTraitsDetailTab();
   renderRelationsGrid();
   renderHistoryList();
+
+  // 共通テスト直前対策期間（高3 11月〜1月2週）限定ボタン表示制御
+  const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
+  const extraBtn = document.getElementById('study-btn-kyotsu-extra');
+  if (extraBtn) {
+    if (isKyotsuPeriod) {
+      extraBtn.style.display = 'flex';
+      const isBunkei = state.course === '文系';
+      const subName = isBunkei ? '理科基礎' : '社会';
+      const nameEl = document.getElementById('study-name-kyotsu-extra');
+      const descEl = document.getElementById('study-desc-kyotsu-extra');
+      if (nameEl) nameEl.textContent = `💻 情報I・${subName} マーク演習 (現在: ${Math.round(state.subExtraScore || 35)}点)`;
+      if (descEl) descEl.textContent = `共テ200点枠（情報I＋${subName}）を集中的に詰め込む (体力-14 / ストレス+6)`;
+    } else {
+      extraBtn.style.display = 'none';
+    }
+  }
+
   autoSaveGame();
 }
 
@@ -1465,7 +1493,27 @@ function addExpToSubject(subjectKey, amount) {
 
 function openStudyMenu() {
   playSound('click');
+  renderStudyMenu();
   document.getElementById('study-modal').classList.add('active');
+}
+
+function renderStudyMenu() {
+  if (!state) return;
+  const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
+  const extraBtn = document.getElementById('study-btn-kyotsu-extra');
+  if (extraBtn) {
+    if (isKyotsuPeriod) {
+      extraBtn.style.display = 'flex';
+      const isBunkei = state.course === '文系';
+      const subName = isBunkei ? '理科基礎' : '社会';
+      const nameEl = document.getElementById('study-name-kyotsu-extra');
+      const descEl = document.getElementById('study-desc-kyotsu-extra');
+      if (nameEl) nameEl.textContent = `💻 情報I・${subName} マーク演習 (現在: ${Math.round(state.subExtraScore || 35)}点)`;
+      if (descEl) descEl.textContent = `共テ200点枠（情報I＋${subName}）を集中的に詰め込む (体力-14 / ストレス+6)`;
+    } else {
+      extraBtn.style.display = 'none';
+    }
+  }
 }
 function closeStudyMenu() {
   document.getElementById('study-modal').classList.remove('active');
@@ -1497,6 +1545,7 @@ function executeStudy(subject) {
   if (subject === 'math') { stamCost = 18; stressCost = 9; }
   if (subject === 'jp') { stamCost = 12; stressCost = 5; }
   if (subject === 'all') { stamCost = 22; stressCost = 10; }
+  if (subject === 'sub_extra') { stamCost = 14; stressCost = 6; }
 
   if (state.club === '運動部') stamCost += 3;
 
@@ -1565,7 +1614,15 @@ function executeStudy(subject) {
     let anyLevelUp = false;
     const isBunkei = state.course === '文系';
 
-    if (subject === 'all') {
+    if (subject === 'sub_extra') {
+      const isBunkeiSub = state.course === '文系';
+      const extraName = isBunkeiSub ? '情報I・理科基礎' : '情報I・社会';
+      const gained = Math.round(14 * motMulti * zoneBonus);
+      state.subExtraScore = Math.min(100, (state.subExtraScore || 35) + gained);
+      rewardLines.push(`共テ副教科対策値: +${gained} pt 獲得！（現在: ${Math.round(state.subExtraScore)} / 100）`);
+      showFloatingText(`${extraName} +${gained} pt`, null, null, 'exp');
+      setDialog('担任の先生', `よし！${extraName}のマーク演習を着実にこなしたな！この調子で本番200点満点を狙おう！`);
+    } else if (subject === 'all') {
       const subjs = ['eng', 'math', 'jp', 'sci'];
       const leveledUpSubjs = [];
       subjs.forEach(s => {
@@ -2213,8 +2270,33 @@ function checkScheduledEvents() {
     return;
   }
 
-  if (w === 2 && ((y === 2 && (m === 6 || m === 11)) || (y === 3 && (m === 8 || m === 11)))) {
-    enqueueModal(() => runMockExam());
+  // 高3 11月1週：共通テスト直前対策期間スタート告知
+  if (y === 3 && m === 11 && w === 1 && !state.kyotsuPeriodActive) {
+    state.kyotsuPeriodActive = true;
+    enqueueModal(() => {
+      showEventModal(
+        '🔥 共通テスト直前対策期間 スタート！',
+        'いよいよ11月！大学入学共通テスト本番まで残り2ヶ月半となった！\n\nここからは新課程共通テストの専用科目【情報I】と、副教科（理系社会 / 文系の理科基礎）の集中対策期間が解禁！\n勉強メニューの「💻 情報I・副教科マーク演習」を活用して、200点分の得点源をがっちり確保しよう！',
+        ['勉強メニューに「情報I・副教科マーク演習」が解放！', '共テ200点枠を抜け目なく鍛えて足切りを突破せよ！'],
+        '💻',
+        () => renderUI()
+      );
+      setDialog('担任の先生', '11月からは共通テスト対策のギアを一段上げよう！情報Iと副教科を抜かりなく仕上げておくことが安全圏への鍵だ！');
+    });
+    return;
+  }
+
+  // 模試エントリー判定（高1・高2: 年2〜3回、高3: 4月, 8月, 11月, 12月）
+  const isMockWeek = (
+    (y === 1 && w === 2 && (m === 6 || m === 11 || m === 1)) ||
+    (y === 2 && w === 2 && (m === 6 || m === 11 || m === 2)) ||
+    (y === 3 && w === 2 && (m === 4 || m === 8 || m === 11 || m === 12))
+  );
+
+  const mockKey = `mock_done_${y}_${m}_${w}`;
+  if (isMockWeek && !state[mockKey]) {
+    state[mockKey] = true;
+    enqueueModal(() => triggerMockEntry(y, m, w));
     return;
   }
 
@@ -2316,7 +2398,7 @@ function triggerClubChoice() {
 function triggerCourseChoice() {
   showChoiceModal(
     '⚖️ 文理選択の決断',
-    '高1の秋。大学入試の基本方針を決める時期だ。',
+    '高1の秋。大学入試の基本方針を決める時期だ。文理を選択後、学習する専門科目の組み合わせを決定します。',
     [
       {
         title: '文系コース（国語・英語・社会重視）',
@@ -2329,8 +2411,7 @@ function triggerCourseChoice() {
             state.traits = state.traits.map(t => t === 'math_spark' ? 'humanities_spark' : t);
             showFloatingText('金特が【人文の閃き】へ変化！', null, null, 'heal');
           }
-          setDialog('進路指導', '文系だな！現代文の論理力と英語・社会の記述を鍛えよう！');
-          renderUI();
+          triggerSpecialtySubjectChoice('文系');
         }
       },
       {
@@ -2344,13 +2425,69 @@ function triggerCourseChoice() {
             state.traits = state.traits.map(t => t === 'humanities_spark' ? 'math_spark' : t);
             showFloatingText('金特が【数理の閃き】へ変化！', null, null, 'heal');
           }
-          setDialog('進路指導', '理系だな！数学の思考力と理科の論証力が鍵だ！');
-          renderUI();
+          triggerSpecialtySubjectChoice('理系');
         }
       }
     ],
     '🧭'
   );
+}
+
+function triggerSpecialtySubjectChoice(course) {
+  if (course === '理系') {
+    showChoiceModal(
+      '🔬 理科 専門科目の組み合わせ選択',
+      '高校で履修・受験する理科の専門科目を選択しよう！\n（普段の学習は「理科」としてまとめて行い、入試や模試で各科目の実力が発揮されます）',
+      [
+        {
+          title: '🔬 物理 ＋ 化学 （理工・工学・医進 王道型）',
+          subtext: '難関国公立理系・早慶理工の標準型。数理的論理思考力を最大限に活かせる！',
+          action: () => setSpecialtySubjects('理科', '物理', '化学', '物理・化学')
+        },
+        {
+          title: '🧪 化学 ＋ 生物 （農・薬・バイオ・医療系型）',
+          subtext: '生命科学・薬学部志望に最適。実験観察と有機化学の深い理解を深める！',
+          action: () => setSpecialtySubjects('理科', '化学', '生物', '化学・生物')
+        },
+        {
+          title: '🔭 物理 ＋ 生物 （先端科学・学際総合型）',
+          subtext: '物理の数理モデルと生物のシステム論を横断するユニークな組み合わせ！',
+          action: () => setSpecialtySubjects('理科', '物理', '生物', '物理・生物')
+        }
+      ],
+      '🔬'
+    );
+  } else {
+    showChoiceModal(
+      '📜 地歴・公民 専門科目の組み合わせ選択',
+      '高校で履修・受験する地歴・公民の科目を選択しよう！\n（普段の学習は「社会」としてまとめて行い、入試や模試で各科目の実力が発揮されます）',
+      [
+        {
+          title: '📜 日本史 ＋ 政治経済 （私大難関・国公立標準型）',
+          subtext: '早慶・MARCH文系から国公立まで幅広く対応する鉄板の組み合わせ！',
+          action: () => setSpecialtySubjects('社会', '日本史', '政治経済', '日本史・政経')
+        },
+        {
+          title: '🌍 世界史 ＋ 地理 （国際・法・グローバル型）',
+          subtext: '地球規模の歴史展開と地誌・空間認知を結びつける国際志向の選択！',
+          action: () => setSpecialtySubjects('社会', '世界史', '地理', '世界史・地理')
+        },
+        {
+          title: '📖 日本史 ＋ 世界史 （最難関国公立文系 二次特化型）',
+          subtext: '東大文系・京大文学部など、地歴2科目を課す難関二次試験専用の本格派！',
+          action: () => setSpecialtySubjects('社会', '日本史', '世界史', '日本史・世界史')
+        }
+      ],
+      '📜'
+    );
+  }
+}
+
+function setSpecialtySubjects(category, sub1, sub2, name) {
+  state.specialtySubjects = { category, sub1, sub2, name };
+  playSound('success');
+  setDialog('進路指導', `よし、【${state.course}】の専門科目は【${name}】に決定したな！日々の勉強で実力を磨いていこう！`);
+  renderUI();
 }
 
 function triggerTargetUnivChoice() {
@@ -2918,8 +3055,79 @@ function runSchoolExam() {
   renderUI();
 }
 
-function runMockExam() {
+function triggerMockEntry(y, m, w) {
+  const targetUnivName = state.targetUniv ? state.targetUniv.name : '第1志望大学';
+  let kanName = '難関大学 突破オープン模試';
+  if (state.targetUniv) {
+    if (state.targetUniv.id.includes('todai')) kanName = '東大入試実戦模試';
+    else if (state.targetUniv.id.includes('kyodai')) kanName = '京大入試オープン模試';
+    else if (state.targetUniv.id.includes('waseda')) kanName = '早大入試プレ模試';
+    else if (state.targetUniv.id.includes('keio')) kanName = '慶大入試プレ模試';
+    else if (state.targetUniv.type === '国公立') kanName = `${state.targetUniv.shortName || '難関国公立'} 突破オープン模試`;
+    else kanName = `${state.targetUniv.shortName || '有名私大'} 突破プレ模試`;
+  }
+
+  const options = [];
+
+  // 高3の8月・11月は「志望校冠模試」が主役！
+  if (y === 3 && (m === 8 || m === 11)) {
+    options.push({
+      title: `🏛️ 【${kanName}】を受験する！`,
+      subtext: `志望校【${targetUnivName}】の出題形式・配点を完全模倣！A/B判定で特能【本番◯】や自信を獲得！（費用無料 / 体力-28）`,
+      action: () => executeMockExam('kan', kanName)
+    });
+  }
+
+  // 共通テスト型マーク模試
+  const markName = y === 3 && m === 12 ? '全統共通テストプレ模試（直前ファイナル）' : (y === 3 ? '全統共通テスト模試' : `第${m === 6 ? 1 : (m === 11 ? 2 : 3)}回 マーク模試`);
+  options.push({
+    title: `📊 【${markName}】を受験する`,
+    subtext: `新課程1000点満点換算！全教科の基礎バランス・共テ足切り判定を測定。（費用無料 / 体力-22）`,
+    action: () => executeMockExam('mark', markName)
+  });
+
+  // 記述模試（高1〜高3）
+  if (!(y === 3 && m === 12)) {
+    const descName = y === 3 ? '全統記述模試（二次・私大実戦）' : `第${m === 6 ? 1 : 2}回 学力記述模試`;
+    options.push({
+      title: `📝 【${descName}】を受験する`,
+      subtext: `論述・記述形式の難問演習！二次試験の記述力を鍛え、主要教科の経験値特大。（費用無料 / 体力-25）`,
+      action: () => executeMockExam('desc', descName)
+    });
+  }
+
+  // 見送り選択肢
+  options.push({
+    title: '📖 今回は模試を見送り、自習・休養に専念する',
+    subtext: '体力と時間を温存し、自分のペースで苦手分野の勉強や体調管理を行います。（費用¥0 / 体力消費なし）',
+    action: () => {
+      playSound('click');
+      showEventModal(
+        '📖 模試見送り・自習期間',
+        '今回は模試の受験を見送り、自分の課題に合わせた弱点克服学習と体調管理に専念した！',
+        ['体力消費なし', 'この週の通常行動（勉強・休養・お出かけ）を行えます'],
+        '📖'
+      );
+      setDialog(state.playerName, '模試の時期だけど、今は基礎の穴埋めを優先しよう！自分のペースを大切にするぞ。');
+      renderUI();
+    }
+  });
+
+  playSound('click');
+  showChoiceModal(
+    `📑 ${y}年生 ${m}月 模試エントリー選択！`,
+    `大手予備校の模試シーズンがやってきた！\n自分の志望校戦略に合わせて、受験する模試を選択しよう！（学校一括申込のため受験料は無料です）`,
+    options,
+    '📊'
+  );
+}
+
+function executeMockExam(mockType, mockTitle) {
   playSound('success');
+  let stamCost = mockType === 'kan' ? 28 : (mockType === 'desc' ? 25 : 22);
+  state.stamina = Math.max(0, state.stamina - stamCost);
+  state.stress = Math.min(100, state.stress + 8);
+
   let totalScore = state.subjects.eng.score + state.subjects.math.score + state.subjects.jp.score + state.subjects.sci.score;
   let avgAcademic = totalScore / 4;
 
@@ -2932,14 +3140,14 @@ function runMockExam() {
   if (state.traits.includes('strong_exam')) traitBonus += 3.0;
   if (state.traits.includes('weak_exam')) traitBonus -= 3.0;
 
-  // 当日のブレ (-0.8 ~ +0.8)
+  // 当日のブレ
   let randomJitter = (Math.random() - 0.5) * 1.6;
-
   const totalBonus = motBonus + traitBonus + randomJitter;
+
   let generalDev = calcDeviation(avgAcademic, totalBonus);
   let dev = state.targetUniv ? calcTargetDev(state.targetUniv, totalBonus) : generalDev;
-
   let targetBorder = state.targetUniv ? state.targetUniv.border : 58;
+
   let diff = dev - targetBorder;
   let judge = 'E';
   let probText = '合格可能性 20%未満';
@@ -2948,39 +3156,74 @@ function runMockExam() {
   else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
   else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
 
+  // 共通テスト型マーク模試なら 1000点満点換算得点を算出
+  let kyotsuScoreEst = Math.min(1000, Math.round((generalDev / 75) * 850 + (state.subExtraScore || 35) * 1.5 + (Math.random() - 0.5) * 20));
+  let kyotsuRateEst = Math.round((kyotsuScoreEst / 1000) * 100);
+
   const targetUnivName = state.targetUniv ? state.targetUniv.name : '志望大学';
-  state.history.unshift(`${state.year}年生${state.month}月 全国模試: 【${judge}判定】 (志望学部傾斜 ${dev} / 総合 ${generalDev})`);
+  state.history.unshift(`${state.year}年${state.month}月 ${mockTitle}: 【${judge}判定】 (傾斜偏差値 ${dev} / 総合 ${generalDev})`);
 
   let traitMsg = '';
-  if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.4) {
+  if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.5) {
     state.traits.push('strong_exam');
-    traitMsg = '✨ 特能閃き！大舞台での自信から【本番に強い】を体得した！';
+    traitMsg = '✨ 特能閃き！大舞台での好結果から【本番に強い】を体得した！';
   }
 
-  // 模試の復習ボーナス（基本+20pt、復習上手持ちなら特大+35pt）
-  const reviewPts = state.traits.includes('review_master') ? 35 : 20;
-  ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, reviewPts));
-  const reviewMsg = state.traits.includes('review_master')
-    ? '【復習上手】発動！模試の徹底解き直しで全教科経験値 +35 pt！'
-    : '模試の解き直し復習完了！全教科経験値 +20 pt！';
+  // 模試ごとの復習ボーナス
+  const isMaster = state.traits.includes('review_master');
+  let reviewMsg = '';
+  if (mockType === 'desc') {
+    // 記述模試: 主要教科（理系なら数理、文系なら英国社）に特大ボーナス
+    const pts = isMaster ? 45 : 30;
+    if (state.course === '理系') {
+      addExpToSubject('math', pts);
+      addExpToSubject('sci', pts);
+      addExpToSubject('eng', Math.round(pts * 0.6));
+      addExpToSubject('jp', Math.round(pts * 0.4));
+    } else {
+      addExpToSubject('eng', pts);
+      addExpToSubject('jp', pts);
+      addExpToSubject('sci', pts);
+      addExpToSubject('math', Math.round(pts * 0.4));
+    }
+    reviewMsg = `記述模試徹底復習！二次主要教科 経験値 +${pts} pt 獲得！`;
+  } else if (mockType === 'kan') {
+    // 冠模試: 全教科 + 志望校対策特大ボーナス
+    const pts = isMaster ? 45 : 32;
+    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, pts));
+    reviewMsg = `冠模試解き直し完了！全教科 経験値 +${pts} pt ＆ 志望校適性大幅UP！`;
+  } else {
+    // マーク模試: 全教科均等
+    const pts = isMaster ? 35 : 20;
+    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, pts));
+    reviewMsg = `マーク模試解き直し完了！全教科 経験値 +${pts} pt 獲得！`;
+  }
 
-  showEventModal(
-    '📊 全国統一マーク模試 帳票返却！',
-    `第1志望【${targetUnivName}】の合否判定が返却された！\n\n【判定結果】: 【 ${judge} 判定 】\n志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）\n全国総合偏差値: ${generalDev} （全科目均等）\n${probText}`,
-    [
-      `判定: ${judge}判定 (${probText})`,
-      `志望学部 傾斜偏差値: ${dev} (目標ボーダー: ${targetBorder})`,
-      `全教科総合偏差値: ${generalDev} (平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
-      reviewMsg,
-      judge === 'A' || judge === 'B' ? 'やる気 絶好調！！' : 'ここからの追い上げが勝負！',
-      traitMsg
-    ].filter(Boolean),
-    '🎯'
-  );
+  let rewards = [
+    `判定: 【 ${judge} 判定 】 (${probText})`,
+    `志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）`,
+    mockType === 'mark' ? `共テ1000点換算: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : `全国総合偏差値: ${generalDev}`,
+    reviewMsg,
+    judge === 'A' || judge === 'B' ? '好判定により やる気 絶好調！！' : 'ここからの弱点補強が合否を分ける！',
+    traitMsg
+  ].filter(Boolean);
 
   if (judge === 'A' || judge === 'B') state.motivation = 4;
-  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。目標の${targetUnivName}(ボーダー${targetBorder})に向けて弱点科目を重点補強しましょう！`);
+
+  showEventModal(
+    `📊 【${mockTitle}】 帳票返却！`,
+    `模試の成績表が返却された！\n第1志望【${targetUnivName}】の判定結果は……【 ${judge} 判定 】！\n\n（体力 -${stamCost} / ストレス +8%）`,
+    rewards,
+    mockType === 'kan' ? '🏛️' : (mockType === 'desc' ? '📝' : '📊'),
+    () => advanceTurn()
+  );
+
+  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。模試の復習を徹底して、次のステップへ繋げましょう！`);
   renderUI();
+}
+
+function runMockExam() {
+  triggerMockEntry(state.year, state.month, state.week);
 }
 
 function runRandomFlavorEvent() {
@@ -3047,8 +3290,8 @@ function startExamBattle(type) {
   let maxSteps = 5;
 
   if (isKyotsu) {
-    title = '🔥 大学入学共通テスト 本番！';
-    maxScore = 500;
+    title = '🔥 大学入学共通テスト 本番！（新課程1000点満点）';
+    maxScore = 1000;
     maxSteps = 5;
   } else if (isSubExam) {
     const subName = state.subUniv ? state.subUniv.name : '私立併願大学';
@@ -3093,42 +3336,55 @@ function advanceExamBattle() {
   if (isSubExam) {
     if (isBunkeiBattle) {
       questions = [
-        { name: '第1問：長文総合読解・要約（英語）', subj: 'eng' },
-        { name: '第2問：現代文・古文・論述（国語）', subj: 'jp' },
-        { name: '第3問：歴史・公民・史料考察（社会）', subj: 'sci' }
+        { name: '第1問：長文総合読解・要約（英語）', subj: 'eng', max: 100 },
+        { name: '第2問：現代文・古文・論述（国語）', subj: 'jp', max: 100 },
+        { name: '第3問：歴史・公民・史料考察（社会）', subj: 'sci', max: 100 }
       ];
     } else {
       questions = [
-        { name: '第1問：科学技術英語・読解（英語）', subj: 'eng' },
-        { name: '第2問：微分積分・数列ベクトル（数学）', subj: 'math' },
-        { name: '第3問：物理／化学・総合考察（理科）', subj: 'sci' }
+        { name: '第1問：科学技術英語・読解（英語）', subj: 'eng', max: 100 },
+        { name: '第2問：微分積分・数列ベクトル（数学）', subj: 'math', max: 100 },
+        { name: '第3問：物理／化学・総合考察（理科）', subj: 'sci', max: 100 }
       ];
     }
   } else if (isKouki) {
     if (isBunkeiBattle) {
       questions = [
-        { name: '第1問：超長文読解・英文論述（英語）', subj: 'eng' },
-        { name: '第2問：多角的読解・総合小論文（国語）', subj: 'jp' },
-        { name: '第3問：歴史的思索・課題解決論述（社会）', subj: 'sci' }
+        { name: '第1問：超長文読解・英文論述（英語）', subj: 'eng', max: 100 },
+        { name: '第2問：多角的読解・総合小論文（国語）', subj: 'jp', max: 100 },
+        { name: '第3問：歴史的思索・課題解決論述（社会）', subj: 'sci', max: 100 }
       ];
     } else {
       questions = [
-        { name: '第1問：先端科学英語・専門読解（英語）', subj: 'eng' },
-        { name: '第2問：難関微積・証明総合問題（数学）', subj: 'math' },
-        { name: '第3問：物理／化学・考察実験総合（理科）', subj: 'sci' }
+        { name: '第1問：先端科学英語・専門読解（英語）', subj: 'eng', max: 100 },
+        { name: '第2問：難関微積・証明総合問題（数学）', subj: 'math', max: 100 },
+        { name: '第3問：物理／化学・考察実験総合（理科）', subj: 'sci', max: 100 }
       ];
     }
+  } else if (battleState.examType === 'kyotsu') {
+    const spec = state.specialtySubjects;
+    const sciLabel = spec ? spec.name : (isBunkeiBattle ? '社会2科目' : '理科2科目');
+    const fukuLabel = isBunkeiBattle ? '理科基礎' : '社会';
+    questions = [
+      { name: '第1問：外国語・英語（R 100点 ＋ L 100点）', subj: 'eng', max: 200 },
+      { name: '第2問：数学（数I・A 100点 ＋ 数II・B・C 100点）', subj: 'math', max: 200 },
+      { name: '第3問：国語（現代文 110点 ＋ 古文漢文 90点）', subj: 'jp', max: 200 },
+      { name: `第4問：専門選択2科目【${sciLabel}】（各100点）`, subj: 'sci', max: 200, isTwoSubjects: true },
+      { name: `第5問：新課程！【情報I 100点 ＋ ${fukuLabel} 100点】`, subj: 'sub_extra', max: 200, isExtraTwo: true }
+    ];
   } else {
-    const sciQName = isBunkeiBattle ? '第4問：史料読解・論述（社会）' : (isRikeiBattle ? '第4問：実験考察・計算（理科）' : '第4問：実験・論述（理社）');
+    // 国公立二次試験（前期日程）/ 第1志望本番
+    const spec = state.specialtySubjects;
+    const sciName = spec ? `専門【${spec.name}】（2科目別採点）` : (isBunkeiBattle ? '史料読解・論述（社会）' : '実験考察・計算（理科）');
     const q5Subj = isBunkeiBattle ? 'jp' : 'math';
     const q5Name = isBunkeiBattle ? '第5問：最難関・総合論述問題（国語）' : '第5問：最難関・総合記述問題（数学）';
 
     questions = [
-      { name: '第1問：長文読解（英語）', subj: 'eng' },
-      { name: '第2問：微積・数列（数学）', subj: 'math' },
-      { name: '第3問：評論文・古文（国語）', subj: 'jp' },
-      { name: sciQName, subj: 'sci' },
-      { name: q5Name, subj: q5Subj }
+      { name: '第1問：長文読解・英文和訳（英語）', subj: 'eng', max: 100 },
+      { name: '第2問：微積・数列ベクトル（数学）', subj: 'math', max: 100 },
+      { name: '第3問：現代文・古文漢文論述（国語）', subj: 'jp', max: 100 },
+      { name: `第4問：${sciName}`, subj: 'sci', max: 100, isSecondaryTwo: !!spec },
+      { name: q5Name, subj: q5Subj, max: 100 }
     ];
   }
 
@@ -3137,32 +3393,48 @@ function advanceExamBattle() {
   document.getElementById('exam-progress-fill').style.width = `${(step / maxSteps) * 100}%`;
 
   const term = document.getElementById('exam-log-terminal');
-  const baseScore = state.subjects[q.subj].score;
-  let gained = Math.round(baseScore * 1.2) + Math.floor(Math.random() * 15);
+  const isKyotsuBattle = battleState.examType === 'kyotsu';
+  const qMax = q.max || 100;
+
+  let baseScore = 50;
+  if (q.subj === 'sub_extra') {
+    baseScore = state.subExtraScore || 35;
+  } else if (state.subjects[q.subj]) {
+    baseScore = state.subjects[q.subj].score;
+  }
+
+  let gained = 0;
+  if (qMax === 200) {
+    // 共通テスト200点満点大問
+    gained = Math.round(baseScore * 2.1) + Math.floor(Math.random() * 20);
+  } else {
+    // 二次試験・個別試験100点満点大問
+    gained = Math.round(baseScore * 1.2) + Math.floor(Math.random() * 15);
+  }
 
   if (state.traits.includes('strong_exam')) {
-    gained += 10;
-    term.innerHTML += `<div class="log-line trait">【青特】「本番に強い」が発動！プレッシャーを味方につけた！</div>`;
+    const b = qMax === 200 ? 15 : 10;
+    gained += b;
+    term.innerHTML += `<div class="log-line trait">【青特】「本番に強い」が発動！プレッシャーを味方につけた！(+${b}点)</div>`;
   }
   if (state.traits.includes('math_spark') && (q.subj === 'math' || q.subj === 'sci')) {
-    // 基礎学力比例の閃きクリティカル（基礎得点×1.35倍 ＋ 最低保証8点）
-    const sparkBonus = Math.round(gained * 0.35) + 8;
+    const sparkBonus = Math.round(gained * 0.35) + (qMax === 200 ? 12 : 8);
     gained += sparkBonus;
-    term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」クリティカル発動！！培った思考力で難問を完全に解き明かした！(+${sparkBonus}点)</div>`;
+    term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」クリティカル発動！！難問を完全掌握！(+${sparkBonus}点)</div>`;
     triggerParticles(null, null, 25, 'gold');
     triggerScreenBounce();
   }
   if (state.traits.includes('humanities_spark') && (q.subj === 'jp' || q.subj === 'sci' || q.subj === 'eng')) {
-    // 基礎学力比例の閃きクリティカル（基礎得点×1.35倍 ＋ 最低保証8点）
-    const sparkBonus = Math.round(gained * 0.35) + 8;
+    const sparkBonus = Math.round(gained * 0.35) + (qMax === 200 ? 12 : 8);
     gained += sparkBonus;
-    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」クリティカル発動！！深い読解と論述力で難問を完全掌握！(+${sparkBonus}点)</div>`;
+    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」クリティカル発動！！深い論理と思考力！(+${sparkBonus}点)</div>`;
     triggerParticles(null, null, 25, 'gold');
     triggerScreenBounce();
   }
   if (state.traits.includes('lang_master') && (q.subj === 'eng' || q.subj === 'jp')) {
-    gained += 20;
-    term.innerHTML += `<div class="log-line trait">【金特】「言語の極意」が発動！！論理展開を完璧に掌握した！</div>`;
+    const b = qMax === 200 ? 25 : 20;
+    gained += b;
+    term.innerHTML += `<div class="log-line trait">【金特】「言語の極意」が発動！！論理展開を完璧に掌握！(+${b}点)</div>`;
     triggerParticles(null, null, 20, 'gold');
     triggerScreenBounce();
   }
@@ -3173,19 +3445,45 @@ function advanceExamBattle() {
       term.innerHTML += `<div class="log-line trait">🌸 あおいの「合格祈願お守り」が輝いた！計算ミスを寸前で自覚して書き直した！</div>`;
       triggerParticles(null, null, 16, 'star');
     } else {
-      gained -= 25;
-      term.innerHTML += `<div class="log-line fail">【赤特】「ケアレスミス癖」発動…！符号の書き間違いで部分点を落とした！</div>`;
+      const p = qMax === 200 ? 35 : 25;
+      gained -= p;
+      term.innerHTML += `<div class="log-line fail">【赤特】「ケアレスミス癖」発動…！符号の書き間違いで部分点を落とした！(-${p}点)</div>`;
       triggerScreenShake();
-      showFloatingText('-25点 痛恨のミス！', null, null, 'damage');
+      showFloatingText(`-${p}点 痛恨のミス！`, null, null, 'damage');
     }
   }
 
-  gained = Math.max(10, Math.min(100, gained));
+  gained = Math.max(Math.round(qMax * 0.15), Math.min(qMax, gained));
   battleState.score += gained;
   document.getElementById('battle-current-score').textContent = `獲得得点: ${battleState.score} / ${maxScore}`;
   triggerParticles(null, null, 12, 'star');
 
-  term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+  // 専門2科目の個別採点ログ出力
+  if (q.isTwoSubjects && state.specialtySubjects) {
+    const spec = state.specialtySubjects;
+    const diff = Math.floor((Math.random() - 0.5) * 8);
+    const s1 = Math.max(15, Math.min(100, Math.round(gained * 0.5) + diff));
+    const s2 = gained - s1;
+    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【${spec.sub1}】 ${s1}点 / 100点</div><div class="log-line sub-detail">　└ 【${spec.sub2}】 ${s2}点 / 100点</div>`;
+  } else if (q.isExtraTwo) {
+    const fukuName = state.course === '文系' ? '理科基礎' : '社会';
+    const diff = Math.floor((Math.random() - 0.5) * 8);
+    const sInfo = Math.max(15, Math.min(100, Math.round(gained * 0.5) + diff));
+    const sFuku = gained - sInfo;
+    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【情報I】 ${sInfo}点 / 100点</div><div class="log-line sub-detail">　└ 【${fukuName}】 ${sFuku}点 / 100点</div>`;
+  } else if (q.isSecondaryTwo && state.specialtySubjects) {
+    const spec = state.specialtySubjects;
+    const diff = Math.floor((Math.random() - 0.5) * 4);
+    const s1 = Math.max(5, Math.min(50, Math.round(gained * 0.5) + diff));
+    const s2 = gained - s1;
+    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+    term.innerHTML += `<div class="log-line sub-detail">　├ 【${spec.sub1}】 ${s1}点 / 50点</div><div class="log-line sub-detail">　└ 【${spec.sub2}】 ${s2}点 / 50点</div>`;
+  } else {
+    term.innerHTML += `<div class="log-line great">${q.name} ▶ 【+${gained}点】獲得！（合計: ${battleState.score}点）</div>`;
+  }
+
   term.scrollTop = term.scrollHeight;
 
   if (step >= maxSteps) {
@@ -3205,7 +3503,7 @@ function finishExamBattle() {
 
   if (isKyotsu) {
     state.kyotsuScore = battleState.score;
-    state.kyotsuRate = Math.round((battleState.score / 500) * 100);
+    state.kyotsuRate = Math.round((battleState.score / 1000) * 100);
 
     // 第1志望の共通テストリサーチ判定
     const target = state.targetUniv || UNIV_LIST[0];
@@ -3248,14 +3546,14 @@ function finishExamBattle() {
     }
 
     const summaryRewards = [
-      `共通テスト得点: ${state.kyotsuScore}点 / 500点（得点率: ${state.kyotsuRate}%）`,
+      `共通テスト得点: ${state.kyotsuScore}点 / 1000点（得点率: ${state.kyotsuRate}%）`,
       `第1志望【${target.name}】共テリサーチ判定: 【 ${researchRank}判定 】（${researchDesc}）`,
       subKyotsuMsg
     ];
 
     showEventModal(
       '📝 共通テスト終了！自己採点＆共テ利用結果',
-      `2日間の共通テストを戦い抜いた！\n獲得得点: 【 ${battleState.score} / 500 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
+      `2日間の共通テスト（新課程1000点満点）を戦い抜いた！\n獲得得点: 【 ${battleState.score} / 1000 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
       summaryRewards,
       state.subUnivKyotsuPass ? '🎉' : '🎯',
       () => advanceTurn()
