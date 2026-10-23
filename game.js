@@ -3160,23 +3160,43 @@ function executeMockExam(mockType, mockTitle) {
   let dev = state.targetUniv ? calcTargetDev(state.targetUniv, totalBonus) : generalDev;
   let targetBorder = state.targetUniv ? state.targetUniv.border : 58;
 
-  let diff = dev - targetBorder;
   let judge = 'E';
   let probText = '合格可能性 20%未満';
-  if (diff >= 2.0) { judge = 'A'; probText = '合格可能性 80%以上 (安全圏)'; }
-  else if (diff >= 0.0) { judge = 'B'; probText = '合格可能性 60%以上 (合格圏)'; }
-  else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
-  else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
+  if (state.targetUniv) {
+    let diff = dev - targetBorder;
+    if (diff >= 2.0) { judge = 'A'; probText = '合格可能性 80%以上 (安全圏)'; }
+    else if (diff >= 0.0) { judge = 'B'; probText = '合格可能性 60%以上 (合格圏)'; }
+    else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
+    else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
+  }
+
+  // 大学群別の合格可能性判定（志望校未定時の到達度診断用）
+  const getGroupJudge = (b) => {
+    const d = generalDev - b;
+    if (d >= 2.0) return 'A';
+    if (d >= 0.0) return 'B';
+    if (d >= -3.0) return 'C';
+    if (d >= -6.0) return 'D';
+    return 'E';
+  };
+  const judgeTop = getGroupJudge(72);   // 最難関（東大・京大・国公立医進）
+  const judgeHigh = getGroupJudge(64);  // 難関上位（早慶・旧帝大・上位国立）
+  const judgeUpper = getGroupJudge(56); // 上位校（MARCH・関関同立・上位国公立）
+  const judgeMid = getGroupJudge(48);   // 中堅校（日東駒専・産近甲龍・中堅国公立）
 
   // 共通テスト型マーク模試なら 1000点満点換算得点を算出
   let kyotsuScoreEst = Math.min(1000, Math.round((generalDev / 75) * 850 + (state.subExtraScore || 35) * 1.5 + (Math.random() - 0.5) * 20));
   let kyotsuRateEst = Math.round((kyotsuScoreEst / 1000) * 100);
 
-  const targetUnivName = state.targetUniv ? state.targetUniv.name : '志望大学';
-  state.history.unshift(`${state.year}年${state.month}月 ${mockTitle}: 【${judge}判定】 (傾斜偏差値 ${dev} / 総合 ${generalDev})`);
+  if (state.targetUniv) {
+    state.history.unshift(`${state.year}年${state.month}月 ${mockTitle}: 【${judge}判定】 (傾斜偏差値 ${dev} / 総合 ${generalDev})`);
+  } else {
+    state.history.unshift(`${state.year}年${state.month}月 ${mockTitle}: 全国総合偏差値 ${generalDev} (上位大: ${judgeHigh}判定 / MARCH圏: ${judgeUpper}判定)`);
+  }
 
   let traitMsg = '';
-  if ((judge === 'A' || judge === 'B') && !state.traits.includes('strong_exam') && Math.random() < 0.5) {
+  const isHighResult = state.targetUniv ? (judge === 'A' || judge === 'B') : (judgeUpper === 'A' || judgeHigh === 'B');
+  if (isHighResult && !state.traits.includes('strong_exam') && Math.random() < 0.5) {
     state.traits.push('strong_exam');
     traitMsg = '✨ 特能閃き！大舞台での好結果から【本番に強い】を体得した！';
   }
@@ -3211,26 +3231,49 @@ function executeMockExam(mockType, mockTitle) {
     reviewMsg = `マーク模試解き直し完了！全教科 経験値 +${pts} pt 獲得！`;
   }
 
-  let rewards = [
-    `判定: 【 ${judge} 判定 】 (${probText})`,
-    `志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）`,
-    mockType === 'mark' ? `共テ1000点換算: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : `全国総合偏差値: ${generalDev}`,
-    reviewMsg,
-    judge === 'A' || judge === 'B' ? '好判定により やる気 絶好調！！' : 'ここからの弱点補強が合否を分ける！',
-    traitMsg
-  ].filter(Boolean);
+  let modalDesc = '';
+  let rewards = [];
 
-  if (judge === 'A' || judge === 'B') state.motivation = 4;
+  if (state.targetUniv) {
+    modalDesc = `模試の成績表が返却された！\n第1志望【${state.targetUniv.name}】の判定結果は……【 ${judge} 判定 】！\n\n（体力 -${stamCost} / ストレス +8%）`;
+    rewards = [
+      `判定: 【 ${judge} 判定 】 (${probText})`,
+      `志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）`,
+      mockType === 'mark' ? `共テ1000点換算: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : `全国総合偏差値: ${generalDev}`,
+      reviewMsg,
+      judge === 'A' || judge === 'B' ? '好判定により やる気 絶好調！！' : 'ここからの弱点補強が合否を分ける！',
+      traitMsg
+    ].filter(Boolean);
+  } else {
+    modalDesc = `全国模試の成績表が返却された！\n志望校未定のため、全国総合偏差値と各大学群の合格到達度水準を診断！\n\n（体力 -${stamCost} / ストレス +8%）`;
+    rewards = [
+      `全国総合偏差値: ${generalDev} (4教科平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
+      mockType === 'mark' ? `共テ1000点換算得点: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : null,
+      `🏆 最難関(東大・京大・医進/目標72): 【 ${judgeTop} 判定 】`,
+      `🏛️ 難関上位(早慶・旧帝大・上位国立/目標64): 【 ${judgeHigh} 判定 】`,
+      `🎓 上位校(MARCH・関関同立・国公立/目標56): 【 ${judgeUpper} 判定 】`,
+      `🏫 中堅校(日東駒専・中堅国公立/目標48): 【 ${judgeMid} 判定 】`,
+      reviewMsg,
+      isHighResult ? '好成績により やる気 絶好調！！' : '日々の積み重ねで上位大学群を目指そう！',
+      traitMsg
+    ].filter(Boolean);
+  }
+
+  if (isHighResult) state.motivation = 4;
 
   showEventModal(
     `📊 【${mockTitle}】 帳票返却！`,
-    `模試の成績表が返却された！\n第1志望【${targetUnivName}】の判定結果は……【 ${judge} 判定 】！\n\n（体力 -${stamCost} / ストレス +8%）`,
+    modalDesc,
     rewards,
     mockType === 'kan' ? '🏛️' : (mockType === 'desc' ? '📝' : '📊'),
     () => advanceTurn()
   );
 
-  setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。模試の復習を徹底して、次のステップへ繋げましょう！`);
+  if (state.targetUniv) {
+    setDialog('予備校アドバイザー', `現在の判定は【${judge}判定】(偏差値${dev})です。模試の復習を徹底して、目標の${state.targetUniv.name}(ボーダー${targetBorder})へ繋げましょう！`);
+  } else {
+    setDialog('予備校アドバイザー', `全国総合偏差値は【${generalDev}】です！難関上位大は【${judgeHigh}判定】、上位校・MARCH圏は【${judgeUpper}判定】と測定されました。この調子で基礎力を高めていきましょう！`);
+  }
   renderUI();
 }
 
