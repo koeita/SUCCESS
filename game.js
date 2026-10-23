@@ -456,8 +456,8 @@ const TRAITS_MASTER = [
   { id: 'review_master', name: '復習上手', desc: '模試やテストを受けた後の全科目経験値ボーナスUP', type: 'blue' },
 
   { id: 'miracle_pass', name: '逆転合格の奇跡', desc: '【金特】入試本番でE判定でも驚異的な底力を発揮する', type: 'gold' },
-  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数学・理科の難問で圧倒的な解法突破力を発揮する', type: 'gold' },
-  { id: 'humanities_spark', name: '人文の閃き', desc: '【金特】国語・社会の難問で圧倒的な読解・論述力を発揮する', type: 'gold' },
+  { id: 'math_spark', name: '数理の閃き', desc: '【金特】数理の学習経験値+25%！本番で学力比例の閃きクリティカル（得点×1.35倍）発動', type: 'gold' },
+  { id: 'humanities_spark', name: '人文の閃き', desc: '【金特】文系科目の学習経験値+25%！本番で学力比例の閃きクリティカル（得点×1.35倍）発動', type: 'gold' },
   { id: 'lang_master', name: '言語の極意', desc: '【金特】英語・国語の長文読解で無類の安定感を誇る', type: 'gold' },
 
   { id: 'careless_mistake', name: 'ケアレスミス癖', desc: '【赤特】模試や本番で30%の確率で失点する', cureMoney: 2000, type: 'red' },
@@ -1260,36 +1260,57 @@ function executeStudy(subject) {
     let baseExp = 18;
     if (state.traits.includes('night_owl')) baseExp *= 1.15;
 
+    // 学年進行ボーナス（高1: 1.0倍 基礎固め / 高2: 1.3倍 応用期 / 高3: 1.6倍 実戦演習・ラストスパート期）
+    let gradeBonus = 1.0;
+    if (state.year === 2) gradeBonus = 1.3;
+    if (state.year === 3) gradeBonus = 1.6;
+    baseExp *= gradeBonus;
+
     const isZone = Math.random() < 0.12;
     const zoneBonus = isZone ? 1.6 : 1.0;
 
     let rewardLines = [`体力 -${stamCost} / ストレス +${stressCost}%`];
     let anyLevelUp = false;
+    const isBunkei = state.course === '文系';
 
     if (subject === 'all') {
-      const pts = Math.round((baseExp * 0.7) * motMulti * zoneBonus);
       const subjs = ['eng', 'math', 'jp', 'sci'];
       subjs.forEach(s => {
+        let subjMult = 1.0;
+        if (state.traits.includes('math_spark') && (s === 'math' || s === 'sci')) subjMult *= 1.25;
+        if (state.traits.includes('humanities_spark') && (s === 'jp' || (isBunkei && s === 'sci') || s === 'eng')) subjMult *= 1.25;
+        const pts = Math.round((baseExp * 0.85) * motMulti * zoneBonus * subjMult);
         const up = addExpToSubject(s, pts);
         if (up > 0) anyLevelUp = true;
       });
-      rewardLines.push(`全科目経験値: 各 +${pts} pt 獲得！`);
-      showFloatingText(`全科目 +${pts} pt`, null, null, 'exp');
+      const avgPts = Math.round((baseExp * 0.85) * motMulti * zoneBonus);
+      const gradeNotice = state.year > 1 ? `（${state.year}年生効率UP）` : '';
+      rewardLines.push(`全科目経験値: 各 +${avgPts} pt 獲得！${gradeNotice}`);
+      showFloatingText(`全科目 +${avgPts} pt`, null, null, 'exp');
     } else {
       let mult = 1.0;
-      if (state.traits.includes('speed_reading') && (subject === 'eng' || subject === 'jp')) mult = 1.25;
-      if (state.club === '文化部' && (subject === 'eng' || subject === 'jp')) mult = 1.2;
+      if (state.traits.includes('speed_reading') && (subject === 'eng' || subject === 'jp')) mult *= 1.25;
+      if (state.club === '文化部' && (subject === 'eng' || subject === 'jp')) mult *= 1.2;
+
+      // 金特パッシブ: 該当教科の学習経験値 +25% UP
+      if (state.traits.includes('math_spark') && (subject === 'math' || subject === 'sci')) {
+        mult *= 1.25;
+      }
+      if (state.traits.includes('humanities_spark') && (subject === 'jp' || (isBunkei && subject === 'sci') || subject === 'eng')) {
+        mult *= 1.25;
+      }
 
       const gainedExp = Math.round(baseExp * motMulti * zoneBonus * mult);
       const levelUps = addExpToSubject(subject, gainedExp);
 
-      const subjNames = { eng: '英語', math: '数学', jp: '国語', sci: document.getElementById('subj-name-sci').textContent };
-      rewardLines.push(`${subjNames[subject]}経験値: +${gainedExp} pt 獲得！`);
-      showFloatingText(`${subjNames[subject]} +${gainedExp} pt`, null, null, 'exp');
+      const subjName = getSubjectDisplayName(subject);
+      const gradeNotice = state.year > 1 ? `（${state.year}年生効率UP）` : '';
+      rewardLines.push(`${subjName}経験値: +${gainedExp} pt 獲得！${gradeNotice}`);
+      showFloatingText(`${subjName} +${gainedExp} pt`, null, null, 'exp');
 
       if (levelUps > 0) {
         anyLevelUp = true;
-        rewardLines.push(`🎉 【${subjNames[subject]} 偏差値 UP! ➔ ${state.subjects[subject].score}】`);
+        rewardLines.push(`🎉 【${subjName} 偏差値 UP! ➔ ${state.subjects[subject].score}】`);
       }
     }
 
@@ -2153,31 +2174,34 @@ function runSchoolExam() {
   let rewardText = '';
   let schoolRank = '';
 
+  let examReviewExp = 18;
   if (avg >= 75) {
     schoolRank = '学年 5位以内 (上位 2%)';
     rankStr = '学年トップクラス！全校に名前が轟く秀才！';
     if (state.motivation < 4) state.motivation++;
     state.money += 1000;
-    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 18));
-    rewardText = '特別お小遣い +¥1,000 / 全教科経験値 +18pt';
+    examReviewExp = 35;
+    rewardText = '特別お小遣い +¥1,000 / 考査徹底復習: 全教科経験値 +35pt！';
   } else if (avg >= 60) {
     schoolRank = '学年 25位 (上位 12%)';
     rankStr = '成績優秀！先生や親から大きく褒められた！';
     if (state.motivation < 4) state.motivation++;
     state.money += 500;
-    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 15));
-    rewardText = '臨時お小遣い +¥500 / 全教科経験値 +15pt';
+    examReviewExp = 26;
+    rewardText = '臨時お小遣い +¥500 / 考査復習: 全教科経験値 +26pt！';
   } else if (avg >= 45) {
     schoolRank = '学年 95位 (平均レベル)';
     rankStr = '学年平均レベル。基礎はしっかり定着している。';
-    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 8));
-    rewardText = '全教科経験値 +8pt';
+    examReviewExp = 18;
+    rewardText = '考査復習: 全教科経験値 +18pt！';
   } else {
     schoolRank = '学年 178位 (下位 10%)';
     rankStr = '赤点ギリギリ…補習の危機！';
     if (state.motivation > 0) state.motivation--;
-    rewardText = 'やる気ダウン…';
+    examReviewExp = 12;
+    rewardText = 'やる気ダウン… / 追試復習: 全教科経験値 +12pt';
   }
+  ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, examReviewExp));
 
   state.history.unshift(`${state.year}年生${state.month}月 定期考査: 【${schoolRank}】(学力平均 ${avg}・学内偏差値 ${dev})`);
 
@@ -2228,9 +2252,12 @@ function runMockExam() {
     traitMsg = '✨ 特能閃き！大舞台での自信から【本番に強い】を体得した！';
   }
 
-  if (state.traits.includes('review_master')) {
-    ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, 20));
-  }
+  // 模試の復習ボーナス（基本+20pt、復習上手持ちなら特大+35pt）
+  const reviewPts = state.traits.includes('review_master') ? 35 : 20;
+  ['eng', 'math', 'jp', 'sci'].forEach(s => addExpToSubject(s, reviewPts));
+  const reviewMsg = state.traits.includes('review_master')
+    ? '【復習上手】発動！模試の徹底解き直しで全教科経験値 +35 pt！'
+    : '模試の解き直し復習完了！全教科経験値 +20 pt！';
 
   showEventModal(
     '📊 全国統一マーク模試 帳票返却！',
@@ -2238,6 +2265,7 @@ function runMockExam() {
     [
       `判定: ${judge}判定 (${probText})`,
       `総合偏差値: ${dev} (平均学力: ${Math.round(avgAcademic)}・${getRank(avgAcademic).rank}ランク)`,
+      reviewMsg,
       judge === 'A' || judge === 'B' ? 'やる気 絶好調！！' : 'ここからの追い上げが勝負！',
       traitMsg
     ].filter(Boolean),
@@ -2349,15 +2377,19 @@ function advanceExamBattle() {
     term.innerHTML += `<div class="log-line trait">【青特】「本番に強い」が発動！プレッシャーを味方につけた！</div>`;
   }
   if (state.traits.includes('math_spark') && (q.subj === 'math' || q.subj === 'sci')) {
-    gained += 25;
-    term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」が発動！！難問の突破口を瞬時に閃いた！</div>`;
-    triggerParticles(null, null, 20, 'gold');
+    // 基礎学力比例の閃きクリティカル（基礎得点×1.35倍 ＋ 最低保証8点）
+    const sparkBonus = Math.round(gained * 0.35) + 8;
+    gained += sparkBonus;
+    term.innerHTML += `<div class="log-line trait">【金特】「数理の閃き」クリティカル発動！！培った思考力で難問を完全に解き明かした！(+${sparkBonus}点)</div>`;
+    triggerParticles(null, null, 25, 'gold');
     triggerScreenBounce();
   }
   if (state.traits.includes('humanities_spark') && (q.subj === 'jp' || q.subj === 'sci' || q.subj === 'eng')) {
-    gained += 25;
-    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」が発動！！深遠な読解と論述で難問を完全攻略！</div>`;
-    triggerParticles(null, null, 20, 'gold');
+    // 基礎学力比例の閃きクリティカル（基礎得点×1.35倍 ＋ 最低保証8点）
+    const sparkBonus = Math.round(gained * 0.35) + 8;
+    gained += sparkBonus;
+    term.innerHTML += `<div class="log-line trait">【金特】「人文の閃き」クリティカル発動！！深い読解と論述力で難問を完全掌握！(+${sparkBonus}点)</div>`;
+    triggerParticles(null, null, 25, 'gold');
     triggerScreenBounce();
   }
   if (state.traits.includes('lang_master') && (q.subj === 'eng' || q.subj === 'jp')) {
