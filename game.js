@@ -693,7 +693,11 @@ const ITEM_DATABASE = {
     type: 'book',
     price: 2800,
     desc: '基礎から難関大レベルの必須英単語を網羅。英語の勉強経験値 +15%！',
-    passiveText: '英語勉強経験値 +15%'
+    passiveText: '英語勉強経験値 +15%',
+    effectTags: [
+      { text: '英語経験値 +15%', type: 'exp' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   book_math: {
     id: 'book_math',
@@ -702,7 +706,11 @@ const ITEM_DATABASE = {
     type: 'book',
     price: 3600,
     desc: '網羅系問題集の王道。難関大数学の土台を築く。数学の勉強経験値 +15%！',
-    passiveText: '数学勉強経験値 +15%'
+    passiveText: '数学勉強経験値 +15%',
+    effectTags: [
+      { text: '数学経験値 +15%', type: 'exp' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   book_jp: {
     id: 'book_jp',
@@ -711,7 +719,11 @@ const ITEM_DATABASE = {
     type: 'book',
     price: 2600,
     desc: '論理的読解力を養い、記述の土台を作る。国語の勉強経験値 +15%！',
-    passiveText: '国語勉強経験値 +15%'
+    passiveText: '国語勉強経験値 +15%',
+    effectTags: [
+      { text: '国語経験値 +15%', type: 'exp' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   book_sci: {
     id: 'book_sci',
@@ -721,7 +733,12 @@ const ITEM_DATABASE = {
     price: 3200,
     reqYear: 2,
     desc: '高2以降の重要事項を凝縮した講義書。理社（専門科目）の勉強経験値 +15%！',
-    passiveText: '理社勉強経験値 +15%'
+    passiveText: '理社勉強経験値 +15%',
+    effectTags: [
+      { text: '理社経験値 +15%', type: 'exp' },
+      { text: '高2以降解放', type: 'mot' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   book_past: {
     id: 'book_past',
@@ -731,7 +748,12 @@ const ITEM_DATABASE = {
     price: 4500,
     reqYear: 3,
     desc: '志望校の徹底研究。二次試験バトルでの獲得得点 +5%！',
-    passiveText: '二次試験得点 +5%'
+    passiveText: '二次試験得点 +5%',
+    effectTags: [
+      { text: '二次試験得点 +5%', type: 'exp' },
+      { text: '高3限定', type: 'mot' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
 
   // --- 文房具・勉強ギア（永続パッシブ） ---
@@ -742,7 +764,11 @@ const ITEM_DATABASE = {
     type: 'gear',
     price: 3000,
     desc: '周囲の雑音を遮断して全集中。勉強コマンド実行時のストレス増加量を 15% 軽減！',
-    passiveText: '勉強ストレス 15%カット'
+    passiveText: '勉強ストレス 15%カット',
+    effectTags: [
+      { text: '勉強ストレス 15%軽減', type: 'heal' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   gear_pencil: {
     id: 'gear_pencil',
@@ -751,7 +777,11 @@ const ITEM_DATABASE = {
     type: 'gear',
     price: 1500,
     desc: '濃く滑らかなマーク専用鉛筆。共通テストやマーク模試でのケアレスミス率を低減！',
-    passiveText: 'マークミス低減'
+    passiveText: 'マークミス低減',
+    effectTags: [
+      { text: 'マークミス大幅低減', type: 'exp' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   gear_timer: {
     id: 'gear_timer',
@@ -760,7 +790,11 @@ const ITEM_DATABASE = {
     type: 'gear',
     price: 2400,
     desc: '時間を意識して机に向かう。勉強失敗時のやる気ダウンを完全に防止！',
-    passiveText: '勉強失敗時のやる気低下防止'
+    passiveText: '勉強失敗時のやる気低下防止',
+    effectTags: [
+      { text: 'やる気低下完全防止', type: 'mot' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
   gear_cushion: {
     id: 'gear_cushion',
@@ -769,7 +803,11 @@ const ITEM_DATABASE = {
     type: 'gear',
     price: 2500,
     desc: '長時間の学習でも疲れにくい。勉強コマンド実行時の体力消費を 2pt 軽減！',
-    passiveText: '勉強体力消費 -2pt'
+    passiveText: '勉強体力消費 -2pt',
+    effectTags: [
+      { text: '勉強体力消費 -2pt', type: 'heal' },
+      { text: '永続パッシブ', type: 'heal' }
+    ]
   },
 
   // --- 軽食・リフレッシュ（消費アイテム / 1週1回まで使用可） ---
@@ -781,6 +819,11 @@ const ITEM_DATABASE = {
     price: 1000,
     desc: '脳の栄養補給。使うと即座に【やる気 +1】＆【ストレス -5%】！（※1週1回まで使用可）',
     passiveText: 'やる気+1 / ストレス-5%',
+    effectTags: [
+      { text: 'やる気 +1 ⤴', type: 'mot' },
+      { text: 'ストレス -5%', type: 'heal' },
+      { text: '1週1回使用', type: '' }
+    ],
     use: (s) => {
       if (s.motivation < 4) s.motivation++;
       s.stress = Math.max(0, s.stress - 5);
@@ -795,6 +838,11 @@ const ITEM_DATABASE = {
     price: 1500,
     desc: '気合いのドーピング飲料。使うと即座に【体力 +30 回復】（※反動でストレス+5%）！',
     passiveText: '体力+30 / ストレス+5%',
+    effectTags: [
+      { text: '体力 +30 回復', type: 'heal' },
+      { text: 'ストレス +5%', type: 'cost' },
+      { text: '1週1回使用', type: '' }
+    ],
     use: (s) => {
       s.stamina = Math.min(100, s.stamina + 30);
       s.stress = Math.min(100, s.stress + 5);
@@ -809,6 +857,10 @@ const ITEM_DATABASE = {
     price: 1200,
     desc: '芳醇な香りの本格コーヒー。使うと即座に【ストレス -20% 解消】！',
     passiveText: 'ストレス -20%',
+    effectTags: [
+      { text: 'ストレス -20% 解消', type: 'heal' },
+      { text: '1週1回使用', type: '' }
+    ],
     use: (s) => {
       s.stress = Math.max(0, s.stress - 20);
       return 'ホッと一息。深い香りに包まれてストレスが20%解消した！';
@@ -822,6 +874,11 @@ const ITEM_DATABASE = {
     price: 1300,
     desc: '酷使した目を優しく温める。使うと【体力 +20 回復】＆【ストレス -12% 解消】！',
     passiveText: '体力+20 / ストレス-12%',
+    effectTags: [
+      { text: '体力 +20 回復', type: 'heal' },
+      { text: 'ストレス -12%', type: 'heal' },
+      { text: '1週1回使用', type: '' }
+    ],
     use: (s) => {
       s.stamina = Math.min(100, s.stamina + 20);
       s.stress = Math.max(0, s.stress - 12);
@@ -837,7 +894,12 @@ const ITEM_DATABASE = {
     type: 'exam',
     price: 2200,
     desc: '学問の神様のご加護。共通テスト・二次試験本番で各大問得点ボーナス！',
-    passiveText: '本番各大問得点ボーナス'
+    passiveText: '本番各大問得点ボーナス',
+    effectTags: [
+      { text: '本番得点ボーナス', type: 'exp' },
+      { text: '神頼み', type: 'mot' },
+      { text: '所持で常時発動', type: 'heal' }
+    ]
   },
   exam_katsu: {
     id: 'exam_katsu',
@@ -847,6 +909,11 @@ const ITEM_DATABASE = {
     price: 2400,
     desc: '「勝つ！」の験担ぎ。ここぞの場面で【やる気 +1 ＆ 体力 +25 回復】！',
     passiveText: 'やる気+1 / 体力+25',
+    effectTags: [
+      { text: 'やる気 +1 ⤴', type: 'mot' },
+      { text: '体力 +25 回復', type: 'heal' },
+      { text: '勝負アイテム', type: 'mot' }
+    ],
     use: (s) => {
       if (s.motivation < 4) s.motivation++;
       s.stamina = Math.min(100, s.stamina + 25);
@@ -860,7 +927,12 @@ const ITEM_DATABASE = {
     type: 'exam',
     price: 1200,
     desc: '持っていれば安心の常備薬。模試や試験バトルでのプレッシャーや腹痛デバフを軽減。',
-    passiveText: '試験時のデバフ・失点防護'
+    passiveText: '試験時のデバフ・失点防護',
+    effectTags: [
+      { text: '試験デバフ防護', type: 'heal' },
+      { text: '腹痛・緊張ケア', type: 'heal' },
+      { text: '所持で常時発動', type: 'heal' }
+    ]
   }
 };
 
@@ -942,7 +1014,7 @@ function renderShopUI() {
       moneyBar.innerHTML = `<span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥${(state.money || 0).toLocaleString()}</b></span>`;
     } else {
       const ownedCount = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0).length;
-      const usedText = (state.itemsUsedThisTurn || 0) >= 1 ? '<span style="color:#ef4444; font-weight:800;">今週使用済み(1/1)</span>' : '<span style="color:#16a34a; font-weight:800;">使用可(0/1)</span>';
+      const usedText = (state.itemsUsedThisTurn || 0) >= 1 ? '<span style="color:#ef4444; font-weight:800;">今週使用済(1/1)</span>' : '<span style="color:#16a34a; font-weight:800;">今週使用可(0/1)</span>';
       moneyBar.innerHTML = `
         <span>🎒 <b>所持</b>: <b style="color:#2563eb;">${ownedCount}種</b> / 軽食: ${usedText}</span>
         <span style="font-size: 0.8rem; color: #166534; font-weight:700;">💰 ¥${(state.money || 0).toLocaleString()}</span>
@@ -993,6 +1065,11 @@ function renderShopBuyList() {
     else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}個)</span>`;
     else if (item.type === 'exam') badgeHtml = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">試験お守り</span>`;
 
+    const effectTagsHtml = (item.effectTags || []).map(t => {
+      const cls = t.type ? `play-tag ${t.type}` : 'play-tag';
+      return `<span class="${cls}">${t.text}</span>`;
+    }).join('');
+
     card.innerHTML = `
       <div class="item-icon">${item.icon}</div>
       <div class="item-info">
@@ -1001,7 +1078,10 @@ function renderShopBuyList() {
           ${badgeHtml}
         </div>
         <div class="item-desc">${item.desc}</div>
-        <div class="item-price">¥${item.price.toLocaleString()}</div>
+        <div class="play-effect-row" style="margin-top: 4px;">
+          ${effectTagsHtml}
+        </div>
+        <div class="item-price" style="margin-top: 4px;">¥${item.price.toLocaleString()}</div>
       </div>
       <div class="item-action">
         ${actionBtnHtml}
@@ -1071,6 +1151,11 @@ function renderShopBagList() {
 
     const countLabel = item.type === 'consumable' ? ` <b style="color:#2563eb; font-weight:900;">×${count}個</b>` : '';
 
+    const effectTagsHtml = (item.effectTags || []).map(t => {
+      const cls = t.type ? `play-tag ${t.type}` : 'play-tag';
+      return `<span class="${cls}">${t.text}</span>`;
+    }).join('');
+
     card.innerHTML = `
       <div class="item-icon">${item.icon}</div>
       <div class="item-info">
@@ -1079,8 +1164,8 @@ function renderShopBagList() {
           ${typeBadge}
         </div>
         <div class="item-desc">${item.desc}</div>
-        <div style="font-size: 0.72rem; color: #0284c7; font-weight: 800; margin-top: 3px;">
-          ✨ 効果: ${item.passiveText || '使用可能アイテム'}
+        <div class="play-effect-row" style="margin-top: 4px;">
+          ${effectTagsHtml}
         </div>
       </div>
       <div class="item-action">
@@ -2361,40 +2446,158 @@ function openStudyMenu() {
   document.getElementById('study-modal').classList.add('active');
 }
 
+function closeStudyMenu() {
+  playSound('click');
+  document.getElementById('study-modal').classList.remove('active');
+}
+
 function renderStudyMenu() {
   if (!state) return;
 
-  // 専門科目・コースに応じた理社ラベルの同期
   const isBunkei = state.course === '文系';
   const sciLabel = state.course === '理系' ? '理科' : (isBunkei ? '社会' : '理社');
-  const sciSubtext = state.specialtySubjects ? `（${state.specialtySubjects.name}）` : '';
-  const studySciLabel = document.getElementById('study-name-sci');
-  if (studySciLabel) studySciLabel.textContent = `${sciLabel}${sciSubtext}の集中学習`;
-  const studySciDesc = document.getElementById('study-desc-sci');
-  if (studySciDesc) {
-    const targetName = state.specialtySubjects ? state.specialtySubjects.name : sciLabel;
-    studySciDesc.textContent = `${targetName}の経験値を獲得 (体力-15 / ストレス+7)`;
+  const specName = state.specialtySubjects ? state.specialtySubjects.name : sciLabel;
+  const sciIcon = isBunkei ? '📜' : '🔬';
+
+  // 基本消費の計算（ギアや部活のパッシブ補正をリアルタイム反映）
+  const hasCushion = hasItem('gear_cushion');
+  const hasEarplugs = hasItem('gear_earplugs');
+  const clubPenalty = state.club === '運動部' ? 3 : 0;
+
+  function calcCosts(baseStam, baseStress) {
+    let sCost = baseStam + clubPenalty;
+    if (hasCushion) sCost = Math.max(6, sCost - 2);
+    let stCost = baseStress;
+    if (hasEarplugs) stCost = Math.max(3, Math.round(stCost * 0.85));
+    return { sCost, stCost };
   }
-  const studySciIcon = document.getElementById('study-icon-sci');
-  if (studySciIcon) studySciIcon.textContent = isBunkei ? '📜' : '🔬';
+
+  const costs = {
+    eng: calcCosts(15, 7),
+    math: calcCosts(18, 9),
+    jp: calcCosts(12, 5),
+    sci: calcCosts(15, 7),
+    all: calcCosts(22, 10),
+    extra: calcCosts(14, 6)
+  };
+
+  const container = document.querySelector('#study-modal .study-options');
+  if (!container) return;
 
   const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
-  const extraBtn = document.getElementById('study-btn-kyotsu-extra');
-  if (extraBtn) {
-    if (isKyotsuPeriod) {
-      extraBtn.style.display = 'flex';
-      const subName = isBunkei ? '理科基礎' : '社会';
-      const nameEl = document.getElementById('study-name-kyotsu-extra');
-      const descEl = document.getElementById('study-desc-kyotsu-extra');
-      if (nameEl) nameEl.textContent = `💻 情報I・${subName} マーク演習 (現在: ${Math.round(state.subExtraScore || 35)}点)`;
-      if (descEl) descEl.textContent = `共テ200点枠（情報I＋${subName}）を集中的に詰め込む (体力-14 / ストレス+6)`;
-    } else {
-      extraBtn.style.display = 'none';
-    }
-  }
-}
-function closeStudyMenu() {
-  document.getElementById('study-modal').classList.remove('active');
+  const subName = isBunkei ? '理科基礎' : '社会';
+
+  // パッシブ効果のタグ
+  const engBookTag = hasItem('book_eng') ? '<span class="play-tag exp" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;">単語帳 +15%</span>' : '';
+  const mathBookTag = hasItem('book_math') ? '<span class="play-tag exp" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;">青チャート +15%</span>' : '';
+  const jpBookTag = hasItem('book_jp') ? '<span class="play-tag exp" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;">現代文開発 +15%</span>' : '';
+  const sciBookTag = hasItem('book_sci') ? '<span class="play-tag exp" style="background:#e0f2fe;color:#0284c7;border-color:#bae6fd;">集中講義 +15%</span>' : '';
+
+  const gearCushionTag = hasCushion ? '<span class="play-tag heal" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0;">クッション -2</span>' : '';
+  const gearEarplugsTag = hasEarplugs ? '<span class="play-tag heal" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0;">耳栓 15%軽減</span>' : '';
+
+  container.innerHTML = `
+    <button class="study-card-btn" onclick="executeStudy('eng')">
+      <span class="icon">🔤</span>
+      <div class="info">
+        <div class="name">英語の集中学習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.eng.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.eng.stCost}%</span>
+            <span class="play-tag exp">英語経験値 大</span>
+            ${engBookTag}
+            ${gearCushionTag}
+            ${gearEarplugsTag}
+          </div>
+        </div>
+      </div>
+    </button>
+
+    <button class="study-card-btn" onclick="executeStudy('math')">
+      <span class="icon">📐</span>
+      <div class="info">
+        <div class="name">数学の集中学習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.math.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.math.stCost}%</span>
+            <span class="play-tag exp">数学経験値 大</span>
+            ${mathBookTag}
+            ${gearCushionTag}
+            ${gearEarplugsTag}
+          </div>
+        </div>
+      </div>
+    </button>
+
+    <button class="study-card-btn" onclick="executeStudy('jp')">
+      <span class="icon">📕</span>
+      <div class="info">
+        <div class="name">国語の集中学習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.jp.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.jp.stCost}%</span>
+            <span class="play-tag exp">国語経験値 大</span>
+            ${jpBookTag}
+            ${gearCushionTag}
+            ${gearEarplugsTag}
+          </div>
+        </div>
+      </div>
+    </button>
+
+    <button class="study-card-btn" onclick="executeStudy('sci')">
+      <span class="icon">${sciIcon}</span>
+      <div class="info">
+        <div class="name">${sciLabel}（${specName}）の集中学習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.sci.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.sci.stCost}%</span>
+            <span class="play-tag exp">${specName}経験値 大</span>
+            ${sciBookTag}
+            ${gearCushionTag}
+            ${gearEarplugsTag}
+          </div>
+        </div>
+      </div>
+    </button>
+
+    <button class="study-card-btn all-round" onclick="executeStudy('all')">
+      <span class="icon">🎯</span>
+      <div class="info">
+        <div class="name">全科目 総合演習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.all.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.all.stCost}%</span>
+            <span class="play-tag exp">全教科バランス底上げ</span>
+            ${gearCushionTag}
+            ${gearEarplugsTag}
+          </div>
+        </div>
+      </div>
+    </button>
+
+    ${isKyotsuPeriod ? `
+    <button class="study-card-btn kyotsu-extra" style="border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);" onclick="executeStudy('sub_extra')">
+      <span class="icon">💻</span>
+      <div class="info">
+        <div class="name" style="color: #b45309; font-weight: 800;">💻 情報I・${subName} マーク演習</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">体力 -${costs.extra.sCost}</span>
+            <span class="play-tag cost">ストレス +${costs.extra.stCost}%</span>
+            <span class="play-tag exp">共テ200点枠 +14pt</span>
+            <span class="play-tag mot">現在: ${Math.round(state.subExtraScore || 35)}点</span>
+          </div>
+        </div>
+      </div>
+    </button>
+    ` : ''}
+  `;
 }
 
 function executeStudy(subject) {
