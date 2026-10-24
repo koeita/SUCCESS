@@ -900,8 +900,20 @@ function switchShopTab(tab) {
   document.getElementById('shop-tab-buy').classList.toggle('active', tab === 'buy');
   document.getElementById('shop-tab-bag').classList.toggle('active', tab === 'bag');
 
-  document.getElementById('shop-view-buy').style.display = tab === 'buy' ? 'block' : 'none';
-  document.getElementById('shop-view-bag').style.display = tab === 'bag' ? 'block' : 'none';
+  const buyView = document.getElementById('shop-view-buy');
+  const bagView = document.getElementById('shop-view-bag');
+
+  if (tab === 'buy') {
+    buyView.classList.remove('hidden');
+    buyView.style.display = 'flex';
+    bagView.classList.add('hidden');
+    bagView.style.display = 'none';
+  } else {
+    buyView.classList.add('hidden');
+    buyView.style.display = 'none';
+    bagView.classList.remove('hidden');
+    bagView.style.display = 'flex';
+  }
 
   renderShopUI();
 }
@@ -917,8 +929,18 @@ function filterShopCategory(cat) {
 }
 
 function renderShopUI() {
-  const moneyEl = document.getElementById('shop-current-money');
-  if (moneyEl) moneyEl.textContent = `¥${(state.money || 0).toLocaleString()}`;
+  const moneyBar = document.querySelector('.shop-money-bar');
+  if (moneyBar) {
+    if (curShopTab === 'buy') {
+      moneyBar.innerHTML = `<span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥${(state.money || 0).toLocaleString()}</b></span>`;
+    } else {
+      const ownedCount = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0).length;
+      moneyBar.innerHTML = `
+        <span>🎒 <b>所持アイテム一覧</b>: <span style="color:#2563eb; font-weight:900;">${ownedCount}種類</span></span>
+        <span style="font-size: 0.8rem; color: #166534; font-weight:700;">💰 所持金: ¥${(state.money || 0).toLocaleString()}</span>
+      `;
+    }
+  }
 
   if (curShopTab === 'buy') {
     renderShopBuyList();
@@ -986,12 +1008,14 @@ function renderShopBagList() {
   if (!container) return;
   container.innerHTML = '';
 
+  // 所持品のみ（個数 > 0）を抽出
   const ownedKeys = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0);
 
   if (ownedKeys.length === 0) {
     container.innerHTML = `
-      <div style="text-align: center; padding: 32px 0; color: #64748b; font-size: 0.85rem; font-weight: 700;">
-        <div style="font-size: 2.2rem; margin-bottom: 6px;">🎒</div>
+      <div style="text-align: center; padding: 36px 12px; color: #64748b; font-size: 0.85rem; font-weight: 700; background: #f8fafc; border-radius: 12px; border: 1.5px dashed #cbd5e1; margin: 8px 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 8px;">🎒</div>
+        <div style="color: #334155; font-size: 0.95rem; font-weight: 800; margin-bottom: 4px;">マイバッグは空です</div>
         まだ何もアイテムを持っていません。<br>
         「🛒 購買」タブでお小遣いを使って参考書やグッズを購入してみましょう！
       </div>
@@ -1016,22 +1040,31 @@ function renderShopBagList() {
       `;
     } else {
       actionHtml = `
-        <span class="owned-badge" style="background:#e0f2fe; color:#0369a1;">
+        <span class="owned-badge" style="background:#e0f2fe; color:#0369a1; font-weight: 800;">
           常時発動中
         </span>
       `;
     }
 
-    const countLabel = item.type === 'consumable' ? ` <b style="color:#2563eb;">×${count}個</b>` : '';
+    let typeBadge = '';
+    if (item.type === 'book') typeBadge = `<span class="item-badge" style="background:#e0f2fe; color:#0284c7;">参考書</span>`;
+    else if (item.type === 'gear') typeBadge = `<span class="item-badge" style="background:#fef3c7; color:#d97706;">ギア</span>`;
+    else if (item.type === 'consumable') typeBadge = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品</span>`;
+    else if (item.type === 'exam') typeBadge = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">お守り</span>`;
+
+    const countLabel = item.type === 'consumable' ? ` <b style="color:#2563eb; font-weight:900;">×${count}個</b>` : '';
 
     card.innerHTML = `
       <div class="item-icon">${item.icon}</div>
       <div class="item-info">
         <div class="item-title-row">
           <span class="item-name">${item.name}${countLabel}</span>
-          <span class="item-badge" style="background:#f1f5f9; color:#475569;">${item.passiveText || '消耗品'}</span>
+          ${typeBadge}
         </div>
         <div class="item-desc">${item.desc}</div>
+        <div style="font-size: 0.72rem; color: #0284c7; font-weight: 800; margin-top: 3px;">
+          ✨ 効果: ${item.passiveText || '使用可能アイテム'}
+        </div>
       </div>
       <div class="item-action">
         ${actionHtml}

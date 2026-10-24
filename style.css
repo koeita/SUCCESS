@@ -2585,9 +2585,14 @@ body::before {
 #shop-modal .shop-view {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
+  display: flex;
+  flex-direction: column;
   overflow: hidden !important;
+}
+
+#shop-modal .shop-view.hidden,
+#shop-modal .shop-view[style*="display: none"] {
+  display: none !important;
 }
 
 #shop-modal .shop-category-filters {
