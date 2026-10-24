@@ -1222,9 +1222,9 @@ body::before {
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   cursor: pointer;
   text-align: left;
@@ -1261,18 +1261,24 @@ body::before {
 
 .study-card-btn .icon {
   font-size: 1.8rem;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .study-card-btn .info .name {
   font-weight: 900;
   font-size: 0.9rem;
   color: #1e293b;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .study-card-btn .info .desc {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: #64748b;
-  margin-top: 1px;
+  margin-top: 3px;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 /* 選択肢ボタン */
@@ -2093,27 +2099,33 @@ body::before {
   }
 
   .study-card-btn {
-    padding: 9px 12px;
+    padding: 8px 12px;
     gap: 10px;
     border-radius: 12px;
+    align-items: flex-start;
   }
 
   .study-card-btn .icon {
-    font-size: 1.3rem;
+    font-size: 1.35rem;
+    margin-top: 2px;
+    flex-shrink: 0;
   }
 
   .study-card-btn .info .name {
-    font-size: 0.78rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .study-card-btn .info .desc {
-    font-size: 0.64rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.68rem;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+    margin-top: 3px;
   }
 }
 
