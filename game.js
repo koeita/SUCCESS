@@ -677,6 +677,404 @@ if (typeof window !== 'undefined') {
   });
 }
 
+
+// ========================================================
+// 購買部・本屋 ＆ 所持品（アイテム）システム
+// ========================================================
+const ITEM_DATABASE = {
+  // --- 参考書・問題集（永続パッシブ / 各教科経験値+25%） ---
+  book_eng: {
+    id: 'book_eng',
+    name: '『システム英単語』',
+    icon: '📘',
+    type: 'book',
+    price: 3500,
+    desc: '英語の勉強経験値 +25%！「速読王」の習得率UP。基礎から難関大レベルの必須英単語を網羅。',
+    passiveText: '英語勉強経験値 +25%'
+  },
+  book_math: {
+    id: 'book_math',
+    name: '『青チャート数学』',
+    icon: '📐',
+    type: 'book',
+    price: 4200,
+    desc: '数学の勉強経験値 +25%！「数理の閃き」の習得率UP。網羅系問題集の王道。難関大数学の土台を築く。',
+    passiveText: '数学勉強経験値 +25%'
+  },
+  book_jp: {
+    id: 'book_jp',
+    name: '『現代文読解の開発講座』',
+    icon: '📜',
+    type: 'book',
+    price: 3200,
+    desc: '国語の勉強経験値 +25%！「人文の閃き」の習得率UP。論理的読解力を養い、記述の土台を作る。',
+    passiveText: '国語勉強経験値 +25%'
+  },
+  book_sci: {
+    id: 'book_sci',
+    name: '『理科・社会 集中講義』',
+    icon: '🔬',
+    type: 'book',
+    price: 3800,
+    desc: '理社（専門科目）の勉強経験値 +25%！重要事項を凝縮したハイレベル講義書。',
+    passiveText: '理社勉強経験値 +25%'
+  },
+  book_past: {
+    id: 'book_past',
+    name: '『志望校の赤本（過去問）』',
+    icon: '📕',
+    type: 'book',
+    price: 5500,
+    reqYear: 3,
+    desc: '志望校の徹底研究。二次試験バトルでの獲得得点 +8%！出題傾向を掴んで本番を突破する。',
+    passiveText: '二次試験得点 +8%'
+  },
+
+  // --- 文房具・勉強ギア（永続パッシブ） ---
+  gear_earplugs: {
+    id: 'gear_earplugs',
+    name: '耳栓',
+    icon: '🎧',
+    type: 'gear',
+    price: 4500,
+    desc: '勉強コマンド実行時のストレス増加量を 30% カット！周囲の雑音を遮断して全集中。',
+    passiveText: '勉強ストレス 30%カット'
+  },
+  gear_pencil: {
+    id: 'gear_pencil',
+    name: '鉛筆',
+    icon: '✏️',
+    type: 'gear',
+    price: 2000,
+    desc: '濃く滑らかなマーク専用鉛筆。共通テストやマーク模試での失点・ケアレスミス発生率を低減！',
+    passiveText: 'マークミス大幅低減'
+  },
+  gear_timer: {
+    id: 'gear_timer',
+    name: '学習用カウントダウンタイマー',
+    icon: '⏱️',
+    type: 'gear',
+    price: 2800,
+    desc: '試験時間を常に意識して机に向かう。勉強コマンド実行時のやる気低下を完全に防止！',
+    passiveText: '勉強時のやる気低下防止'
+  },
+  gear_cushion: {
+    id: 'gear_cushion',
+    name: '低反発クッション',
+    icon: '🪑',
+    type: 'gear',
+    price: 3000,
+    desc: '長時間の学習でも腰やお尻が疲れない。勉強コマンド実行時の体力消費を 3pt 軽減！',
+    passiveText: '勉強体力消費 -3pt'
+  },
+
+  // --- 軽食・リフレッシュ（消費アイテム） ---
+  snack_choco: {
+    id: 'snack_choco',
+    name: 'ブドウ糖チョコ',
+    icon: '🍫',
+    type: 'consumable',
+    price: 800,
+    desc: '脳の唯一のエネルギー源。使うと即座に【やる気 +1】＆【ストレス -8%】！',
+    use: (s) => {
+      if (s.motivation < 4) s.motivation++;
+      s.stress = Math.max(0, s.stress - 8);
+      return '脳に糖分補給！やる気が1段階アップし、ストレスが8%回復した！';
+    }
+  },
+  snack_energy: {
+    id: 'snack_energy',
+    name: '超集中エナジードリンク',
+    icon: '⚡',
+    type: 'consumable',
+    price: 1200,
+    desc: '気合いのドーピング飲料。使うと即座に【体力 +40 回復】！',
+    use: (s) => {
+      s.stamina = Math.min(100, s.stamina + 40);
+      return 'グッと飲み干して覚醒！体力が40ポイント回復した！';
+    }
+  },
+  snack_coffee: {
+    id: 'snack_coffee',
+    name: 'カフェのドリップコーヒー',
+    icon: '☕',
+    type: 'consumable',
+    price: 900,
+    desc: '芳醇な香りの極上コーヒー。使うと即座に【ストレス -25% 解消】！',
+    use: (s) => {
+      s.stress = Math.max(0, s.stress - 25);
+      return 'ホッと一息。深い香りに包まれてストレスが25%吹き飛んだ！';
+    }
+  },
+  snack_eyemask: {
+    id: 'snack_eyemask',
+    name: '蒸気ホットアイマスク',
+    icon: '♨️',
+    type: 'consumable',
+    price: 1000,
+    desc: '酷使した目を優しく温める。使うと【体力 +25 回復】＆【ストレス -15% 解消】！',
+    use: (s) => {
+      s.stamina = Math.min(100, s.stamina + 25);
+      s.stress = Math.max(0, s.stress - 15);
+      return '心地よい温かさに癒やされた...！体力が25回復、ストレスが15%解消！';
+    }
+  },
+
+  // --- 本番・神頼みアイテム ---
+  exam_omamori: {
+    id: 'exam_omamori',
+    name: '太宰府の合格祈願お守り',
+    icon: '⛩️',
+    type: 'exam',
+    price: 2500,
+    desc: '学問の神様のご加護。共通テスト・二次試験本番でボーナス偏差値 +1.5！',
+    passiveText: '本番ボーナス偏差値 +1.5'
+  },
+  exam_katsu: {
+    id: 'exam_katsu',
+    name: '母の手作りカツ弁当',
+    icon: '🥢',
+    type: 'consumable',
+    price: 1500,
+    desc: '「勝つ！」の験担ぎ。使うと即座にやる気が【最高（絶好調）】になり、体力も30回復！',
+    use: (s) => {
+      s.motivation = 4;
+      s.stamina = Math.min(100, s.stamina + 30);
+      return '母の温かいカツ弁当を完食！やる気が最高潮（絶好調）になり体力が30回復！';
+    }
+  },
+  exam_medicine: {
+    id: 'exam_medicine',
+    name: '常備薬',
+    icon: '💊',
+    type: 'exam',
+    price: 1000,
+    desc: '持っていれば安心の常備薬。試験バトルでのプレッシャーや腹痛デバフを完全に防ぎ安定させる。',
+    passiveText: '試験時のデバフ・失点防護'
+  }
+};
+
+function hasItem(itemId) {
+  if (!state || !state.inventory) return false;
+  return (state.inventory[itemId] || 0) > 0;
+}
+
+function getItemCount(itemId) {
+  if (!state || !state.inventory) return 0;
+  return state.inventory[itemId] || 0;
+}
+
+function addItem(itemId, count = 1) {
+  if (!state.inventory) state.inventory = {};
+  state.inventory[itemId] = (state.inventory[itemId] || 0) + count;
+}
+
+function consumeItem(itemId) {
+  if (!hasItem(itemId)) return false;
+  state.inventory[itemId]--;
+  if (state.inventory[itemId] <= 0) {
+    delete state.inventory[itemId];
+  }
+  return true;
+}
+
+let curShopTab = 'buy';
+let curShopCategory = 'all';
+
+function openShopModal(defaultTab = 'buy') {
+  playSound('click');
+  curShopTab = defaultTab;
+  switchShopTab(curShopTab);
+  document.getElementById('shop-modal').classList.add('active');
+}
+
+function closeShopModal() {
+  playSound('click');
+  document.getElementById('shop-modal').classList.remove('active');
+  renderUI();
+}
+
+function switchShopTab(tab) {
+  playSound('click');
+  curShopTab = tab;
+  document.getElementById('shop-tab-buy').classList.toggle('active', tab === 'buy');
+  document.getElementById('shop-tab-bag').classList.toggle('active', tab === 'bag');
+
+  document.getElementById('shop-view-buy').style.display = tab === 'buy' ? 'block' : 'none';
+  document.getElementById('shop-view-bag').style.display = tab === 'bag' ? 'block' : 'none';
+
+  renderShopUI();
+}
+
+function filterShopCategory(cat) {
+  playSound('click');
+  curShopCategory = cat;
+  const filterBtns = document.querySelectorAll('.shop-filter-btn');
+  filterBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.id === `filter-btn-${cat}`);
+  });
+  renderShopUI();
+}
+
+function renderShopUI() {
+  const moneyEl = document.getElementById('shop-current-money');
+  if (moneyEl) moneyEl.textContent = `¥${(state.money || 0).toLocaleString()}`;
+
+  if (curShopTab === 'buy') {
+    renderShopBuyList();
+  } else {
+    renderShopBagList();
+  }
+}
+
+function renderShopBuyList() {
+  const container = document.getElementById('shop-items-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const items = Object.values(ITEM_DATABASE).filter(item => {
+    if (item.reqYear && state.year < item.reqYear) return false;
+    if (curShopCategory !== 'all' && item.type !== curShopCategory) return false;
+    return true;
+  });
+
+  items.forEach(item => {
+    const isOwned = item.type !== 'consumable' && hasItem(item.id);
+    const count = getItemCount(item.id);
+    const canAfford = (state.money || 0) >= item.price;
+
+    const card = document.createElement('div');
+    card.className = `shop-item-card ${isOwned ? 'owned-card' : ''}`;
+
+    let actionBtnHtml = '';
+    if (isOwned) {
+      actionBtnHtml = `<span class="owned-badge">✔ 購入済み</span>`;
+    } else {
+      actionBtnHtml = `
+        <button class="btn-buy-item" ${!canAfford ? 'disabled' : ''} onclick="buyShopItem('${item.id}')">
+          購入 (¥${item.price.toLocaleString()})
+        </button>
+      `;
+    }
+
+    let badgeHtml = '';
+    if (item.type === 'book') badgeHtml = `<span class="item-badge" style="background:#e0f2fe; color:#0284c7;">参考書</span>`;
+    else if (item.type === 'gear') badgeHtml = `<span class="item-badge" style="background:#fef3c7; color:#d97706;">勉強ギア</span>`;
+    else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}個)</span>`;
+    else if (item.type === 'exam') badgeHtml = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">試験お守り</span>`;
+
+    card.innerHTML = `
+      <div class="item-icon">${item.icon}</div>
+      <div class="item-info">
+        <div class="item-title-row">
+          <span class="item-name">${item.name}</span>
+          ${badgeHtml}
+        </div>
+        <div class="item-desc">${item.desc}</div>
+        <div class="item-price">¥${item.price.toLocaleString()}</div>
+      </div>
+      <div class="item-action">
+        ${actionBtnHtml}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderShopBagList() {
+  const container = document.getElementById('bag-items-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const ownedKeys = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0);
+
+  if (ownedKeys.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 32px 0; color: #64748b; font-size: 0.85rem; font-weight: 700;">
+        <div style="font-size: 2.2rem; margin-bottom: 6px;">🎒</div>
+        まだ何もアイテムを持っていません。<br>
+        「🛒 購買」タブでお小遣いを使って参考書やグッズを購入してみましょう！
+      </div>
+    `;
+    return;
+  }
+
+  ownedKeys.forEach(itemId => {
+    const item = ITEM_DATABASE[itemId];
+    if (!item) return;
+    const count = getItemCount(itemId);
+
+    const card = document.createElement('div');
+    card.className = 'shop-item-card';
+
+    let actionHtml = '';
+    if (item.type === 'consumable') {
+      actionHtml = `
+        <button class="btn-use-item" onclick="useBagItem('${item.id}')">
+          使う
+        </button>
+      `;
+    } else {
+      actionHtml = `
+        <span class="owned-badge" style="background:#e0f2fe; color:#0369a1;">
+          常時発動中
+        </span>
+      `;
+    }
+
+    const countLabel = item.type === 'consumable' ? ` <b style="color:#2563eb;">×${count}個</b>` : '';
+
+    card.innerHTML = `
+      <div class="item-icon">${item.icon}</div>
+      <div class="item-info">
+        <div class="item-title-row">
+          <span class="item-name">${item.name}${countLabel}</span>
+          <span class="item-badge" style="background:#f1f5f9; color:#475569;">${item.passiveText || '消耗品'}</span>
+        </div>
+        <div class="item-desc">${item.desc}</div>
+      </div>
+      <div class="item-action">
+        ${actionHtml}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function buyShopItem(itemId) {
+  const item = ITEM_DATABASE[itemId];
+  if (!item) return;
+
+  if ((state.money || 0) < item.price) {
+    playSound('fail');
+    alert(`お小遣いが足りません！ (必要: ¥${item.price.toLocaleString()})`);
+    return;
+  }
+
+  playSound('success');
+  state.money -= item.price;
+  addItem(itemId, 1);
+  showFloatingText(`${item.name} を購入！`, null, null, 'item');
+  triggerParticles(null, null, 15, 'gold');
+  renderShopUI();
+  renderUI();
+}
+
+function useBagItem(itemId) {
+  const item = ITEM_DATABASE[itemId];
+  if (!item || item.type !== 'consumable') return;
+
+  if (!consumeItem(itemId)) return;
+
+  playSound('success');
+  triggerParticles(null, null, 20, 'gold');
+  const msg = item.use ? item.use(state) : `${item.name} を使った！`;
+  showFloatingText(msg, null, null, 'heal');
+  setDialog(state.playerName, msg);
+  renderShopUI();
+  renderUI();
+}
+
 function createInitialState(playerName = '合格太郎') {
   return {
     playerName: playerName,
@@ -718,7 +1116,8 @@ function createInitialState(playerName = '合格太郎') {
     motivation: 2,
     turnsAtMotivation: 0,
     lastMotivation: 2,
-    money: 1000,
+    money: 3000,
+    inventory: {},
 
     subjects: {
       eng:  { score: 38, exp: 0, nextExp: 20 },
@@ -1797,13 +2196,24 @@ function advanceTurn() {
     }
   }
 
-  // 1. 月初めのお小遣い（学年に応じた支給）
+  // 1. 月初めのお小遣い支給 ＆ お年玉
   if (state.week === 1) {
-    let monthlyAllowance = 1000;
-    if (state.year === 2) monthlyAllowance = 1500;
-    if (state.year === 3) monthlyAllowance = 2000;
-    state.money += monthlyAllowance;
-    showFloatingText(`お小遣い +¥${monthlyAllowance.toLocaleString()}`, null, null, 'heal');
+    let monthlyAllowance = 3000;
+    if (state.year === 2) monthlyAllowance = 3500;
+    if (state.year === 3) monthlyAllowance = 4000;
+
+    let otoshidama = 0;
+    if (state.month === 1) {
+      otoshidama = 10000; // 1月1週はお年玉臨時ボーナス！
+    }
+
+    const totalAllowance = monthlyAllowance + otoshidama;
+    state.money = (state.money || 0) + totalAllowance;
+
+    const noticeText = otoshidama > 0 
+      ? `お小遣い&お年玉 +¥${totalAllowance.toLocaleString()}！` 
+      : `今月のお小遣い +¥${monthlyAllowance.toLocaleString()}`;
+    showFloatingText(noticeText, null, null, 'item');
   }
 
   // 2. 時間経過によるやる気の自然低下（中だるみ・気の緩み）
@@ -2155,6 +2565,24 @@ function openPlayMenu() {
   playSound('click');
   const container = document.getElementById('play-options-container');
   container.innerHTML = '';
+
+  // 0. 購買部・本屋に行く（ターン消費なし）
+  const btnShop = document.createElement('button');
+  btnShop.className = 'study-card-btn';
+  btnShop.style.borderColor = '#16a34a';
+  btnShop.style.background = '#f0fdf4';
+  btnShop.onclick = () => {
+    closePlayMenu();
+    openShopModal();
+  };
+  btnShop.innerHTML = `
+    <span class="icon">🛒</span>
+    <div class="info">
+      <div class="name" style="color:#166534; font-weight:900;">購買部・本屋に行く</div>
+      <div class="desc">参考書・勉強ギア・軽食を購入（※ターン消費なし）</div>
+    </div>
+  `;
+  container.appendChild(btnShop);
 
   // 1. 自宅の部屋
   const btnHome = document.createElement('button');
@@ -3722,11 +4150,18 @@ function executeMockExam(mockType, mockTitle) {
 
   if (state.targetUniv) {
     modalDesc = `模試の成績表が返却された！\n第1志望【${state.targetUniv.name}】の判定結果は……【 ${judge} 判定 】！\n\n（体力 -${stamCost} / ストレス +8%）`;
+    let rewardMoneyText = '';
+    if (judge === 'A' || judge === 'B') {
+      state.money = (state.money || 0) + 2000;
+      rewardMoneyText = '親からの模試好成績ご褒美: +¥2,000！';
+    }
+
     rewards = [
       `判定: 【 ${judge} 判定 】 (${probText})`,
       `志望学部 傾斜偏差値: ${dev} （目標ボーダー: ${targetBorder}）`,
       mockType === 'mark' ? `共テ1000点換算: 約 ${kyotsuScoreEst} 点 (${kyotsuRateEst}%)` : `全国総合偏差値: ${generalDev}`,
       reviewMsg,
+      rewardMoneyText,
       judge === 'A' || judge === 'B' ? '好判定により やる気 絶好調！！' : 'ここからの弱点補強が合否を分ける！',
       traitMsg
     ].filter(Boolean);

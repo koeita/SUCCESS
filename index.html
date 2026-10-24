@@ -129,10 +129,13 @@
             </div>
           </div>
 
-          <!-- 所持金 -->
-          <div class="vital-item">
-            <span class="label">お小遣い</span>
-            <span class="val money" id="money-text">¥1,000</span>
+          <!-- 所持金（タップで購買・本屋を開く） -->
+          <div class="vital-item vital-money" id="vital-money" onclick="openShopModal()" title="タップして購買部・本屋を開く">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="label">お小遣い</span>
+              <span class="shop-badge">🛒 購買</span>
+            </div>
+            <span class="val money" id="money-text">¥3,000</span>
           </div>
         </div>
       </header>
@@ -318,6 +321,50 @@
       </div>
       <div class="modal-footer">
         <button class="btn-confirm" onclick="closeOBRosterModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 購買・本屋 & 所持品モーダル ================= -->
+  <div class="modal-overlay" id="shop-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>🛒 購買部・本屋 ＆ 所持品</h3>
+        <button class="btn-close" onclick="closeShopModal()">✕</button>
+      </div>
+
+      <div class="shop-tabs">
+        <button class="shop-tab-btn active" id="shop-tab-buy" onclick="switchShopTab('buy')">🛒 購買（アイテムを買う）</button>
+        <button class="shop-tab-btn" id="shop-tab-bag" onclick="switchShopTab('bag')">🎒 マイバッグ（所持品・使う）</button>
+      </div>
+
+      <div class="shop-money-bar">
+        <span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥3,000</b></span>
+      </div>
+
+      <!-- 購買（購入）ビュー -->
+      <div class="shop-view" id="shop-view-buy">
+        <div class="shop-category-filters">
+          <button class="shop-filter-btn active" id="filter-btn-all" onclick="filterShopCategory('all')">すべて</button>
+          <button class="shop-filter-btn" id="filter-btn-book" onclick="filterShopCategory('book')">📘 参考書</button>
+          <button class="shop-filter-btn" id="filter-btn-gear" onclick="filterShopCategory('gear')">⚙️ 勉強ギア</button>
+          <button class="shop-filter-btn" id="filter-btn-consumable" onclick="filterShopCategory('consumable')">🍫 軽食・回復</button>
+          <button class="shop-filter-btn" id="filter-btn-exam" onclick="filterShopCategory('exam')">⛩️ 試験お守り</button>
+        </div>
+        <div class="shop-items-container" id="shop-items-list">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+
+      <!-- マイバッグ（所持品・使用）ビュー -->
+      <div class="shop-view" id="shop-view-bag" style="display: none;">
+        <div class="shop-items-container" id="bag-items-list">
+          <!-- JSで動的生成 -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-confirm" onclick="closeShopModal()">閉じる</button>
       </div>
     </div>
   </div>

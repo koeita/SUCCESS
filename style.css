@@ -2442,3 +2442,218 @@ body::before {
   margin-top: 8px;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ========================================================
+   購買部・本屋 ＆ 所持品システム スタイル
+   ======================================================== */
+.vital-money {
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  user-select: none;
+}
+.vital-money:hover {
+  background-color: #f0fdf4;
+}
+.vital-money:active {
+  transform: scale(0.97);
+}
+.shop-badge {
+  font-size: 0.65rem;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid #bbf7d0;
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.shop-tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.shop-tab-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.shop-money-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.shop-category-filters {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.shop-filter-btn {
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+}
+.shop-filter-btn.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.shop-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(48vh, 360px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.shop-items-container::-webkit-scrollbar {
+  width: 6px;
+}
+.shop-items-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.shop-item-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease;
+}
+.shop-item-card:hover {
+  border-color: #94a3b8;
+}
+.shop-item-card.owned-card {
+  background: #f8fafc;
+  opacity: 0.85;
+}
+
+.shop-item-card .item-icon {
+  font-size: 1.9rem;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+.shop-item-card .item-info {
+  flex: 1;
+  min-width: 0;
+}
+.shop-item-card .item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.shop-item-card .item-name {
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+.shop-item-card .item-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.shop-item-card .item-desc {
+  font-size: 0.72rem;
+  color: #475569;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.shop-item-card .item-price {
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #16a34a;
+  margin-top: 2px;
+}
+
+.shop-item-card .item-action {
+  flex-shrink: 0;
+}
+.btn-buy-item, .btn-use-item {
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.btn-buy-item {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+}
+.btn-buy-item:hover:not(:disabled) {
+  background: #15803d;
+}
+.btn-buy-item:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-use-item {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2);
+}
+.btn-use-item:hover {
+  background: #0369a1;
+}
+.owned-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
