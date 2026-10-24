@@ -772,14 +772,13 @@ const ITEM_DATABASE = {
     passiveText: '勉強体力消費 -2pt'
   },
 
-  // --- 軽食・リフレッシュ（消費アイテム / 1週1回まで使用可 / 最大2個所持） ---
+  // --- 軽食・リフレッシュ（消費アイテム / 1週1回まで使用可） ---
   snack_choco: {
     id: 'snack_choco',
     name: 'ブドウ糖チョコ',
     icon: '🍫',
     type: 'consumable',
     price: 1000,
-    maxStack: 2,
     desc: '脳の栄養補給。使うと即座に【やる気 +1】＆【ストレス -5%】！（※1週1回まで使用可）',
     passiveText: 'やる気+1 / ストレス-5%',
     use: (s) => {
@@ -794,7 +793,6 @@ const ITEM_DATABASE = {
     icon: '⚡',
     type: 'consumable',
     price: 1500,
-    maxStack: 2,
     desc: '気合いのドーピング飲料。使うと即座に【体力 +30 回復】（※反動でストレス+5%）！',
     passiveText: '体力+30 / ストレス+5%',
     use: (s) => {
@@ -809,7 +807,6 @@ const ITEM_DATABASE = {
     icon: '☕',
     type: 'consumable',
     price: 1200,
-    maxStack: 2,
     desc: '芳醇な香りの本格コーヒー。使うと即座に【ストレス -20% 解消】！',
     passiveText: 'ストレス -20%',
     use: (s) => {
@@ -823,7 +820,6 @@ const ITEM_DATABASE = {
     icon: '♨️',
     type: 'consumable',
     price: 1300,
-    maxStack: 2,
     desc: '酷使した目を優しく温める。使うと【体力 +20 回復】＆【ストレス -12% 解消】！',
     passiveText: '体力+20 / ストレス-12%',
     use: (s) => {
@@ -849,9 +845,8 @@ const ITEM_DATABASE = {
     icon: '🥢',
     type: 'consumable',
     price: 2400,
-    maxStack: 1,
-    desc: '「勝つ！」の験担ぎ。ここぞの場面で【やる気 +1 ＆ 体力 +25 回復】！（※所持上限1個）',
-    passiveText: 'やる気+1 / 体力+25 (上限1個)',
+    desc: '「勝つ！」の験担ぎ。ここぞの場面で【やる気 +1 ＆ 体力 +25 回復】！',
+    passiveText: 'やる気+1 / 体力+25',
     use: (s) => {
       if (s.motivation < 4) s.motivation++;
       s.stamina = Math.min(100, s.stamina + 25);
@@ -976,8 +971,6 @@ function renderShopBuyList() {
   items.forEach(item => {
     const isOwned = item.type !== 'consumable' && hasItem(item.id);
     const count = getItemCount(item.id);
-    const maxStack = item.maxStack || 2;
-    const isFull = item.type === 'consumable' && count >= maxStack;
     const canAfford = (state.money || 0) >= item.price;
 
     const card = document.createElement('div');
@@ -986,8 +979,6 @@ function renderShopBuyList() {
     let actionBtnHtml = '';
     if (isOwned) {
       actionBtnHtml = `<span class="owned-badge">✔ 購入済み</span>`;
-    } else if (isFull) {
-      actionBtnHtml = `<button class="btn-buy-item" disabled style="background:#94a3b8; font-size:0.73rem;">所持上限(${maxStack}個)</button>`;
     } else {
       actionBtnHtml = `
         <button class="btn-buy-item" ${!canAfford ? 'disabled' : ''} onclick="buyShopItem('${item.id}')">
@@ -999,7 +990,7 @@ function renderShopBuyList() {
     let badgeHtml = '';
     if (item.type === 'book') badgeHtml = `<span class="item-badge" style="background:#e0f2fe; color:#0284c7;">参考書</span>`;
     else if (item.type === 'gear') badgeHtml = `<span class="item-badge" style="background:#fef3c7; color:#d97706;">勉強ギア</span>`;
-    else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}/${maxStack}個)</span>`;
+    else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}個)</span>`;
     else if (item.type === 'exam') badgeHtml = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">試験お守り</span>`;
 
     card.innerHTML = `
@@ -1105,13 +1096,8 @@ function buyShopItem(itemId) {
   if (!item) return;
 
   const currentCount = getItemCount(itemId);
-  const maxStack = item.maxStack || (item.type === 'consumable' ? 2 : 1);
 
-  if (item.type === 'consumable' && currentCount >= maxStack) {
-    playSound('fail');
-    alert(`このアイテムはこれ以上持てません！（マイバッグ所持上限: ${maxStack}個）`);
-    return;
-  }
+  // 永続パッシブ（参考書・ギア）は1回のみ購入可
   if (item.type !== 'consumable' && currentCount >= 1) {
     playSound('fail');
     alert('このアイテムはすでに購入済みです！');
