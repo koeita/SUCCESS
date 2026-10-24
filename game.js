@@ -681,53 +681,57 @@ if (typeof window !== 'undefined') {
 // ========================================================
 // 購買部・本屋 ＆ 所持品（アイテム）システム
 // ========================================================
+let curShopTab = 'buy';
+let curShopCategory = 'all';
+
 const ITEM_DATABASE = {
-  // --- 参考書・問題集（永続パッシブ / 各教科経験値+25%） ---
+  // --- 参考書・問題集（永続パッシブ / 各教科経験値 +15%） ---
   book_eng: {
     id: 'book_eng',
     name: '『システム英単語』',
     icon: '📘',
     type: 'book',
-    price: 3500,
-    desc: '英語の勉強経験値 +25%！「速読王」の習得率UP。基礎から難関大レベルの必須英単語を網羅。',
-    passiveText: '英語勉強経験値 +25%'
+    price: 2800,
+    desc: '基礎から難関大レベルの必須英単語を網羅。英語の勉強経験値 +15%！',
+    passiveText: '英語勉強経験値 +15%'
   },
   book_math: {
     id: 'book_math',
     name: '『青チャート数学』',
     icon: '📐',
     type: 'book',
-    price: 4200,
-    desc: '数学の勉強経験値 +25%！「数理の閃き」の習得率UP。網羅系問題集の王道。難関大数学の土台を築く。',
-    passiveText: '数学勉強経験値 +25%'
+    price: 3600,
+    desc: '網羅系問題集の王道。難関大数学の土台を築く。数学の勉強経験値 +15%！',
+    passiveText: '数学勉強経験値 +15%'
   },
   book_jp: {
     id: 'book_jp',
     name: '『現代文読解の開発講座』',
     icon: '📜',
     type: 'book',
-    price: 3200,
-    desc: '国語の勉強経験値 +25%！「人文の閃き」の習得率UP。論理的読解力を養い、記述の土台を作る。',
-    passiveText: '国語勉強経験値 +25%'
+    price: 2600,
+    desc: '論理的読解力を養い、記述の土台を作る。国語の勉強経験値 +15%！',
+    passiveText: '国語勉強経験値 +15%'
   },
   book_sci: {
     id: 'book_sci',
     name: '『理科・社会 集中講義』',
     icon: '🔬',
     type: 'book',
-    price: 3800,
-    desc: '理社（専門科目）の勉強経験値 +25%！重要事項を凝縮したハイレベル講義書。',
-    passiveText: '理社勉強経験値 +25%'
+    price: 3200,
+    reqYear: 2,
+    desc: '高2以降の重要事項を凝縮した講義書。理社（専門科目）の勉強経験値 +15%！',
+    passiveText: '理社勉強経験値 +15%'
   },
   book_past: {
     id: 'book_past',
     name: '『志望校の赤本（過去問）』',
     icon: '📕',
     type: 'book',
-    price: 5500,
+    price: 4500,
     reqYear: 3,
-    desc: '志望校の徹底研究。二次試験バトルでの獲得得点 +8%！出題傾向を掴んで本番を突破する。',
-    passiveText: '二次試験得点 +8%'
+    desc: '志望校の徹底研究。二次試験バトルでの獲得得点 +5%！',
+    passiveText: '二次試験得点 +5%'
   },
 
   // --- 文房具・勉強ギア（永続パッシブ） ---
@@ -736,50 +740,52 @@ const ITEM_DATABASE = {
     name: '耳栓',
     icon: '🎧',
     type: 'gear',
-    price: 4500,
-    desc: '勉強コマンド実行時のストレス増加量を 30% カット！周囲の雑音を遮断して全集中。',
-    passiveText: '勉強ストレス 30%カット'
+    price: 3000,
+    desc: '周囲の雑音を遮断して全集中。勉強コマンド実行時のストレス増加量を 15% 軽減！',
+    passiveText: '勉強ストレス 15%カット'
   },
   gear_pencil: {
     id: 'gear_pencil',
-    name: '鉛筆',
+    name: 'マーク専用鉛筆',
     icon: '✏️',
     type: 'gear',
-    price: 2000,
-    desc: '濃く滑らかなマーク専用鉛筆。共通テストやマーク模試での失点・ケアレスミス発生率を低減！',
-    passiveText: 'マークミス大幅低減'
+    price: 1500,
+    desc: '濃く滑らかなマーク専用鉛筆。共通テストやマーク模試でのケアレスミス率を低減！',
+    passiveText: 'マークミス低減'
   },
   gear_timer: {
     id: 'gear_timer',
-    name: '学習用カウントダウンタイマー',
+    name: '学習タイマー',
     icon: '⏱️',
     type: 'gear',
-    price: 2800,
-    desc: '試験時間を常に意識して机に向かう。勉強コマンド実行時のやる気低下を完全に防止！',
-    passiveText: '勉強時のやる気低下防止'
+    price: 2400,
+    desc: '時間を意識して机に向かう。勉強失敗時のやる気ダウンを完全に防止！',
+    passiveText: '勉強失敗時のやる気低下防止'
   },
   gear_cushion: {
     id: 'gear_cushion',
     name: '低反発クッション',
     icon: '🪑',
     type: 'gear',
-    price: 3000,
-    desc: '長時間の学習でも腰やお尻が疲れない。勉強コマンド実行時の体力消費を 3pt 軽減！',
-    passiveText: '勉強体力消費 -3pt'
+    price: 2500,
+    desc: '長時間の学習でも疲れにくい。勉強コマンド実行時の体力消費を 2pt 軽減！',
+    passiveText: '勉強体力消費 -2pt'
   },
 
-  // --- 軽食・リフレッシュ（消費アイテム） ---
+  // --- 軽食・リフレッシュ（消費アイテム / 1週1回まで使用可 / 最大2個所持） ---
   snack_choco: {
     id: 'snack_choco',
     name: 'ブドウ糖チョコ',
     icon: '🍫',
     type: 'consumable',
-    price: 800,
-    desc: '脳の唯一のエネルギー源。使うと即座に【やる気 +1】＆【ストレス -8%】！',
+    price: 1000,
+    maxStack: 2,
+    desc: '脳の栄養補給。使うと即座に【やる気 +1】＆【ストレス -5%】！（※1週1回まで使用可）',
+    passiveText: 'やる気+1 / ストレス-5%',
     use: (s) => {
       if (s.motivation < 4) s.motivation++;
-      s.stress = Math.max(0, s.stress - 8);
-      return '脳に糖分補給！やる気が1段階アップし、ストレスが8%回復した！';
+      s.stress = Math.max(0, s.stress - 5);
+      return '脳に糖分補給！やる気が1段階アップし、ストレスが少し回復した！';
     }
   },
   snack_energy: {
@@ -787,11 +793,14 @@ const ITEM_DATABASE = {
     name: '超集中エナジードリンク',
     icon: '⚡',
     type: 'consumable',
-    price: 1200,
-    desc: '気合いのドーピング飲料。使うと即座に【体力 +40 回復】！',
+    price: 1500,
+    maxStack: 2,
+    desc: '気合いのドーピング飲料。使うと即座に【体力 +30 回復】（※反動でストレス+5%）！',
+    passiveText: '体力+30 / ストレス+5%',
     use: (s) => {
-      s.stamina = Math.min(100, s.stamina + 40);
-      return 'グッと飲み干して覚醒！体力が40ポイント回復した！';
+      s.stamina = Math.min(100, s.stamina + 30);
+      s.stress = Math.min(100, s.stress + 5);
+      return 'グッと飲み干して覚醒！体力が30回復したが、カフェインの反動でストレスが5%増えた。';
     }
   },
   snack_coffee: {
@@ -799,11 +808,13 @@ const ITEM_DATABASE = {
     name: 'カフェのドリップコーヒー',
     icon: '☕',
     type: 'consumable',
-    price: 900,
-    desc: '芳醇な香りの極上コーヒー。使うと即座に【ストレス -25% 解消】！',
+    price: 1200,
+    maxStack: 2,
+    desc: '芳醇な香りの本格コーヒー。使うと即座に【ストレス -20% 解消】！',
+    passiveText: 'ストレス -20%',
     use: (s) => {
-      s.stress = Math.max(0, s.stress - 25);
-      return 'ホッと一息。深い香りに包まれてストレスが25%吹き飛んだ！';
+      s.stress = Math.max(0, s.stress - 20);
+      return 'ホッと一息。深い香りに包まれてストレスが20%解消した！';
     }
   },
   snack_eyemask: {
@@ -811,36 +822,40 @@ const ITEM_DATABASE = {
     name: '蒸気ホットアイマスク',
     icon: '♨️',
     type: 'consumable',
-    price: 1000,
-    desc: '酷使した目を優しく温める。使うと【体力 +25 回復】＆【ストレス -15% 解消】！',
+    price: 1300,
+    maxStack: 2,
+    desc: '酷使した目を優しく温める。使うと【体力 +20 回復】＆【ストレス -12% 解消】！',
+    passiveText: '体力+20 / ストレス-12%',
     use: (s) => {
-      s.stamina = Math.min(100, s.stamina + 25);
-      s.stress = Math.max(0, s.stress - 15);
-      return '心地よい温かさに癒やされた...！体力が25回復、ストレスが15%解消！';
+      s.stamina = Math.min(100, s.stamina + 20);
+      s.stress = Math.max(0, s.stress - 12);
+      return '心地よい温かさに癒やされた...！体力が20回復、ストレスが12%解消！';
     }
   },
 
-  // --- 本番・神頼みアイテム ---
+  // --- 本番・勝負アイテム ---
   exam_omamori: {
     id: 'exam_omamori',
     name: '太宰府の合格祈願お守り',
     icon: '⛩️',
     type: 'exam',
-    price: 2500,
-    desc: '学問の神様のご加護。共通テスト・二次試験本番でボーナス偏差値 +1.5！',
-    passiveText: '本番ボーナス偏差値 +1.5'
+    price: 2200,
+    desc: '学問の神様のご加護。共通テスト・二次試験本番で各大問得点ボーナス！',
+    passiveText: '本番各大問得点ボーナス'
   },
   exam_katsu: {
     id: 'exam_katsu',
     name: '母の手作りカツ弁当',
     icon: '🥢',
     type: 'consumable',
-    price: 1500,
-    desc: '「勝つ！」の験担ぎ。使うと即座にやる気が【最高（絶好調）】になり、体力も30回復！',
+    price: 2400,
+    maxStack: 1,
+    desc: '「勝つ！」の験担ぎ。ここぞの場面で【やる気 +1 ＆ 体力 +25 回復】！（※所持上限1個）',
+    passiveText: 'やる気+1 / 体力+25 (上限1個)',
     use: (s) => {
-      s.motivation = 4;
-      s.stamina = Math.min(100, s.stamina + 30);
-      return '母の温かいカツ弁当を完食！やる気が最高潮（絶好調）になり体力が30回復！';
+      if (s.motivation < 4) s.motivation++;
+      s.stamina = Math.min(100, s.stamina + 25);
+      return '母の温かいカツ弁当を完食！愛情が染み渡り、やる気が1段階アップして体力が25回復！';
     }
   },
   exam_medicine: {
@@ -848,8 +863,8 @@ const ITEM_DATABASE = {
     name: '常備薬',
     icon: '💊',
     type: 'exam',
-    price: 1000,
-    desc: '持っていれば安心の常備薬。試験バトルでのプレッシャーや腹痛デバフを完全に防ぎ安定させる。',
+    price: 1200,
+    desc: '持っていれば安心の常備薬。模試や試験バトルでのプレッシャーや腹痛デバフを軽減。',
     passiveText: '試験時のデバフ・失点防護'
   }
 };
@@ -877,9 +892,6 @@ function consumeItem(itemId) {
   }
   return true;
 }
-
-let curShopTab = 'buy';
-let curShopCategory = 'all';
 
 function openShopModal(defaultTab = 'buy') {
   playSound('click');
@@ -935,9 +947,10 @@ function renderShopUI() {
       moneyBar.innerHTML = `<span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥${(state.money || 0).toLocaleString()}</b></span>`;
     } else {
       const ownedCount = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0).length;
+      const usedText = (state.itemsUsedThisTurn || 0) >= 1 ? '<span style="color:#ef4444; font-weight:800;">今週使用済み(1/1)</span>' : '<span style="color:#16a34a; font-weight:800;">使用可(0/1)</span>';
       moneyBar.innerHTML = `
-        <span>🎒 <b>所持アイテム一覧</b>: <span style="color:#2563eb; font-weight:900;">${ownedCount}種類</span></span>
-        <span style="font-size: 0.8rem; color: #166534; font-weight:700;">💰 所持金: ¥${(state.money || 0).toLocaleString()}</span>
+        <span>🎒 <b>所持</b>: <b style="color:#2563eb;">${ownedCount}種</b> / 軽食: ${usedText}</span>
+        <span style="font-size: 0.8rem; color: #166534; font-weight:700;">💰 ¥${(state.money || 0).toLocaleString()}</span>
       `;
     }
   }
@@ -963,6 +976,8 @@ function renderShopBuyList() {
   items.forEach(item => {
     const isOwned = item.type !== 'consumable' && hasItem(item.id);
     const count = getItemCount(item.id);
+    const maxStack = item.maxStack || 2;
+    const isFull = item.type === 'consumable' && count >= maxStack;
     const canAfford = (state.money || 0) >= item.price;
 
     const card = document.createElement('div');
@@ -971,6 +986,8 @@ function renderShopBuyList() {
     let actionBtnHtml = '';
     if (isOwned) {
       actionBtnHtml = `<span class="owned-badge">✔ 購入済み</span>`;
+    } else if (isFull) {
+      actionBtnHtml = `<button class="btn-buy-item" disabled style="background:#94a3b8; font-size:0.73rem;">所持上限(${maxStack}個)</button>`;
     } else {
       actionBtnHtml = `
         <button class="btn-buy-item" ${!canAfford ? 'disabled' : ''} onclick="buyShopItem('${item.id}')">
@@ -982,7 +999,7 @@ function renderShopBuyList() {
     let badgeHtml = '';
     if (item.type === 'book') badgeHtml = `<span class="item-badge" style="background:#e0f2fe; color:#0284c7;">参考書</span>`;
     else if (item.type === 'gear') badgeHtml = `<span class="item-badge" style="background:#fef3c7; color:#d97706;">勉強ギア</span>`;
-    else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}個)</span>`;
+    else if (item.type === 'consumable') badgeHtml = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品 (所持: ${count}/${maxStack}個)</span>`;
     else if (item.type === 'exam') badgeHtml = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">試験お守り</span>`;
 
     card.innerHTML = `
@@ -1008,7 +1025,6 @@ function renderShopBagList() {
   if (!container) return;
   container.innerHTML = '';
 
-  // 所持品のみ（個数 > 0）を抽出
   const ownedKeys = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0);
 
   if (ownedKeys.length === 0) {
@@ -1023,6 +1039,8 @@ function renderShopBagList() {
     return;
   }
 
+  const isUsedThisTurn = (state.itemsUsedThisTurn || 0) >= 1;
+
   ownedKeys.forEach(itemId => {
     const item = ITEM_DATABASE[itemId];
     if (!item) return;
@@ -1033,11 +1051,19 @@ function renderShopBagList() {
 
     let actionHtml = '';
     if (item.type === 'consumable') {
-      actionHtml = `
-        <button class="btn-use-item" onclick="useBagItem('${item.id}')">
-          使う
-        </button>
-      `;
+      if (isUsedThisTurn) {
+        actionHtml = `
+          <button class="btn-use-item" disabled style="background:#cbd5e1; color:#64748b; cursor:not-allowed;" title="軽食アイテムの使用は1週に1回までです">
+            今週済
+          </button>
+        `;
+      } else {
+        actionHtml = `
+          <button class="btn-use-item" onclick="useBagItem('${item.id}')">
+            使う
+          </button>
+        `;
+      }
     } else {
       actionHtml = `
         <span class="owned-badge" style="background:#e0f2fe; color:#0369a1; font-weight: 800;">
@@ -1078,6 +1104,20 @@ function buyShopItem(itemId) {
   const item = ITEM_DATABASE[itemId];
   if (!item) return;
 
+  const currentCount = getItemCount(itemId);
+  const maxStack = item.maxStack || (item.type === 'consumable' ? 2 : 1);
+
+  if (item.type === 'consumable' && currentCount >= maxStack) {
+    playSound('fail');
+    alert(`このアイテムはこれ以上持てません！（マイバッグ所持上限: ${maxStack}個）`);
+    return;
+  }
+  if (item.type !== 'consumable' && currentCount >= 1) {
+    playSound('fail');
+    alert('このアイテムはすでに購入済みです！');
+    return;
+  }
+
   if ((state.money || 0) < item.price) {
     playSound('fail');
     alert(`お小遣いが足りません！ (必要: ¥${item.price.toLocaleString()})`);
@@ -1097,8 +1137,16 @@ function useBagItem(itemId) {
   const item = ITEM_DATABASE[itemId];
   if (!item || item.type !== 'consumable') return;
 
+  // 1週1回制限チェック
+  if ((state.itemsUsedThisTurn || 0) >= 1) {
+    playSound('fail');
+    alert('今週はすでに軽食・回復アイテムを使用しました！\n（※胃腸やカフェインの負担を考え、アイテム使用は1週に1回までです）');
+    return;
+  }
+
   if (!consumeItem(itemId)) return;
 
+  state.itemsUsedThisTurn = (state.itemsUsedThisTurn || 0) + 1;
   playSound('success');
   triggerParticles(null, null, 20, 'gold');
   const msg = item.use ? item.use(state) : `${item.name} を使った！`;
@@ -1149,7 +1197,8 @@ function createInitialState(playerName = '合格太郎') {
     motivation: 2,
     turnsAtMotivation: 0,
     lastMotivation: 2,
-    money: 3000,
+    money: 1500,
+    itemsUsedThisTurn: 0,
     inventory: {},
 
     subjects: {
@@ -2202,6 +2251,7 @@ function setDialog(speaker, message) {
 }
 
 function advanceTurn() {
+  state.itemsUsedThisTurn = 0;
   // 進学先確定（ゲーム終了）後はターンを一切進めない
   if (state.gameOver) {
     showGameOverAgain();
@@ -2229,15 +2279,18 @@ function advanceTurn() {
     }
   }
 
-  // 1. 月初めのお小遣い支給 ＆ お年玉
+  // ターン開始時にアイテム使用回数をリセット
+  state.itemsUsedThisTurn = 0;
+
+  // 1. 月初めのお小遣い支給 ＆ お年玉（バランス調整版）
   if (state.week === 1) {
-    let monthlyAllowance = 3000;
-    if (state.year === 2) monthlyAllowance = 3500;
-    if (state.year === 3) monthlyAllowance = 4000;
+    let monthlyAllowance = 1500; // 高1: 毎月1,500円
+    if (state.year === 2) monthlyAllowance = 2000; // 高2: 毎月2,000円
+    if (state.year === 3) monthlyAllowance = 2500; // 高3: 毎月2,500円
 
     let otoshidama = 0;
     if (state.month === 1) {
-      otoshidama = 10000; // 1月1週はお年玉臨時ボーナス！
+      otoshidama = 4000; // 1月1週のお年玉ボーナス（4,000円）
     }
 
     const totalAllowance = monthlyAllowance + otoshidama;
@@ -2388,6 +2441,14 @@ function executeStudy(subject) {
 
   if (state.club === '運動部') stamCost += 3;
 
+  // 勉強ギアパッシブ効果
+  if (hasItem('gear_cushion')) {
+    stamCost = Math.max(6, stamCost - 2); // 低反発クッション: 体力消費 -2pt
+  }
+  if (hasItem('gear_earplugs')) {
+    stressCost = Math.max(3, Math.round(stressCost * 0.85)); // 耳栓: ストレス増加量 15%カット
+  }
+
   let failRate = 0;
   if (state.stamina < 40) failRate = (40 - state.stamina) * 1.5;
   if (state.stamina < 15) failRate = 75;
@@ -2407,8 +2468,12 @@ function executeStudy(subject) {
 
     let motDown = false;
     if (state.motivation > 0 && Math.random() < 0.5) {
-      state.motivation--;
-      motDown = true;
+      if (hasItem('gear_timer')) {
+        motDown = false; // 学習タイマー所持時はやる気低下を防止
+      } else {
+        state.motivation--;
+        motDown = true;
+      }
     }
 
     let gotBadTrait = false;
@@ -2469,7 +2534,13 @@ function executeStudy(subject) {
         if (state.traits.includes('math_spark') && (s === 'math' || s === 'sci')) subjMult *= 1.15;
         if (state.traits.includes('humanities_spark') && (s === 'jp' || (isBunkei && s === 'sci') || s === 'eng')) subjMult *= 1.15;
         // 総合演習は4教科に分散するため各科38%（単科18ptに対し約7pt・4教科合計で約1.5倍の総経験点）
-        const pts = Math.max(3, Math.round((baseExp * 0.38) * motMulti * zoneBonus * subjMult));
+        let bookBonus = 1.0;
+        if (s === 'eng' && hasItem('book_eng')) bookBonus = 1.15;
+        if (s === 'math' && hasItem('book_math')) bookBonus = 1.15;
+        if (s === 'jp' && hasItem('book_jp')) bookBonus = 1.15;
+        if (s === 'sci' && hasItem('book_sci')) bookBonus = 1.15;
+
+        const pts = Math.max(3, Math.round((baseExp * 0.38) * motMulti * zoneBonus * subjMult * bookBonus));
         const up = addExpToSubject(s, pts);
         if (up > 0) {
           anyLevelUp = true;
@@ -2496,7 +2567,14 @@ function executeStudy(subject) {
         mult *= 1.15;
       }
 
-      const gainedExp = Math.round(baseExp * motMulti * zoneBonus * mult);
+      // 参考書パッシブボーナス (+15%)
+      let bookBonus = 1.0;
+      if (subject === 'eng' && hasItem('book_eng')) bookBonus = 1.15;
+      if (subject === 'math' && hasItem('book_math')) bookBonus = 1.15;
+      if (subject === 'jp' && hasItem('book_jp')) bookBonus = 1.15;
+      if (subject === 'sci' && hasItem('book_sci')) bookBonus = 1.15;
+
+      const gainedExp = Math.round(baseExp * motMulti * zoneBonus * mult * bookBonus);
       const levelUps = addExpToSubject(subject, gainedExp);
 
       const subjName = getSubjectDisplayName(subject);
@@ -4514,6 +4592,22 @@ function advanceExamBattle() {
     gained += b;
     term.innerHTML += `<div class="log-line trait">【青特】「本番に強い」が発動！プレッシャーを味方につけた！(+${b}点)</div>`;
   }
+  // 【アイテム効果】合格祈願お守り
+  if (hasItem('exam_omamori')) {
+    const omamoriBonus = qMax === 200 ? 4 : 2;
+    gained += omamoriBonus;
+    term.innerHTML += `<div class="log-line trait">⛩️【お守り】「太宰府の合格祈願お守り」のご加護！(+${omamoriBonus}点)</div>`;
+  }
+  // 【アイテム効果】志望校の赤本（二次試験・後期試験ボーナス +5%）
+  if (!isKyotsuBattle && hasItem('book_past')) {
+    const redBonus = Math.max(2, Math.round(gained * 0.05));
+    gained += redBonus;
+    term.innerHTML += `<div class="log-line trait">📕【赤本】「過去問の徹底研究」が的中！二次試験で加点！(+${redBonus}点)</div>`;
+  }
+  // 【アイテム効果】常備薬（高ストレス時の減点防護）
+  if (hasItem('exam_medicine') && state.stress >= 50) {
+    term.innerHTML += `<div class="log-line trait">💊【常備薬】持参した薬のおかげで緊張と腹痛を抑え、冷静さを保てた！</div>`;
+  }
   // 金特「数理の閃き」「人文の閃き」: 確率クリティカル発動（基本45%・やる気連動、案A調整）
   const sparkTriggerRate = 0.45 + (state.motivation >= 4 ? 0.15 : (state.motivation === 3 ? 0.05 : (state.motivation === 1 ? -0.10 : (state.motivation === 0 ? -0.20 : 0))));
 
@@ -4543,7 +4637,8 @@ function advanceExamBattle() {
     triggerScreenBounce();
   }
 
-  if (state.traits.includes('careless_mistake') && Math.random() < 0.35) {
+  const carelessRate = hasItem('gear_pencil') ? 0.15 : 0.35; // マーク専用鉛筆所持時はミス率激減
+  if (state.traits.includes('careless_mistake') && Math.random() < carelessRate) {
     if (state.hasAmulet) {
       state.hasAmulet = false;
       term.innerHTML += `<div class="log-line trait">🌸 あおいの「合格祈願お守り」が輝いた！計算ミスを寸前で自覚して書き直した！</div>`;
