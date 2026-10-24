@@ -1218,19 +1218,21 @@ body::before {
 
 .study-card-btn {
   width: 100%;
+  height: auto !important;
+  min-height: fit-content !important;
   box-sizing: border-box;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   cursor: pointer;
   text-align: left;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
   transition: all 0.16s var(--ease-spring);
-  overflow: hidden;
+  overflow: visible !important;
 }
 
 .study-card-btn .info {
@@ -2099,33 +2101,47 @@ body::before {
   }
 
   .study-card-btn {
-    padding: 8px 12px;
+    padding: 10px 12px 12px 12px;
     gap: 10px;
     border-radius: 12px;
-    align-items: flex-start;
+    align-items: center;
+    height: auto !important;
+    min-height: fit-content !important;
+    overflow: visible !important;
   }
 
   .study-card-btn .icon {
-    font-size: 1.35rem;
-    margin-top: 2px;
+    font-size: 1.5rem;
     flex-shrink: 0;
   }
 
+  .study-card-btn .info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-bottom: 2px;
+    overflow: visible !important;
+  }
+
   .study-card-btn .info .name {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
+    font-weight: 900;
     line-height: 1.35;
     white-space: normal;
     word-break: break-word;
+    color: #0f172a;
   }
 
   .study-card-btn .info .desc {
-    font-size: 0.68rem;
-    line-height: 1.4;
+    font-size: 0.69rem;
+    line-height: 1.45;
     white-space: normal;
     word-break: break-word;
-    overflow: visible;
+    overflow: visible !important;
     text-overflow: clip;
-    margin-top: 3px;
+    color: #475569;
   }
 }
 
@@ -2668,4 +2684,47 @@ body::before {
   padding: 4px 8px;
   border-radius: 6px;
   white-space: nowrap;
+}
+
+/* お出かけ選択肢の視認性向上タグ */
+.play-effect-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+.play-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+.play-tag.cost {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+  font-weight: 800;
+}
+.play-tag.heal {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.play-tag.mot {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fef08a;
+}
+.play-tag.exp {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
 }

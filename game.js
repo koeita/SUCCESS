@@ -2579,7 +2579,13 @@ function openPlayMenu() {
     <span class="icon">🛒</span>
     <div class="info">
       <div class="name" style="color:#166534; font-weight:900;">購買部・本屋に行く</div>
-      <div class="desc">参考書・勉強ギア・軽食を購入（※ターン消費なし）</div>
+      <div class="desc">
+        <div class="play-effect-row">
+          <span class="play-tag cost" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0;">買い出し</span>
+          <span class="play-tag">参考書・ギア・軽食購入</span>
+          <span class="play-tag" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd;">※ターン消費なし</span>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(btnShop);
@@ -2592,7 +2598,14 @@ function openPlayMenu() {
     <span class="icon">🎮</span>
     <div class="info">
       <div class="name">自宅の部屋でゲーム＆マンガ</div>
-      <div class="desc">費用: ¥0 • ストレス-30% / 体力+15 / やる気UP</div>
+      <div class="desc">
+        <div class="play-effect-row">
+          <span class="play-tag cost">費用: ¥0</span>
+          <span class="play-tag heal">ストレス -30%</span>
+          <span class="play-tag heal">体力 +15</span>
+          <span class="play-tag mot">やる気UP ⤴</span>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(btnHome);
@@ -2605,7 +2618,14 @@ function openPlayMenu() {
     <span class="icon">⛩️</span>
     <div class="info">
       <div class="name">学問神社でお参り＆合格祈願</div>
-      <div class="desc">費用: ¥500 • やる気絶好調 / ストレス-20% / 赤特お祓い</div>
+      <div class="desc">
+        <div class="play-effect-row">
+          <span class="play-tag cost">費用: ¥500</span>
+          <span class="play-tag mot">やる気 絶好調</span>
+          <span class="play-tag heal">ストレス -20%</span>
+          <span class="play-tag">赤特お祓い浄化</span>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(btnShrine);
@@ -2618,7 +2638,14 @@ function openPlayMenu() {
     <span class="icon">📚</span>
     <div class="info">
       <div class="name">大型書店＆自習カフェ</div>
-      <div class="desc">費用: ¥600 • 全教科経験値+8pt / ストレス-20% / やる気UP</div>
+      <div class="desc">
+        <div class="play-effect-row">
+          <span class="play-tag cost">費用: ¥600</span>
+          <span class="play-tag exp">全教科経験値 +8pt</span>
+          <span class="play-tag heal">ストレス -20%</span>
+          <span class="play-tag mot">やる気UP ⤴</span>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(btnBookstore);
@@ -2631,7 +2658,14 @@ function openPlayMenu() {
     <span class="icon">🎤</span>
     <div class="info">
       <div class="name">カラオケで熱唱！大発散</div>
-      <div class="desc">費用: ¥1,200 • ストレス-50% / やる気絶好調 / 体力-5</div>
+      <div class="desc">
+        <div class="play-effect-row">
+          <span class="play-tag cost">費用: ¥1,200</span>
+          <span class="play-tag heal">ストレス -50%</span>
+          <span class="play-tag mot">やる気 絶好調</span>
+          <span class="play-tag cost">体力 -5</span>
+        </div>
+      </div>
     </div>
   `;
   container.appendChild(btnKaraoke);
@@ -2645,7 +2679,15 @@ function openPlayMenu() {
       <span class="icon">👧</span>
       <div class="info">
         <div class="name">あおいとカフェで自習＆おしゃべり</div>
-        <div class="desc">費用: ¥800 • 好感度+15% / ストレス-35% / 体力+10 / やる気UP</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">費用: ¥800</span>
+            <span class="play-tag heal">好感度 +15%</span>
+            <span class="play-tag heal">ストレス -35%</span>
+            <span class="play-tag heal">体力 +10</span>
+            <span class="play-tag mot">やる気UP ⤴</span>
+          </div>
+        </div>
       </div>
     `;
   } else {
@@ -2654,7 +2696,11 @@ function openPlayMenu() {
       <span class="icon">🔒</span>
       <div class="info">
         <div class="name">幼馴染とお出かけ (未解放)</div>
-        <div class="desc">高校生活が進むと出会えるかも…？</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag">高校生活が進むと出会えるかも…？</span>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -2666,14 +2712,21 @@ function openPlayMenu() {
     btnShindo.className = 'study-card-btn';
     btnShindo.onclick = () => executePlay('shindo');
     const isBunkeiMenu = state.course === '文系';
-    const shindoDesc = isBunkeiMenu
-      ? '費用: ¥900 • 友好度+15% / 国語+20pt・社会+15pt / ストレス-20%'
-      : '費用: ¥900 • 友好度+15% / 数学+20pt・英語+15pt / ストレス-20%';
+    const subExpTag = isBunkeiMenu 
+      ? '<span class="play-tag exp">国語 +20pt・社会 +15pt</span>' 
+      : '<span class="play-tag exp">数学 +20pt・英語 +15pt</span>';
     btnShindo.innerHTML = `
       <span class="icon">👦</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
-        <div class="desc">${shindoDesc}</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag cost">費用: ¥900</span>
+            <span class="play-tag heal">友好度 +15%</span>
+            ${subExpTag}
+            <span class="play-tag heal">ストレス -20%</span>
+          </div>
+        </div>
       </div>
     `;
   } else {
@@ -2682,7 +2735,11 @@ function openPlayMenu() {
       <span class="icon">🔒</span>
       <div class="info">
         <div class="name">ライバルとお出かけ (未解放)</div>
-        <div class="desc">高1秋の文理選択後に現れるかも…？</div>
+        <div class="desc">
+          <div class="play-effect-row">
+            <span class="play-tag">高1秋の文理選択後に現れるかも…？</span>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -2690,6 +2747,7 @@ function openPlayMenu() {
 
   document.getElementById('play-modal').classList.add('active');
 }
+
 function closePlayMenu() {
   document.getElementById('play-modal').classList.remove('active');
 }
