@@ -18,6 +18,7 @@
     <!-- Game Juice エフェクト用レイヤー（クリックを一切遮らない pointer-events: none） -->
     <div class="particle-container" id="particle-container"></div>
     <div class="floating-text-container" id="floating-text-container"></div>
+    <div class="achievement-toast-container" id="achievement-toast-container"></div>
 
     <!-- ================= スタート（タイトル）画面 ================= -->
     <div class="title-screen" id="title-screen">
@@ -74,7 +75,8 @@
         <div class="title-sub-buttons">
           <button class="btn-title-sub" onclick="openPauseModal(true)">⚙️ 設定</button>
           <button class="btn-title-sub" onclick="openHowToPlayModal()">📖 あそびかた</button>
-          <button class="btn-title-sub" onclick="openOBRosterModal()">👨‍🎓 OB名簿・戦績</button>
+          <button class="btn-title-sub" onclick="openOBRosterModal()">👨‍🎓 OB名簿</button>
+          <button class="btn-title-sub btn-title-ach" onclick="openAchievementsModal()">🏆 実績 <span id="title-ach-badge" class="title-ach-badge">0/30</span></button>
         </div>
       </div>
 
@@ -95,6 +97,7 @@
           </div>
           <div class="header-right-actions">
             <div class="turn-count" id="turn-count">残り 144 週</div>
+            <button class="btn-header-menu" onclick="openAchievementsModal()" title="実績・トロフィー一覧">🏆</button>
             <button class="btn-header-menu" onclick="openPauseModal(false)" title="ポーズ・各種設定">⚙️</button>
           </div>
         </div>
@@ -321,6 +324,49 @@
       </div>
       <div class="modal-footer">
         <button class="btn-confirm" onclick="closeOBRosterModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 実績（トロフィー）モーダル ================= -->
+  <div class="modal-overlay" id="achievements-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>🏆 実績・称号トロフィー</h3>
+        <button class="btn-close" onclick="closeAchievementsModal()">✕</button>
+      </div>
+
+      <!-- 達成率サマリーバー -->
+      <div class="ach-summary-box" id="ach-summary-box">
+        <div class="ach-summary-top">
+          <span class="ach-summary-title">達成率: <b id="ach-count-text">0 / 30 (0%)</b></span>
+          <div class="ach-grade-counts" id="ach-grade-counts">
+            <span title="プラチナ">👑0</span>
+            <span title="ゴールド">🥇0</span>
+            <span title="シルバー">🥈0</span>
+            <span title="ブロンズ">🥉0</span>
+          </div>
+        </div>
+        <div class="ach-progress-outer">
+          <div class="ach-progress-inner" id="ach-progress-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- カテゴリフィルター -->
+      <div class="shop-category-filters ach-category-filters">
+        <button class="shop-filter-btn active" id="ach-filter-all" onclick="filterAchievementsCategory('all')">すべて</button>
+        <button class="shop-filter-btn" id="ach-filter-univ" onclick="filterAchievementsCategory('univ')">🎓 大学合格</button>
+        <button class="shop-filter-btn" id="ach-filter-study" onclick="filterAchievementsCategory('study')">📖 学力・試験</button>
+        <button class="shop-filter-btn" id="ach-filter-life" onclick="filterAchievementsCategory('life')">🏫 やりこみ</button>
+      </div>
+
+      <!-- 実績リスト（独立スクロール領域） -->
+      <div class="shop-items-container ach-items-container" id="achievements-list">
+        <!-- JSで動的生成 -->
+      </div>
+
+      <div class="modal-footer ach-modal-footer">
+        <button class="btn-confirm" onclick="closeAchievementsModal()">閉じる</button>
       </div>
     </div>
   </div>

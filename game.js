@@ -531,6 +531,22 @@ function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.start(now);
       osc.stop(now + 0.12);
+    } else if (type === 'trophy') {
+      // 実績解除・トロフィー獲得音（煌びやかな高音クリスタル・アルペジオ）
+      const notes = [587.33, 739.99, 880.00, 1174.66, 1479.98];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        const t = now + idx * 0.065;
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.22 * vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+        osc.start(t);
+        osc.stop(t + 0.45);
+      });
     }
   } catch (e) {
     console.warn('Audio error:', e);
@@ -1286,6 +1302,9 @@ function createInitialState(playerName = '合格太郎') {
       shindo: { met: false, affection: 0 }
     },
     hasAmulet: false,
+    hadStudyFail: false,
+    hadMaxStress: false,
+    hadMockE: false,
 
     history: []
   };
@@ -1737,6 +1756,9 @@ function updateTitleScreenUI() {
     if (contSection) contSection.style.display = 'none';
     if (startNewText) startNewText.textContent = 'ゲームスタート！';
   }
+  if (typeof updateTitleAchievementBadge === 'function') {
+    updateTitleAchievementBadge();
+  }
 }
 
 // ポーズメニュー制御
@@ -2149,6 +2171,8 @@ function renderUI() {
   renderTraitsDetailTab();
   renderRelationsGrid();
   renderHistoryList();
+  if (state.stress >= 100) state.hadMaxStress = true;
+  if (typeof checkAchievements === 'function') checkAchievements();
 
   // 共通テスト直前対策期間（高3 11月〜1月2週）限定ボタン表示制御
   const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
@@ -2616,6 +2640,7 @@ function executeStudy(subject) {
         () => advanceTurn()
       );
     });
+    state.hadStudyFail = true;
     setDialog(state.playerName, 'うわああ！ちょっとスマホを見ただけなのに…！');
     renderUI();
     return;
@@ -2651,6 +2676,7 @@ function executeStudy(subject) {
   if (isFailed) {
     playSound('fail');
     triggerScreenShake();
+    state.hadStudyFail = true;
     showFloatingText('勉強失敗…！', null, null, 'damage');
     state.stamina = Math.max(0, state.stamina - Math.floor(stamCost * 1.2));
     state.stress = Math.min(100, state.stress + 10);
@@ -4044,6 +4070,11 @@ function triggerZenkiResultEvent() {
   let finalDev = calcTargetDev(target, finalBonus);
   const isPassed = finalDev >= (target.border - 1.2);
   state.firstChoicePassed = isPassed;
+  if (finalDev >= 70.0 && typeof unlockAchievement === 'function') unlockAchievement('dev_70');
+  if (isPassed && typeof unlockUnivAchievement === 'function') {
+    unlockUnivAchievement(target.id);
+    if (state.hadMockE) unlockAchievement('miracle_comeback');
+  }
 
   if (isPassed) {
     playSound('fanfare');
@@ -4440,6 +4471,7 @@ function executeMockExam(mockType, mockTitle) {
     else if (diff >= 0.0) { judge = 'B'; probText = '合格可能性 60%以上 (合格圏)'; }
     else if (diff >= -3.0) { judge = 'C'; probText = '合格可能性 40%以上 (ボーダーライン)'; }
     else if (diff >= -6.0) { judge = 'D'; probText = '合格可能性 20%以上 (努力圏)'; }
+    if (judge === 'E') state.hadMockE = true;
   }
 
   // 大学群別の合格可能性判定（志望校未定時の到達度診断用）
@@ -4455,6 +4487,7 @@ function executeMockExam(mockType, mockTitle) {
   const judgeHigh = getGroupJudge(64);  // 難関上位（早慶・旧帝大・上位国立）
   const judgeUpper = getGroupJudge(56); // 上位校（MARCH・関関同立・上位国公立）
   const judgeMid = getGroupJudge(48);   // 中堅校（日東駒専・産近甲龍・中堅国公立）
+  if ((dev >= 70.0 || generalDev >= 70.0) && typeof unlockAchievement === 'function') unlockAchievement('dev_70');
 
   // 共通テスト型マーク模試なら 1000点満点換算得点を算出
   let kyotsuScoreEst = Math.min(1000, Math.round((generalDev / 75) * 850 + (state.subExtraScore || 35) * 1.5 + (Math.random() - 0.5) * 20));
@@ -4926,6 +4959,8 @@ function finishExamBattle() {
     else if (diff >= -6) { researchRank = 'D'; researchDesc = '合格可能性 20%〜40%（要二次逆転）'; }
     else { researchRank = 'E'; researchDesc = '合格可能性 20%以下（大逆転が必要）'; }
     state.kyotsuResearchRank = researchRank;
+    if (researchRank === 'E') state.hadMockE = true;
+    if (state.kyotsuScore >= 900 && typeof unlockAchievement === 'function') unlockAchievement('kyotsu_900');
 
     // 併願校の「共通テスト利用入試」判定
     let subKyotsuMsg = '';
@@ -4939,6 +4974,7 @@ function finishExamBattle() {
       state.subUnivKyotsuPass = passed;
       if (passed) {
         state.subUnivPassed = true;
+        if (typeof unlockUnivAchievement === 'function') unlockUnivAchievement(state.subUniv.id);
         subKyotsuMsg = `💮【共テ利用 合格！】${state.subUniv.name} のボーダー（${subBorderRate}%）を突破し合格確定！2月の私大個別試験は免除されます！`;
       } else {
         subKyotsuMsg = `⚠️【共テ利用 不合格】${state.subUniv.name} のボーダー（${subBorderRate}%）に及ばず。2月2週の個別入試で合格を狙おう！`;
@@ -4973,6 +5009,7 @@ function finishExamBattle() {
     let finalSubDev = parseFloat((baseDev + scoreBonus).toFixed(1));
     const passed = finalSubDev >= (targetSub.border - 1.0);
     state.subUnivPassed = passed;
+    if (passed && targetSub && typeof unlockUnivAchievement === 'function') unlockUnivAchievement(targetSub.id);
 
     if (passed) {
       playSound('success');
@@ -5017,6 +5054,7 @@ function finishExamBattle() {
     let finalKoukiDev = parseFloat((baseDev + scoreBonus).toFixed(1));
     const passed = finalKoukiDev >= (koukiUniv.border - 1.0);
     state.kokuritsuKoukiPassed = passed;
+    if (passed && koukiUniv && typeof unlockUnivAchievement === 'function') unlockUnivAchievement(koukiUniv.id);
 
     if (passed) {
       playSound('fanfare');
@@ -5168,6 +5206,7 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
   if (enrolledUniv) {
     state.finalEnrolledUniv = enrolledUniv;
     saveClearOB(enrolledUniv.name);
+    if (typeof onGraduateAchievementsCheck === 'function') onGraduateAchievementsCheck(enrolledUniv, allPassed, finalDev);
 
     if (enrolledUniv.id === target.id) {
       title = `🌸 祝！【${enrolledUniv.name}】 現役合格！！ 🌸`;
@@ -5406,4 +5445,592 @@ window.addEventListener('pageshow', () => {
       }
     }).catch(() => {});
   }
+});
+
+
+// ========================================================
+// 8. 実績・称号トロフィーシステム (Achievement System)
+// ※ ゲーム内ボーナス・能力補正は一切行わない純粋なやりこみコレクション
+// ========================================================
+const ACHIEVEMENTS_KEY = 'juken_success_achievements';
+
+const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
+  // --- 🎓 大学合格実績 (16種) ---
+  {
+    id: 'pass_todai_med',
+    name: '医学の頂',
+    grade: 'platinum',
+    icon: '👑',
+    category: 'univ',
+    desc: '東京大学 理科三類（医学部）に現役合格する'
+  },
+  {
+    id: 'pass_todai_sci',
+    name: '赤門の覇者',
+    grade: 'gold',
+    icon: '🏛️',
+    category: 'univ',
+    desc: '東京大学 理科一類（工・理学部）に現役合格する'
+  },
+  {
+    id: 'pass_todai_hum',
+    name: '日本の頭脳',
+    grade: 'gold',
+    icon: '⚖️',
+    category: 'univ',
+    desc: '東京大学 文科一類・二類（法・経済）に現役合格する'
+  },
+  {
+    id: 'pass_kyodai_eng',
+    name: '自由の学風',
+    grade: 'gold',
+    icon: '🔬',
+    category: 'univ',
+    desc: '京都大学 工学部・理学部に現役合格する'
+  },
+  {
+    id: 'pass_kyodai_law',
+    name: '知の深淵',
+    grade: 'gold',
+    icon: '📜',
+    category: 'univ',
+    desc: '京都大学 法学部・経済学部に現役合格する'
+  },
+  {
+    id: 'pass_waseda_pol',
+    name: '雄飛の杜',
+    grade: 'silver',
+    icon: '🦅',
+    category: 'univ',
+    desc: '早稲田大学 政治経済学部に現役合格する'
+  },
+  {
+    id: 'pass_keio_econ',
+    name: '福澤の志',
+    grade: 'silver',
+    icon: '🖊️',
+    category: 'univ',
+    desc: '慶應義塾大学 経済学部・法学部に現役合格する'
+  },
+  {
+    id: 'pass_waseda_sci',
+    name: '進取の理工',
+    grade: 'silver',
+    icon: '⚙️',
+    category: 'univ',
+    desc: '早稲田大学 先進・創造理工学部に現役合格する'
+  },
+  {
+    id: 'pass_meiji_law',
+    name: '駿台の砦',
+    grade: 'silver',
+    icon: '🏫',
+    category: 'univ',
+    desc: '明治大学 法学部・商学部に現役合格する'
+  },
+  {
+    id: 'pass_aoyama_lit',
+    name: '青山の風',
+    grade: 'silver',
+    icon: '🌿',
+    category: 'univ',
+    desc: '青山学院大学 文学部・国際政経に現役合格する'
+  },
+  {
+    id: 'pass_doshisha_sci',
+    name: '同志の精神',
+    grade: 'silver',
+    icon: '🔔',
+    category: 'univ',
+    desc: '同志社大学 理工学部に現役合格する'
+  },
+  {
+    id: 'pass_chiiki_eng',
+    name: '地域を拓く技術者',
+    grade: 'bronze',
+    icon: '🏗️',
+    category: 'univ',
+    desc: '地方国立大学 工学部（金沢・岡山・埼玉等）に現役合格する'
+  },
+  {
+    id: 'pass_chiiki_hum',
+    name: '地域の支柱',
+    grade: 'bronze',
+    icon: '🏛️',
+    category: 'univ',
+    desc: '地方国立大学 人文・経済学部に現役合格する'
+  },
+  {
+    id: 'pass_nitto_kindai',
+    name: '桜咲くスタート',
+    grade: 'bronze',
+    icon: '🌸',
+    category: 'univ',
+    desc: '日本大学・東洋大学 または 近畿大学・東洋大学に合格する'
+  },
+  {
+    id: 'pass_nankan_kouki',
+    name: '不屈のラストチャンス',
+    grade: 'gold',
+    icon: '🔥',
+    category: 'univ',
+    desc: '難関国公立大学 後期日程（東工大・一橋・神戸等）に合格する'
+  },
+  {
+    id: 'pass_chiiki_kouki',
+    name: '粘りの栄冠',
+    grade: 'silver',
+    icon: '💮',
+    category: 'univ',
+    desc: '地方国立大学 後期日程（理工・人文社会）に合格する'
+  },
+
+  // --- 📖 学力・試験実績 (7種) ---
+  {
+    id: 'dev_70',
+    name: '神童の領域',
+    grade: 'gold',
+    icon: '⚡',
+    category: 'study',
+    desc: 'いずれかの教科・模試・最終成績で偏差値70.0以上を記録する'
+  },
+  {
+    id: 'math_rank_s',
+    name: '数学の魔術師',
+    grade: 'silver',
+    icon: '📐',
+    category: 'study',
+    desc: '数学の学力ランクS（スコア90以上）に到達する'
+  },
+  {
+    id: 'eng_rank_s',
+    name: 'マルチリンガル',
+    grade: 'silver',
+    icon: '🔤',
+    category: 'study',
+    desc: '英語の学力ランクS（スコア90以上）に到達する'
+  },
+  {
+    id: 'all_rank_a',
+    name: '全方位の秀才',
+    grade: 'gold',
+    icon: '🌟',
+    category: 'study',
+    desc: '主要4教科すべて学力ランクA（スコア80以上）に到達する'
+  },
+  {
+    id: 'sub_extra_max',
+    name: '新課程の申し子',
+    grade: 'silver',
+    icon: '💻',
+    category: 'study',
+    desc: '「情報I・副教科」共テ対策度を90点以上に高める'
+  },
+  {
+    id: 'kyotsu_900',
+    name: '共通テストマスター',
+    grade: 'gold',
+    icon: '🎯',
+    category: 'study',
+    desc: '大学入学共通テスト本番（1000点満点）で900点以上を獲得する'
+  },
+  {
+    id: 'miracle_comeback',
+    name: '大逆転の奇跡',
+    grade: 'gold',
+    icon: '🌈',
+    category: 'study',
+    desc: '模試または共テリサーチでE判定だった第1志望大学に本番合格する'
+  },
+
+  // --- 🏫 生活・マネジメント・やりこみ実績 (7種) ---
+  {
+    id: 'no_fail_study',
+    name: '皆勤・健康優良児',
+    grade: 'silver',
+    icon: '💪',
+    category: 'life',
+    desc: '3年間一度も勉強失敗（寝落ち・サボり）を起こさずに大学合格する'
+  },
+  {
+    id: 'no_max_stress',
+    name: '鉄の精神力',
+    grade: 'silver',
+    icon: '🛡️',
+    category: 'life',
+    desc: '3年間一度もストレス100%にならずに大学合格する'
+  },
+  {
+    id: 'rich_student',
+    name: 'マネーの達人',
+    grade: 'bronze',
+    icon: '💰',
+    category: 'life',
+    desc: 'お小遣いをやりくりし、所持金 ¥10,000 以上を達成する'
+  },
+  {
+    id: 'all_books',
+    name: '博覧強記の読書家',
+    grade: 'silver',
+    icon: '📚',
+    category: 'life',
+    desc: '購買部の「参考書」全5冊をコンプリート所持する'
+  },
+  {
+    id: 'rival_bond',
+    name: '青春の絆',
+    grade: 'silver',
+    icon: '🤝',
+    category: 'life',
+    desc: '幼馴染「あおい」またはライバル「神童くん」の好感度・友好度を100%にする'
+  },
+  {
+    id: 'ob_10',
+    name: '名門校の礎',
+    grade: 'gold',
+    icon: '👨‍🎓',
+    category: 'life',
+    desc: '歴代OB名簿に合格者を累計10名以上登録する'
+  },
+  {
+    id: 'complete_all',
+    name: '完全無欠の受験生',
+    grade: 'platinum',
+    icon: '🏆',
+    category: 'life',
+    desc: 'すべての実績（全30種）を完全コンプリート解除する'
+  }
+];
+
+const UNIV_TO_ACHIEVEMENT_MAP = {
+  todai_med: 'pass_todai_med',
+  todai_sci: 'pass_todai_sci',
+  todai_hum: 'pass_todai_hum',
+  kyodai_eng: 'pass_kyodai_eng',
+  kyodai_law: 'pass_kyodai_law',
+  waseda_pol: 'pass_waseda_pol',
+  keio_econ: 'pass_keio_econ',
+  waseda_sci: 'pass_waseda_sci',
+  meiji_law: 'pass_meiji_law',
+  aoyama_lit: 'pass_aoyama_lit',
+  doshisha_sci: 'pass_doshisha_sci',
+  chiiki_eng: 'pass_chiiki_eng',
+  chiiki_hum: 'pass_chiiki_hum',
+  nichidai_hum: 'pass_nitto_kindai',
+  kindai_sci: 'pass_nitto_kindai',
+  nankan_kouki_sci: 'pass_nankan_kouki',
+  nankan_kouki_hum: 'pass_nankan_kouki',
+  chiiki_eng_kouki: 'pass_chiiki_kouki',
+  chiiki_hum_kouki: 'pass_chiiki_kouki'
+};
+
+const GRADE_META = {
+  platinum: { label: '👑 プラチナ', icon: '👑' },
+  gold:     { label: '🥇 ゴールド', icon: '🥇' },
+  silver:   { label: '🥈 シルバー', icon: '🥈' },
+  bronze:   { label: '🥉 ブロンズ', icon: '🥉' }
+};
+
+function getAchievementsData() {
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENTS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to load achievements:', e);
+  }
+  return {};
+}
+
+function saveAchievementsData(data) {
+  try {
+    localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to save achievements:', e);
+  }
+}
+
+let currentAchFilter = 'all';
+const achToastQueue = [];
+let activeToastCount = 0;
+
+function showAchievementToast(ach) {
+  achToastQueue.push(ach);
+  processAchievementToastQueue();
+}
+
+function processAchievementToastQueue() {
+  if (activeToastCount >= 2 || achToastQueue.length === 0) return;
+  const container = document.getElementById('achievement-toast-container');
+  if (!container) return;
+
+  const ach = achToastQueue.shift();
+  activeToastCount++;
+
+  playSound('trophy');
+  triggerParticles(null, null, 20, 'gold');
+
+  const gMeta = GRADE_META[ach.grade] || GRADE_META.bronze;
+  const toast = document.createElement('div');
+  toast.className = `achievement-toast grade-${ach.grade}`;
+  toast.innerHTML = `
+    <div class="ach-toast-icon">${ach.icon}</div>
+    <div class="ach-toast-body">
+      <div class="ach-toast-label">🏆 実績解除！ [${gMeta.label}]</div>
+      <div class="ach-toast-title">${ach.name}</div>
+      <div class="ach-toast-desc">${ach.desc}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-hide');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+      activeToastCount = Math.max(0, activeToastCount - 1);
+      processAchievementToastQueue();
+    }, 360);
+  }, 3400);
+}
+
+function unlockAchievement(achId, silent = false) {
+  const ach = ACHIEVEMENTS_MASTER.find(a => a.id === achId);
+  if (!ach) return false;
+
+  const data = getAchievementsData();
+  if (data[achId]) return false; // すでに解除済み
+
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
+  data[achId] = { unlockedAt: dateStr };
+  saveAchievementsData(data);
+
+  if (!silent) {
+    showAchievementToast(ach);
+  }
+
+  // 全29種達成時のプラチナ実績「完全無欠の受験生」自動判定
+  if (achId !== 'complete_all') {
+    const nonPlatinumAll = ACHIEVEMENTS_MASTER.filter(a => a.id !== 'complete_all');
+    const allUnlocked = nonPlatinumAll.every(a => !!data[a.id]);
+    if (allUnlocked && !data['complete_all']) {
+      unlockAchievement('complete_all', silent);
+    }
+  }
+
+  updateTitleAchievementBadge();
+  const modal = document.getElementById('achievements-modal');
+  if (modal && modal.classList.contains('active')) {
+    renderAchievementsModal();
+  }
+  return true;
+}
+
+function unlockUnivAchievement(univId, silent = false) {
+  if (!univId) return;
+  const achId = UNIV_TO_ACHIEVEMENT_MAP[univId];
+  if (achId) {
+    unlockAchievement(achId, silent);
+  }
+}
+
+function checkAchievements() {
+  if (!state) return;
+
+  // 1. 学力・偏差値系
+  if (state.subjects) {
+    if (state.subjects.math && state.subjects.math.score >= 90) {
+      unlockAchievement('math_rank_s');
+    }
+    if (state.subjects.eng && state.subjects.eng.score >= 90) {
+      unlockAchievement('eng_rank_s');
+    }
+    const subKeys = ['eng', 'math', 'jp', 'sci'];
+    if (subKeys.every(k => state.subjects[k] && state.subjects[k].score >= 80)) {
+      unlockAchievement('all_rank_a');
+    }
+    if (subKeys.some(k => state.subjects[k] && calcDeviation(state.subjects[k].score) >= 70.0)) {
+      unlockAchievement('dev_70');
+    }
+  }
+
+  // 2. 情報I・副教科対策
+  if ((state.subExtraScore || 35) >= 90) {
+    unlockAchievement('sub_extra_max');
+  }
+
+  // 3. 共通テスト900点
+  if ((state.kyotsuScore || 0) >= 900) {
+    unlockAchievement('kyotsu_900');
+  }
+
+  // 4. 所持金 ¥10,000
+  if ((state.money || 0) >= 10000) {
+    unlockAchievement('rich_student');
+  }
+
+  // 5. 参考書全5冊コンプリート
+  const bookIds = ['book_eng', 'book_math', 'book_jp', 'book_sci', 'book_past'];
+  if (bookIds.every(id => hasItem(id))) {
+    unlockAchievement('all_books');
+  }
+
+  // 6. 交友度100%
+  if (state.friends) {
+    const aoiAff = state.friends.aoi ? state.friends.aoi.affection : 0;
+    const shindoAff = state.friends.shindo ? state.friends.shindo.affection : 0;
+    if (aoiAff >= 100 || shindoAff >= 100) {
+      unlockAchievement('rival_bond');
+    }
+  }
+
+  // 7. OB名簿10名
+  const obList = getOBList();
+  if (obList && obList.length >= 10) {
+    unlockAchievement('ob_10');
+  }
+}
+
+function onGraduateAchievementsCheck(enrolledUniv, allPassed, finalDev) {
+  if (finalDev >= 70.0) {
+    unlockAchievement('dev_70');
+  }
+  if (enrolledUniv) {
+    unlockUnivAchievement(enrolledUniv.id);
+    if (Array.isArray(allPassed)) {
+      allPassed.forEach(u => {
+        if (u && u.id) unlockUnivAchievement(u.id);
+      });
+    }
+    if (!state.hadStudyFail) {
+      unlockAchievement('no_fail_study');
+    }
+    if (!state.hadMaxStress) {
+      unlockAchievement('no_max_stress');
+    }
+    if (state.hadMockE && state.firstChoicePassed) {
+      unlockAchievement('miracle_comeback');
+    }
+  }
+  checkAchievements();
+}
+
+function syncExistingOBToAchievements() {
+  try {
+    const obList = getOBList();
+    if (!obList || obList.length === 0) return;
+    obList.forEach(ob => {
+      if (!ob.univ) return;
+      const matched = UNIV_LIST.find(u => u.name === ob.univ || u.shortName === ob.univ);
+      if (matched) {
+        unlockUnivAchievement(matched.id, true);
+      }
+    });
+    if (obList.length >= 10) {
+      unlockAchievement('ob_10', true);
+    }
+  } catch (e) {}
+}
+
+function updateTitleAchievementBadge() {
+  const badge = document.getElementById('title-ach-badge');
+  if (!badge) return;
+  const data = getAchievementsData();
+  const count = ACHIEVEMENTS_MASTER.filter(a => !!data[a.id]).length;
+  badge.textContent = `${count}/${ACHIEVEMENTS_MASTER.length}`;
+}
+
+function openAchievementsModal() {
+  playSound('click');
+  syncExistingOBToAchievements();
+  if (state && state.inGame) {
+    checkAchievements();
+  }
+  renderAchievementsModal();
+  const modal = document.getElementById('achievements-modal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeAchievementsModal() {
+  playSound('click');
+  const modal = document.getElementById('achievements-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+function filterAchievementsCategory(cat) {
+  playSound('click');
+  currentAchFilter = cat;
+  ['all', 'univ', 'study', 'life'].forEach(c => {
+    const btn = document.getElementById(`ach-filter-${c}`);
+    if (btn) btn.classList.toggle('active', c === cat);
+  });
+  renderAchievementsModal();
+}
+
+function renderAchievementsModal() {
+  const data = getAchievementsData();
+  const total = ACHIEVEMENTS_MASTER.length;
+  const unlockedList = ACHIEVEMENTS_MASTER.filter(a => !!data[a.id]);
+  const unlockedCount = unlockedList.length;
+  const percent = total > 0 ? Math.round((unlockedCount / total) * 100) : 0;
+
+  const countTextEl = document.getElementById('ach-count-text');
+  if (countTextEl) countTextEl.textContent = `${unlockedCount} / ${total} (${percent}%)`;
+
+  const barEl = document.getElementById('ach-progress-bar');
+  if (barEl) barEl.style.width = `${percent}%`;
+
+  const grades = { platinum: 0, gold: 0, silver: 0, bronze: 0 };
+  unlockedList.forEach(a => {
+    if (grades[a.grade] !== undefined) grades[a.grade]++;
+  });
+  const gradeCountsEl = document.getElementById('ach-grade-counts');
+  if (gradeCountsEl) {
+    gradeCountsEl.innerHTML = `
+      <span title="プラチナ">👑${grades.platinum}</span>
+      <span title="ゴールド">🥇${grades.gold}</span>
+      <span title="シルバー">🥈${grades.silver}</span>
+      <span title="ブロンズ">🥉${grades.bronze}</span>
+    `;
+  }
+
+  const listEl = document.getElementById('achievements-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  const filtered = currentAchFilter === 'all'
+    ? ACHIEVEMENTS_MASTER
+    : ACHIEVEMENTS_MASTER.filter(a => a.category === currentAchFilter);
+
+  filtered.forEach(ach => {
+    const unlockInfo = data[ach.id];
+    const isUnlocked = !!unlockInfo;
+    const gMeta = GRADE_META[ach.grade] || GRADE_META.bronze;
+
+    const card = document.createElement('div');
+    card.className = `ach-card ${isUnlocked ? 'unlocked' : 'locked'} grade-${ach.grade}`;
+    card.innerHTML = `
+      <div class="ach-icon-box">${isUnlocked ? ach.icon : '🔒'}</div>
+      <div class="ach-info">
+        <div class="ach-title-row">
+          <div class="ach-title-left">
+            <span class="ach-name">${ach.name}</span>
+            <span class="ach-grade-badge ${ach.grade}">${gMeta.label}</span>
+          </div>
+          <span class="ach-status-tag ${isUnlocked ? 'unlocked' : 'locked'}">
+            ${isUnlocked ? `✓ ${unlockInfo.unlockedAt}` : '未解除'}
+          </span>
+        </div>
+        <div class="ach-desc">${ach.desc}</div>
+      </div>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  syncExistingOBToAchievements();
+  updateTitleAchievementBadge();
 });
