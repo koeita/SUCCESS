@@ -36,7 +36,9 @@
 
 ### 📅 2026年10月28日: 就活ポートフォリオ向けドキュメント（README.md）の全面刷新
 - **[README.md](file:///c:/Users/xcang/Desktop/Antigravity/high%20school/README.md) をポートフォリオ仕様へブラッシュアップ**
-  - **スクリーンショット / GIF 配置スペース**: UIイメージを伝える枠組みを定義。
+  - **プレイ画面スクリーンショットの撮影・配置**:
+    - 高解像度（Retina 2x）のモバイル実機相当サイズでメイン育成画面、勉強メニュー、出かけるメニュー、購買部ショップの4画面を撮影し `docs/screenshots/` へ配置。
+    - `README.md` トップに中央配置とテーブルグリッド形式で美しく埋め込み。
   - **ゲーム概要＆操作マニュアル**: 全144週の進行、基本コマンド（勉強・出かける・休養・購買部・状態）、3大パラメータ（体力・ストレス・やる気）の体系化。
   - **使用技術一覧**: HTML5/CSS3/Vanilla JS、Web Audio API、localStorage、Cloudflare Workers/Pages、Antigravity（AIペアプログラミング）。
   - **技術的なこだわり（重要）**:
