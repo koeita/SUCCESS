@@ -6,16 +6,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>受験サクセス 〜めざせ難関大学合格！〜</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="game-container" id="game-container">
 
-    <!-- Game Juice エフェクト用レイヤー（クリックを一切遮らない pointer-events: none） -->
+    <!-- Game Juice エフェクト用レイヤー（クリックを遮らない pointer-events: none） -->
     <div class="particle-container" id="particle-container"></div>
     <div class="floating-text-container" id="floating-text-container"></div>
     <div class="achievement-toast-container" id="achievement-toast-container"></div>
@@ -23,16 +22,9 @@
     <!-- ================= スタート（タイトル）画面 ================= -->
     <div class="title-screen" id="title-screen">
       <!-- スタート画面 右上設定ボタン -->
-      <button class="btn-title-setting" onclick="openPauseModal(true)" title="設定（音量・演出など）">
-        <span>⚙️</span>
+      <button class="btn-title-setting" onclick="openPauseModal(true)" title="設定">
+        <span>設定</span>
       </button>
-      <div class="title-bg-decor">
-        <span class="petal p1">🌸</span>
-        <span class="petal p2">🌸</span>
-        <span class="petal p3">🌸</span>
-        <span class="petal p4">🌸</span>
-        <span class="petal p5">🌸</span>
-      </div>
 
       <div class="title-logo-container">
         <div class="title-badge">高校3年間 育成シミュレーション</div>
@@ -40,10 +32,8 @@
           <span class="title-main">受験サクセス</span>
           <span class="title-sub">〜めざせ難関大学合格！〜</span>
         </h1>
-        <div class="title-icon-stage">
-          <div class="title-avatar">🎓</div>
-          <div class="title-sparkle s1">✨</div>
-          <div class="title-sparkle s2">⭐</div>
+        <div class="title-emblem-badge">
+          <span class="emblem-text">STUDY & SUCCESS</span>
         </div>
       </div>
 
@@ -68,19 +58,22 @@
           </div>
 
           <button class="btn-title-main" id="btn-start-new" onclick="handleStartNewClick()">
-            <span class="btn-title-icon">✨</span> <span id="start-new-text">ゲームスタート！</span>
+            <span id="start-new-text">ゲームスタート！</span>
           </button>
         </div>
 
         <div class="title-sub-buttons">
-          <button class="btn-title-sub" onclick="openPauseModal(true)">⚙️ 設定</button>
-          <button class="btn-title-sub" onclick="openHowToPlayModal()">📖 あそびかた</button>
-          <button class="btn-title-sub" onclick="openOBRosterModal()">👨‍🎓 OB名簿</button>
-          <button class="btn-title-sub btn-title-ach" onclick="openAchievementsModal()">🏆 実績 <span id="title-ach-badge" class="title-ach-badge">0/30</span></button>
+          <button class="btn-title-sub" onclick="openPauseModal(true)">設定</button>
+          <button class="btn-title-sub" onclick="openHowToPlayModal()">あそびかた</button>
+          <button class="btn-title-sub" onclick="openOBRosterModal()">OB名簿</button>
+          <button class="btn-title-sub btn-title-ach" onclick="openAchievementsModal()">実績 <span id="title-ach-badge" class="title-ach-badge">0/30</span></button>
         </div>
       </div>
 
-      <div class="title-footer-ver">Version 2.0 • Web Success Engine</div>
+      <div class="title-footer-area">
+        <div class="disclaimer-text">※このゲームはフィクションであり、登場する大学・団体・名称等はすべて架空のものです。</div>
+        <div class="title-footer-ver">Version 2.0 • Web Success Engine</div>
+      </div>
     </div>
 
     <!-- ================= メインゲーム画面（初期は非表示） ================= -->
@@ -97,8 +90,8 @@
           </div>
           <div class="header-right-actions">
             <div class="turn-count" id="turn-count">残り 144 週</div>
-            <button class="btn-header-menu" onclick="openAchievementsModal()" title="実績・トロフィー一覧">🏆</button>
-            <button class="btn-header-menu" onclick="openPauseModal(false)" title="ポーズ・各種設定">⚙️</button>
+            <button class="btn-header-menu" onclick="openAchievementsModal()" title="実績・トロフィー一覧"><span class="header-btn-text">実績</span></button>
+            <button class="btn-header-menu" onclick="openPauseModal(false)" title="ポーズ・各種設定"><span class="header-btn-text">設定</span></button>
           </div>
         </div>
 
@@ -135,8 +128,8 @@
           <!-- 所持金（タップで購買・本屋を開く） -->
           <div class="vital-item vital-money" id="vital-money" onclick="openShopModal()" title="タップして購買部・本屋を開く">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="label">お小遣い</span>
-              <span class="shop-badge">🛒 購買</span>
+              <span class="label">所持金</span>
+              <span class="shop-badge">購買部</span>
             </div>
             <span class="val money" id="money-text">¥3,000</span>
           </div>
@@ -147,10 +140,10 @@
       <section class="screen-area">
         <div class="character-scene">
           <div class="scene-backdrop" id="scene-backdrop">
-            <div class="scene-title-badge" id="scene-title-badge">🌸 高校生活スタート</div>
+            <div class="scene-title-badge" id="scene-title-badge">高校生活スタート</div>
             <div class="scene-extra-info" id="scene-course-badge">コース: 未定 | 部活: 未定</div>
             <div class="avatar-container">
-              <div class="avatar-icon" id="avatar-icon">🎓</div>
+              <div class="avatar-icon study-avatar" id="avatar-icon">学</div>
             </div>
           </div>
         </div>
@@ -177,7 +170,7 @@
         <div class="tab-content" id="tab-content-academic">
           <div class="subject-grid">
             <!-- 英語 -->
-            <div class="subject-card">
+            <div class="subject-card card-eng">
               <div class="subj-name">英語</div>
               <div class="subj-rank rank-f" id="rank-eng">F</div>
               <div class="subj-score-row">
@@ -185,11 +178,11 @@
                 <span class="subj-next-text" id="next-eng">次まで 15 pt</span>
               </div>
               <div class="bar-outer mini">
-                <div class="bar-inner subj-bar" id="bar-eng" style="width: 0%;"></div>
+                <div class="bar-inner subj-bar bar-eng-fill" id="bar-eng" style="width: 0%;"></div>
               </div>
             </div>
             <!-- 数学 -->
-            <div class="subject-card">
+            <div class="subject-card card-math">
               <div class="subj-name">数学</div>
               <div class="subj-rank rank-f" id="rank-math">F</div>
               <div class="subj-score-row">
@@ -197,11 +190,11 @@
                 <span class="subj-next-text" id="next-math">次まで 15 pt</span>
               </div>
               <div class="bar-outer mini">
-                <div class="bar-inner subj-bar" id="bar-math" style="width: 0%;"></div>
+                <div class="bar-inner subj-bar bar-math-fill" id="bar-math" style="width: 0%;"></div>
               </div>
             </div>
             <!-- 国語 -->
-            <div class="subject-card">
+            <div class="subject-card card-jp">
               <div class="subj-name">国語</div>
               <div class="subj-rank rank-e" id="rank-jp">E</div>
               <div class="subj-score-row">
@@ -209,11 +202,11 @@
                 <span class="subj-next-text" id="next-jp">次まで 15 pt</span>
               </div>
               <div class="bar-outer mini">
-                <div class="bar-inner subj-bar" id="bar-jp" style="width: 0%;"></div>
+                <div class="bar-inner subj-bar bar-jp-fill" id="bar-jp" style="width: 0%;"></div>
               </div>
             </div>
             <!-- 理社 -->
-            <div class="subject-card">
+            <div class="subject-card card-sci">
               <div class="subj-name" id="subj-name-sci">理社</div>
               <div class="subj-rank rank-f" id="rank-sci">F</div>
               <div class="subj-score-row">
@@ -221,7 +214,7 @@
                 <span class="subj-next-text" id="next-sci">次まで 15 pt</span>
               </div>
               <div class="bar-outer mini">
-                <div class="bar-inner subj-bar" id="bar-sci" style="width: 0%;"></div>
+                <div class="bar-inner subj-bar bar-sci-fill" id="bar-sci" style="width: 0%;"></div>
               </div>
             </div>
           </div>
@@ -253,31 +246,27 @@
         </div>
       </section>
 
-      <!-- コマンドフッター（パワプロ風メニュー） -->
+      <!-- コマンドフッター（青春サクセス調メニュー） -->
       <footer class="command-footer">
         <div class="command-grid">
           <button class="btn-cmd btn-study" onclick="openStudyMenu()">
-            <span class="cmd-icon">📖</span>
             <span class="cmd-title">勉強する</span>
-            <span class="cmd-sub">経験値獲得・学力UP</span>
+            <span class="cmd-sub">学力アップ</span>
           </button>
 
           <button class="btn-cmd btn-rest" onclick="executeRest()">
-            <span class="cmd-icon">🛌</span>
             <span class="cmd-title">休養</span>
-            <span class="cmd-sub">体力大幅回復</span>
+            <span class="cmd-sub">体力回復</span>
           </button>
 
           <button class="btn-cmd btn-play" onclick="openPlayMenu()">
-            <span class="cmd-icon">🎒</span>
             <span class="cmd-title">出かける</span>
-            <span class="cmd-sub">ストレス解消・やる気</span>
+            <span class="cmd-sub">気分転換</span>
           </button>
 
           <button class="btn-cmd btn-upgrade" onclick="openStatusModal()">
-            <span class="cmd-icon">⭐</span>
-            <span class="cmd-title">特命克服</span>
-            <span class="cmd-sub">赤特消去・詳細</span>
+            <span class="cmd-title">ステータス</span>
+            <span class="cmd-sub">成績・悪癖克服</span>
           </button>
         </div>
       </footer>
@@ -290,20 +279,20 @@
   <div class="modal-overlay" id="how-to-modal">
     <div class="modal-window wide">
       <div class="modal-header">
-        <h3>📖 受験サクセスのあそびかた</h3>
+        <h3>受験サクセスのあそびかた</h3>
         <button class="btn-close" onclick="closeHowToPlayModal()">×</button>
       </div>
       <div class="how-to-content">
         <h4>1. 高校3年間（全144週）の目標</h4>
-        <p>高校1年4月から3年3月までを過ごし、共通テスト・二次試験を突破して第一志望大学の現役合格を目指します！</p>
+        <p>高校1年4月から3年3月までを過ごし、全国統一共通試験・二次試験を突破して第一志望大学の現役合格を目指します！</p>
 
-        <h4>2. 勉強と経験値（自動偏差値UP）</h4>
+        <h4>2. 勉強と経験値（自動学力UP）</h4>
         <p>「英語」「数学」「国語」「理社」を勉強すると、その科目の経験値が溜まり、ゲージが満タンになると自動的に偏差値がアップします。</p>
 
         <h4>3. 体力とやる気の管理</h4>
-        <p>体力が減ると勉強の失敗率が跳ね上がります。「休養」で体力を回復し、「息抜き」でやる気アップやストレス解消を行いましょう。</p>
+        <p>体力が減ると勉強の失敗率が跳ね上がります。「休養」で体力を回復し、「出かける」でやる気アップやストレス解消を行いましょう。</p>
 
-        <h4>4. 特殊能力の閃き</h4>
+        <h4>4. 特殊能力の習得</h4>
         <p>特殊能力は勉強の大成功（ゾーン）や、模試の好成績、友人との絆を通じて閃き・習得します！</p>
       </div>
       <div class="modal-footer">
@@ -316,7 +305,7 @@
   <div class="modal-overlay" id="ob-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3>👨‍🎓 OB名簿・過去の合格実績</h3>
+        <h3>OB名簿・過去の合格実績</h3>
         <button class="btn-close" onclick="closeOBRosterModal()">×</button>
       </div>
       <div class="ob-modal-content" id="ob-modal-body">
@@ -332,7 +321,7 @@
   <div class="modal-overlay" id="achievements-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3>🏆 実績・称号トロフィー</h3>
+        <h3>実績・称号トロフィー</h3>
         <button class="btn-close" onclick="closeAchievementsModal()">✕</button>
       </div>
 
@@ -341,10 +330,10 @@
         <div class="ach-summary-top">
           <span class="ach-summary-title">達成率: <b id="ach-count-text">0 / 30 (0%)</b></span>
           <div class="ach-grade-counts" id="ach-grade-counts">
-            <span title="プラチナ">👑0</span>
-            <span title="ゴールド">🥇0</span>
-            <span title="シルバー">🥈0</span>
-            <span title="ブロンズ">🥉0</span>
+            <span class="ach-pill grade-plat">PLATINUM 0</span>
+            <span class="ach-pill grade-gold">GOLD 0</span>
+            <span class="ach-pill grade-silver">SILVER 0</span>
+            <span class="ach-pill grade-bronze">BRONZE 0</span>
           </div>
         </div>
         <div class="ach-progress-outer">
@@ -355,9 +344,9 @@
       <!-- カテゴリフィルター -->
       <div class="shop-category-filters ach-category-filters">
         <button class="shop-filter-btn active" id="ach-filter-all" onclick="filterAchievementsCategory('all')">すべて</button>
-        <button class="shop-filter-btn" id="ach-filter-univ" onclick="filterAchievementsCategory('univ')">🎓 大学合格</button>
-        <button class="shop-filter-btn" id="ach-filter-study" onclick="filterAchievementsCategory('study')">📖 学力・試験</button>
-        <button class="shop-filter-btn" id="ach-filter-life" onclick="filterAchievementsCategory('life')">🏫 やりこみ</button>
+        <button class="shop-filter-btn" id="ach-filter-univ" onclick="filterAchievementsCategory('univ')">大学合格</button>
+        <button class="shop-filter-btn" id="ach-filter-study" onclick="filterAchievementsCategory('study')">学力・試験</button>
+        <button class="shop-filter-btn" id="ach-filter-life" onclick="filterAchievementsCategory('life')">やりこみ</button>
       </div>
 
       <!-- 実績リスト（独立スクロール領域） -->
@@ -375,27 +364,27 @@
   <div class="modal-overlay" id="shop-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3>🛒 購買部・本屋 ＆ 所持品</h3>
+        <h3>購買部・本屋 ＆ 所持品</h3>
         <button class="btn-close" onclick="closeShopModal()">✕</button>
       </div>
 
       <div class="shop-tabs">
-        <button class="shop-tab-btn active" id="shop-tab-buy" onclick="switchShopTab('buy')">🛒 購買（アイテムを買う）</button>
-        <button class="shop-tab-btn" id="shop-tab-bag" onclick="switchShopTab('bag')">🎒 マイバッグ（所持品・使う）</button>
+        <button class="shop-tab-btn active" id="shop-tab-buy" onclick="switchShopTab('buy')">購買（アイテム購入）</button>
+        <button class="shop-tab-btn" id="shop-tab-bag" onclick="switchShopTab('bag')">マイバッグ（所持品）</button>
       </div>
 
       <div class="shop-money-bar">
-        <span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥3,000</b></span>
+        <span>現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥3,000</b></span>
       </div>
 
       <!-- 購買（購入）ビュー -->
       <div class="shop-view" id="shop-view-buy">
         <div class="shop-category-filters">
           <button class="shop-filter-btn active" id="filter-btn-all" onclick="filterShopCategory('all')">すべて</button>
-          <button class="shop-filter-btn" id="filter-btn-book" onclick="filterShopCategory('book')">📘 参考書</button>
-          <button class="shop-filter-btn" id="filter-btn-gear" onclick="filterShopCategory('gear')">⚙️ 勉強ギア</button>
-          <button class="shop-filter-btn" id="filter-btn-consumable" onclick="filterShopCategory('consumable')">🍫 軽食・回復</button>
-          <button class="shop-filter-btn" id="filter-btn-exam" onclick="filterShopCategory('exam')">⛩️ 試験お守り</button>
+          <button class="shop-filter-btn" id="filter-btn-book" onclick="filterShopCategory('book')">参考書</button>
+          <button class="shop-filter-btn" id="filter-btn-gear" onclick="filterShopCategory('gear')">勉強ギア</button>
+          <button class="shop-filter-btn" id="filter-btn-consumable" onclick="filterShopCategory('consumable')">軽食・回復</button>
+          <button class="shop-filter-btn" id="filter-btn-exam" onclick="filterShopCategory('exam')">試験お守り</button>
         </div>
         <div class="shop-items-container" id="shop-items-list">
           <!-- JSで動的生成 -->
@@ -419,51 +408,51 @@
   <div class="modal-overlay" id="study-modal">
     <div class="modal-window">
       <div class="modal-header">
-        <h3>どの科目を勉強する？（経験値が溜まると自動で学力UP）</h3>
+        <h3>勉強科目の選択</h3>
         <button class="btn-close" onclick="closeStudyMenu()">×</button>
       </div>
       <div class="study-options">
-        <button class="study-card-btn" onclick="executeStudy('eng')">
-          <span class="icon">🔤</span>
+        <button class="study-card-btn study-eng-btn" onclick="executeStudy('eng')">
+          <div class="subject-pill pill-eng">英語</div>
           <div class="info">
             <div class="name">英語の集中学習</div>
-            <div class="desc">英語の経験値大量獲得 (体力-15 / ストレス+7)</div>
+            <div class="desc">英語の経験値を重点的に獲得 (体力-15 / ストレス+7)</div>
           </div>
         </button>
-        <button class="study-card-btn" onclick="executeStudy('math')">
-          <span class="icon">📐</span>
+        <button class="study-card-btn study-math-btn" onclick="executeStudy('math')">
+          <div class="subject-pill pill-math">数学</div>
           <div class="info">
             <div class="name">数学の集中学習</div>
-            <div class="desc">数学の経験値大量獲得 (体力-18 / ストレス+9)</div>
+            <div class="desc">数学の経験値を重点的に獲得 (体力-18 / ストレス+9)</div>
           </div>
         </button>
-        <button class="study-card-btn" onclick="executeStudy('jp')">
-          <span class="icon">📕</span>
+        <button class="study-card-btn study-jp-btn" onclick="executeStudy('jp')">
+          <div class="subject-pill pill-jp">国語</div>
           <div class="info">
             <div class="name">国語の集中学習</div>
-            <div class="desc">国語の経験値大量獲得 (体力-12 / ストレス+5)</div>
+            <div class="desc">国語の経験値を重点的に獲得 (体力-12 / ストレス+5)</div>
           </div>
         </button>
-        <button class="study-card-btn" onclick="executeStudy('sci')">
-          <span class="icon" id="study-icon-sci">🔬</span>
+        <button class="study-card-btn study-sci-btn" onclick="executeStudy('sci')">
+          <div class="subject-pill pill-sci" id="study-pill-sci">理社</div>
           <div class="info">
             <div class="name" id="study-name-sci">理科 / 社会の集中学習</div>
-            <div class="desc" id="study-desc-sci">理社の経験値大量獲得 (体力-15 / ストレス+7)</div>
+            <div class="desc" id="study-desc-sci">専門科目の経験値を獲得 (体力-15 / ストレス+7)</div>
           </div>
         </button>
-        <button class="study-card-btn all-round" onclick="executeStudy('all')">
-          <span class="icon">🎯</span>
+        <button class="study-card-btn all-round study-all-btn" onclick="executeStudy('all')">
+          <div class="subject-pill pill-all">総合</div>
           <div class="info">
             <div class="name">全科目 総合演習</div>
-            <div class="desc">全科目を均等に底上げ (体力-22 / ストレス+10)</div>
+            <div class="desc">全科目をバランスよく底上げ (体力-22 / ストレス+10)</div>
           </div>
         </button>
-        <!-- 高3 11月〜1月 共通テスト直前対策期間 限定コマンド -->
-        <button class="study-card-btn kyotsu-extra" id="study-btn-kyotsu-extra" style="display: none; border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);" onclick="executeStudy('sub_extra')">
-          <span class="icon">💻</span>
+        <!-- 高3 11月〜1月 共通試験直前対策期間 限定コマンド -->
+        <button class="study-card-btn kyotsu-extra study-extra-btn" id="study-btn-kyotsu-extra" style="display: none;" onclick="executeStudy('sub_extra')">
+          <div class="subject-pill pill-extra">共試</div>
           <div class="info">
-            <div class="name" id="study-name-kyotsu-extra" style="color: #b45309; font-weight: 800;">💻 情報I・副教科マーク演習</div>
-            <div class="desc" id="study-desc-kyotsu-extra">共テ200点枠（情報I＋副教科）を集中強化 (体力-14 / ストレス+6)</div>
+            <div class="name" id="study-name-kyotsu-extra">情報I・副教科演習</div>
+            <div class="desc" id="study-desc-kyotsu-extra">共通試験200点枠（情報I＋副教科）を集中強化 (体力-14 / ストレス+6)</div>
           </div>
         </button>
       </div>
@@ -485,7 +474,7 @@
   <div class="modal-overlay" id="status-modal">
     <div class="modal-window wide">
       <div class="modal-header">
-        <h3>⭐ 成績詳細 & 悪癖克服</h3>
+        <h3>成績詳細 & 悪癖克服</h3>
         <button class="btn-close" onclick="closeStatusModal()">×</button>
       </div>
       <div class="upgrade-container">
@@ -499,7 +488,7 @@
         </div>
 
         <div class="traits-note-box">
-          💡 <b>育成の仕組み:</b><br>
+          <b>育成の仕組み:</b><br>
           各科目を勉強するとその科目の経験値が溜まり、<b>ゲージが満タンになると学力パラメータ（0〜100・G〜Sランク）がアップ</b>します！<br>定期模試を受けると、鍛えた学力に応じたリアルな<b>全国偏差値と志望校合否判定</b>が返却されます！<br>
           赤特（悪癖）がついてしまった場合は、お小遣いを使ってカウンセリングで克服できます。
         </div>
@@ -514,7 +503,6 @@
         <h3 id="event-modal-title">イベント発生！</h3>
       </div>
       <div class="event-modal-body">
-        <div class="event-icon" id="event-modal-icon">🎉</div>
         <p class="event-text" id="event-modal-text"></p>
         <div class="event-rewards" id="event-modal-rewards"></div>
       </div>
@@ -528,7 +516,7 @@
   <div class="modal-overlay" id="exam-battle-modal">
     <div class="modal-window wide">
       <div class="modal-header">
-        <h3 id="battle-exam-title">🔥 大学入試本番！</h3>
+        <h3 id="battle-exam-title">大学入試本番！</h3>
       </div>
       <div class="exam-battle-container">
         <div class="exam-progress-bar">
@@ -557,7 +545,6 @@
         <h3 id="choice-modal-title">運命の選択</h3>
       </div>
       <div class="event-modal-body">
-        <div class="event-icon" id="choice-modal-icon">🤔</div>
         <p class="event-text" id="choice-modal-text"></p>
         <div class="choice-buttons-container" id="choice-buttons-container"></div>
       </div>
@@ -568,13 +555,12 @@
   <div class="modal-overlay" id="pause-modal">
     <div class="modal-window modal-pause-window">
       <div class="modal-header">
-        <h3>⚙️ ポーズ & 各種設定</h3>
+        <h3>ポーズ & 各種設定</h3>
         <button class="btn-close" onclick="closePauseModal()">✕</button>
       </div>
 
       <!-- プレイ中情報サマリー -->
       <div class="pause-summary-card" id="pause-summary-card">
-        <div class="summary-avatar">🎓</div>
         <div class="summary-details">
           <div class="summary-name" id="pause-summary-name">合格太郎</div>
           <div class="summary-date" id="pause-summary-date">1年生 4月 1週 (残り 144 週)</div>
@@ -584,13 +570,13 @@
 
       <!-- 音響設定 -->
       <div class="settings-section">
-        <div class="settings-section-title">🔊 サウンド設定</div>
+        <div class="settings-section-title">サウンド設定</div>
 
         <!-- BGM 設定 -->
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-title">BGM (音楽)</div>
-            <div class="setting-desc">シーン別の心地よい背景音楽</div>
+            <div class="setting-desc">シーン別の背景音楽</div>
           </div>
           <button class="setting-toggle-btn active" id="setting-bgm-toggle" onclick="toggleSettingBGM()">ON</button>
         </div>
@@ -627,7 +613,7 @@
 
       <!-- 演出設定 -->
       <div class="settings-section">
-        <div class="settings-section-title">✨ 演出・動作設定</div>
+        <div class="settings-section-title">演出・動作設定</div>
 
         <div class="setting-item">
           <div class="setting-info">
@@ -649,16 +635,16 @@
       <!-- アクションボタン群 -->
       <div class="pause-actions-group">
         <button class="btn-pause-action resume" id="btn-pause-resume" onclick="closePauseModal()">
-          <span class="icon">▶</span> ゲームを再開する
+          ゲームを再開する
         </button>
         <button class="btn-pause-action title" id="btn-pause-title" onclick="pauseReturnToTitle()">
-          <span class="icon">🏠</span> タイトル画面へ戻る (セーブして中断)
+          タイトル画面へ戻る (セーブして中断)
         </button>
         <button class="btn-pause-action restart" id="btn-pause-restart" onclick="confirmRestartGame()">
-          <span class="icon">🔄</span> 最初からやり直す
+          最初からやり直す
         </button>
         <button class="btn-pause-action resume" id="btn-pause-close-settings" onclick="closePauseModal()" style="display: none;">
-          <span class="icon">✓</span> 設定を完了して閉じる
+          設定を完了して閉じる
         </button>
       </div>
     </div>
