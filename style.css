@@ -1159,6 +1159,21 @@ body {
 /* ========================================================
    購買部ショップ & マイバッグ
    ======================================================== */
+#shop-modal .modal-window {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 85dvh !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#shop-modal .modal-header,
+#shop-modal .shop-tabs,
+#shop-modal .shop-money-bar,
+#shop-modal .modal-footer {
+  flex-shrink: 0 !important;
+}
+
 .shop-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1190,18 +1205,36 @@ body {
   border-bottom: 2px solid #e2e8f0;
 }
 
-.shop-category-filters {
+.shop-view {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+.shop-view.hidden,
+.shop-view[style*="display: none"] {
+  display: none !important;
+}
+
+.shop-category-filters {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
   padding: 6px 12px;
   overflow-x: auto;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+  -webkit-overflow-scrolling: touch;
 }
+.shop-category-filters::-webkit-scrollbar {
+  display: none;
+}
+
 .shop-filter-btn {
   background: #ffffff;
   border: 1px solid var(--navy-dark);
   border-radius: 6px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   font-size: 0.72rem;
   font-weight: 800;
   cursor: pointer;
@@ -1213,60 +1246,218 @@ body {
 }
 
 .shop-items-container {
-  padding: 10px 12px;
-  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 12px;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 50dvh;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.shop-items-container::-webkit-scrollbar {
+  width: 5px;
+}
+.shop-items-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
+/* アイテムカード本体（縦並びの3セクション構成） */
 .shop-item-card {
+  flex-shrink: 0;
   background: #ffffff;
   border: var(--border-thick);
   border-radius: 10px;
   padding: 8px 10px;
   box-shadow: var(--solid-shadow-sm);
   display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.shop-item-card.owned-card {
+  background: #f8fafc;
+  opacity: 0.88;
+}
+
+/* 1. カードヘッダー（左: アイコン+名前+バッジ / 右: アクションボタン） */
+.item-card-header {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
-.item-type-pill {
-  font-size: 0.65rem;
+.item-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.item-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1.5px solid var(--navy-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
   font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--navy-dark);
-  color: #ffffff;
 }
-.pill-book { background: var(--study-blue); }
-.pill-gear { background: #64748b; }
-.pill-consumable { background: #f59e0b; }
-.pill-exam { background: var(--passion-red); }
+.item-icon.book {
+  background: #e0f2fe;
+  color: var(--study-blue);
+}
+.item-icon.gear {
+  background: #fef3c7;
+  color: #b45309;
+}
+.item-icon.consumable {
+  background: #dcfce7;
+  color: #15803d;
+}
+.item-icon.exam {
+  background: #fae8ff;
+  color: #a21caf;
+}
+.item-type-text {
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
 
-.btn-buy-item {
+.item-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.item-name {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--navy-dark);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-badges-wrap {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.item-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.badge-book { background: #e0f2fe; color: #0284c7; }
+.badge-gear { background: #fef3c7; color: #d97706; }
+.badge-consumable { background: #dcfce7; color: #15803d; }
+.badge-exam { background: #fae8ff; color: #a21caf; }
+
+.item-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.btn-buy-item, .btn-use-item {
   background: var(--accent-gold);
   color: var(--navy-dark);
   border: var(--border-thick);
   border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 0.8rem;
+  padding: 5px 9px;
+  font-size: 0.74rem;
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 0 var(--navy-dark);
   white-space: nowrap;
+  transition: transform 0.08s ease;
 }
-.btn-buy-item:active {
+.btn-buy-item:active, .btn-use-item:active {
   transform: translateY(2px);
   box-shadow: 0 0 0 var(--navy-dark);
 }
-.btn-buy-item:disabled {
+.btn-buy-item:disabled, .btn-use-item:disabled {
   background: #cbd5e1;
   color: #64748b;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
+}
+.btn-use-item {
+  background: var(--study-blue);
+  color: #ffffff;
+}
+
+.owned-badge {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 3px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* 2. カード本文（説明文）: 全幅（約300px）を活用し、縦長を解消＆横スクロール完全防止 */
+.item-desc {
+  font-size: 0.72rem;
+  color: #475569;
+  line-height: 1.35;
+  width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
+}
+
+/* 3. カードフッター（左: 効果タグ / 右: 値段） */
+.item-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.item-card-footer .play-effect-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+}
+
+.item-card-footer .item-price {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #15803d;
+  font-family: 'Chakra Petch', sans-serif;
+  white-space: nowrap;
+  overflow-x: hidden;
 }
 
 /* ========================================================
