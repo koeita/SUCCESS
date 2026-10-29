@@ -354,8 +354,9 @@ body {
 .status-header {
   background: var(--navy-dark);
   color: #ffffff;
-  padding: 8px 12px 10px;
+  padding: 8px 10px 10px;
   border-bottom: 3px solid var(--navy-dark);
+  flex-shrink: 0;
 }
 
 .header-top-row {
@@ -364,17 +365,29 @@ body {
   align-items: center;
   margin-bottom: 8px;
   gap: 6px;
+  flex-wrap: nowrap;
+  height: 32px;
+  box-sizing: border-box;
 }
 
 .date-badge {
   background: #ffffff;
   color: var(--navy-dark);
-  padding: 3px 10px;
+  padding: 3px 8px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 900;
-  display: flex;
-  gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 28px;
+  box-sizing: border-box;
+}
+
+.date-badge span {
+  white-space: nowrap;
 }
 
 .target-univ-badge {
@@ -382,24 +395,33 @@ body {
   color: #ffffff;
   padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .header-right-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  height: 28px;
 }
 
 .turn-count {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   color: var(--accent-gold);
+  white-space: nowrap;
 }
 
 .btn-header-menu {
@@ -407,11 +429,16 @@ body {
   color: var(--navy-dark);
   border: 2px solid var(--navy-dark);
   border-radius: 6px;
-  padding: 3px 7px;
-  font-size: 0.75rem;
+  padding: 2px 6px;
+  font-size: 0.72rem;
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 0 #0f172a;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .btn-header-menu:active {
@@ -419,8 +446,9 @@ body {
   box-shadow: 0 0 0 #0f172a;
 }
 .header-btn-text {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 /* バイタルゲージ群（やる気・体力・ストレス・所持金） */
@@ -615,7 +643,13 @@ body {
   padding: 10px 12px;
   box-shadow: var(--solid-shadow-sm);
   position: relative;
-  min-height: 64px;
+  min-height: 72px;
+  max-height: 72px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .dialog-name {
@@ -632,11 +666,15 @@ body {
 }
 
 .dialog-content {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--navy-dark);
   margin-top: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* ========================================================
@@ -1050,6 +1088,105 @@ body {
   transform: translateY(4px);
   box-shadow: 0 0 0 var(--navy-dark);
 }
+
+/* ========================================================
+   イベントモーダル & 選択肢モーダル UI
+   ======================================================== */
+.event-modal-body {
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 60dvh;
+}
+
+.event-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.65;
+  color: var(--navy-dark);
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.event-rewards {
+  background: #f0f7ff;
+  border: var(--border-thick);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 0 var(--navy-dark);
+}
+
+.event-rewards:empty {
+  display: none;
+}
+
+.reward-item {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--study-blue);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reward-item::before {
+  content: '▶';
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+}
+
+.choice-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.choice-btn {
+  background: #ffffff;
+  color: var(--navy-dark);
+  border: var(--border-thick);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 3px 0 var(--navy-dark);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 900;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+}
+
+.choice-btn:hover {
+  background: #f8fafc;
+  border-color: var(--study-blue);
+}
+
+.choice-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--navy-dark);
+  background: #eef2f5;
+}
+
+.choice-btn .subtext {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.35;
+}
+
 
 /* ========================================================
    勉強メニュー & 出かけるメニューのカード
@@ -1822,4 +1959,10 @@ body {
     box-sizing: border-box;
     overflow: hidden;
   }
+}
+
+
+/* パーティクルコンテナ非表示（行動時の絵文字・記号完全非表示） */
+#particle-container, .particle-container, .particle {
+  display: none !important;
 }
