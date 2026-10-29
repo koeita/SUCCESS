@@ -41,6 +41,14 @@
   --solid-shadow-lg: 0 6px 0 #1d3557;
 }
 
+html, body {
+  width: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--bg-campus);
   background-image: 
@@ -48,12 +56,12 @@ body {
     linear-gradient(90deg, rgba(29, 53, 87, 0.03) 1px, transparent 1px);
   background-size: 20px 20px;
   color: var(--navy-dark);
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 10px;
-  overflow-x: clip;
+  overflow: hidden;
   position: relative;
 }
 
@@ -1469,4 +1477,36 @@ body {
   40% { transform: translateX(6px); }
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
+}
+
+
+/* ========================================================
+   スマホ画面スクロール防止（レイアウト変更なし）
+   ======================================================== */
+@media (max-width: 600px) {
+  html, body {
+    width: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    touch-action: manipulation;
+  }
+
+  .game-container {
+    width: 100%;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
 }
