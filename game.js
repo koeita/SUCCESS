@@ -14,7 +14,7 @@ const defaultSettings = {
   bgmVolume: 0.5,
   seVolume: 0.8,
   screenShake: true,
-  particles: true
+  particles: false
 };
 
 function loadSettings() {
@@ -599,44 +599,8 @@ function showFloatingText(text, x, y, type = 'exp') {
 }
 
 function triggerParticles(x, y, count = 16, type = 'star') {
-  if (!settings.particles) return;
-  const container = document.getElementById('particle-container');
-  if (!container) return;
-
-  const rect = container.getBoundingClientRect();
-  const originX = x ? (x - rect.left) : (rect.width / 2);
-  const originY = y ? (y - rect.top) : (rect.height * 0.45);
-
-  const icons = {
-    star: ['✦', '★', '◆', '✦'],
-    gold: ['★', '◆', '✦', '▲'],
-    heal: ['✦', '◆', '＋', '✦'],
-    mood: ['★', '◆', '▲', '✦'],
-    confetti: ['◆', '▲', '✦', '★']
-  };
-  const list = icons[type] || icons.star;
-
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('span');
-    p.className = 'particle';
-    p.textContent = list[Math.floor(Math.random() * list.length)];
-    p.style.fontSize = `${Math.random() * 0.6 + 0.8}rem`;
-    p.style.left = `${originX}px`;
-    p.style.top = `${originY}px`;
-
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-    const dist = Math.random() * 90 + 40;
-    const dx = Math.cos(angle) * dist;
-    const dy = Math.sin(angle) * dist;
-    const rot = (Math.random() - 0.5) * 720;
-
-    p.style.setProperty('--dx', `${dx}px`);
-    p.style.setProperty('--dy', `${dy}px`);
-    p.style.setProperty('--rot', `${rot}deg`);
-
-    container.appendChild(p);
-    setTimeout(() => p.remove(), 760);
-  }
+  // 行動時・演出時の絵文字パーティクルは非表示
+  return;
 }
 
 function animateNumberValue(el, targetVal, isScore = false, isMoney = false) {

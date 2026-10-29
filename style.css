@@ -1960,3 +1960,9 @@ body {
     overflow: hidden;
   }
 }
+
+
+/* パーティクルコンテナ非表示（行動時の絵文字・記号完全非表示） */
+#particle-container, .particle-container, .particle {
+  display: none !important;
+}
