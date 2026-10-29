@@ -608,11 +608,11 @@ function triggerParticles(x, y, count = 16, type = 'star') {
   const originY = y ? (y - rect.top) : (rect.height * 0.45);
 
   const icons = {
-    star: ['⭐', '✨', '🌟', '✦'],
-    gold: ['👑', '✨', '⚡', '🌟'],
-    heal: ['💖', '🍀', '✨', '💚'],
-    mood: ['🔥', '✨', '🎮', '💖'],
-    confetti: ['🌸', '', '🎊', '✨']
+    star: ['✦', '★', '◆', '✦'],
+    gold: ['★', '◆', '✦', '▲'],
+    heal: ['✦', '◆', '＋', '✦'],
+    mood: ['★', '◆', '▲', '✦'],
+    confetti: ['◆', '▲', '✦', '★']
   };
   const list = icons[type] || icons.star;
 
@@ -1984,28 +1984,88 @@ function closeHowToPlayModal() {
   document.getElementById('how-to-modal').classList.remove('active');
 }
 
+const OLD_UNIV_NAME_MIGRATION = {
+  // 東京大学
+  '東京大学 理科一類（工・理学部）': '帝都大学 理科一類（工・理学部）',
+  '東大 理一': '帝大 理一',
+  '東京大学 理科三類（医学部）': '帝都大学 理科三類（医学部）',
+  '東大 理三(医)': '帝大 理三(医)',
+  '東京大学 文科一類・二類（法・経済）': '帝都大学 文科一類・二類（法・経済）',
+  '東大 文科(法経)': '帝大 文科(法経)',
+  '東都大学 理科一類（工・理学部）': '帝都大学 理科一類（工・理学部）',
+  '東都大学 理科三類（医学部）': '帝都大学 理科三類（医学部）',
+  '東都大学 文科一類・二類（法・経済）': '帝都大学 文科一類・二類（法・経済）',
+  // 京都大学
+  '京都大学 工学部・理学部': '京洛大学 工学部・理学部',
+  '京大 工・理': '京洛大 工・理',
+  '京都大学 法学部・経済学部': '京洛大学 法学部・経済学部',
+  '京大 法・経': '京洛大 法・経',
+  // 早慶
+  '早稲田大学 政治経済学部': '早稲谷大学 政治経済学部',
+  '早稲田 政経': '早稲谷 政経',
+  '慶應義塾大学 経済学部・法学部': '慶明義塾大学 経済学部・法学部',
+  '慶應 経・法': '慶明 経・法',
+  '早稲田大学 先進・創造理工学部': '早稲谷大学 先進・創造理工学部',
+  '早稲田 理工': '早稲谷 理工',
+  // MARCH・関関同立
+  '明治大学 法学部・商学部': '明政大学 法学部・商学部',
+  '明治 法・商': '明政 法・商',
+  '青山学院大学 文学部・国際政経': '青葉学院大学 文学部・国際政経',
+  '青学 文・国政': '青葉 文・国政',
+  '同志社大学 理工学部': '同朋社大学 理工学部',
+  '同志社 理工': '同朋社 理工',
+  // 地方国公立
+  '地方国立大学 工学部（金沢・岡山・埼玉等）': '地方拠点国立大学 工学部（加賀・吉備・武蔵等）',
+  '地方国立 工学': '拠点国立 工学',
+  '地方国立大学 人文・経済学部': '地方拠点国立大学 人文・経済学部',
+  '地方国立 文・経': '拠点国立 文・経',
+  // 日東駒専・産近甲龍
+  '日本大学・東洋大学 文系学部': '日東大学・東亜大学 文系学部',
+  '日東駒専 文系': '日東東亜 文系',
+  '近畿大学・東洋大学 理工学部': '浪速大学・東亜大学 理工学部',
+  '産近甲龍 理工': '浪速東亜 理工',
+  // 後期日程
+  '地方国立大学 後期（理系）': '地方拠点国立大学 後期（理系）',
+  '地方国立 後期理系': '拠点国立 後期理系',
+  '地方国立大学 後期（文系）': '地方拠点国立大学 後期（文系）',
+  '地方国立 後期文系': '拠点国立 後期文系'
+};
+
 function getOBList() {
   try {
+    let list = [];
     const listStr = localStorage.getItem('juken_success_ob_list');
     if (listStr) {
-      const list = JSON.parse(listStr);
-      if (Array.isArray(list)) return list;
-    }
-    // 旧キーからの自動移行
-    const oldStr = localStorage.getItem('juken_success_ob');
-    if (oldStr) {
-      const oldOb = JSON.parse(oldStr);
-      if (oldOb && typeof oldOb === 'object') {
-        const migratedList = [{
-          id: Date.now() - 100000,
-          generation: 1,
-          dateStr: `${oldOb.year || new Date().getFullYear()}年合格`,
-          ...oldOb
-        }];
-        localStorage.setItem('juken_success_ob_list', JSON.stringify(migratedList));
-        return migratedList;
+      const parsed = JSON.parse(listStr);
+      if (Array.isArray(parsed)) list = parsed;
+    } else {
+      // 旧キーからの自動移行
+      const oldStr = localStorage.getItem('juken_success_ob');
+      if (oldStr) {
+        const oldOb = JSON.parse(oldStr);
+        if (oldOb && typeof oldOb === 'object') {
+          list = [{
+            id: Date.now() - 100000,
+            generation: 1,
+            dateStr: `${oldOb.year || new Date().getFullYear()}年合格`,
+            ...oldOb
+          }];
+        }
       }
     }
+
+    // 旧大学名（実在名称）から新架空名称への自動マイグレーション
+    let migrated = false;
+    list.forEach(ob => {
+      if (ob.univ && OLD_UNIV_NAME_MIGRATION[ob.univ]) {
+        ob.univ = OLD_UNIV_NAME_MIGRATION[ob.univ];
+        migrated = true;
+      }
+    });
+    if (migrated) {
+      localStorage.setItem('juken_success_ob_list', JSON.stringify(list));
+    }
+    return list;
   } catch (e) {
     console.error('getOBList error:', e);
   }
@@ -4653,14 +4713,22 @@ function runRandomFlavorEvent() {
       icon: '🏫'
     },
     {
-      title: '📖 話題の参考書を購入！',
-      text: '「わかりやすい！」と評判の良書を本屋で見つけて即買いした！',
-      rewards: ['英語経験値 +25 pt', 'お小遣い -¥1,200'],
+      title: (state.money >= 1200) ? '話題の参考書を購入！' : '本屋で良書を発見！',
+      text: (state.money >= 1200)
+        ? '「わかりやすい！」と評判の良書を本屋で見つけて即買いした！'
+        : '本屋で評判の良書を見つけたが、お小遣いが足りなくて買えなかった…目次と立ち読みで少しだけ勉強のヒントを得た！',
+      rewards: (state.money >= 1200)
+        ? ['英語経験値 +25 pt', 'お小遣い -¥1,200']
+        : ['英語経験値 +5 pt'],
       action: () => {
-        addExpToSubject('eng', 25);
-        state.money = Math.max(0, state.money - 1200);
+        if (state.money >= 1200) {
+          addExpToSubject('eng', 25);
+          state.money -= 1200;
+        } else {
+          addExpToSubject('eng', 5);
+        }
       },
-      icon: '📚'
+      icon: ''
     },
     {
       title: '☀️ 朝の散歩でリフレッシュ',
@@ -5320,10 +5388,11 @@ function showEventModal(title, text, rewards = [], icon = '', onConfirm = null) 
   rewardsEl.innerHTML = '';
   rewards.forEach(r => {
     const item = document.createElement('div');
+    item.className = 'reward-item';
     if (typeof r === 'string' && r.trim().startsWith('<')) {
       item.innerHTML = r;
     } else {
-      item.textContent = `▶ ${r}`;
+      item.textContent = `${r}`;
     }
     rewardsEl.appendChild(item);
   });
