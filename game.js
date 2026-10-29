@@ -612,7 +612,7 @@ function triggerParticles(x, y, count = 16, type = 'star') {
     gold: ['👑', '✨', '⚡', '🌟'],
     heal: ['💖', '🍀', '✨', '💚'],
     mood: ['🔥', '✨', '🎮', '💖'],
-    confetti: ['🌸', '🎉', '🎊', '✨']
+    confetti: ['🌸', '', '🎊', '✨']
   };
   const list = icons[type] || icons.star;
 
@@ -792,7 +792,7 @@ const ITEM_DATABASE = {
     icon: '✏️',
     type: 'gear',
     price: 1500,
-    desc: '濃く滑らかなマーク専用鉛筆。共通テストやマーク模試でのケアレスミス率を低減！',
+    desc: '濃く滑らかなマーク専用鉛筆。共通試験やマーク模試でのケアレスミス率を低減！',
     passiveText: 'マークミス低減',
     effectTags: [
       { text: 'マークミス大幅低減', type: 'exp' },
@@ -909,7 +909,7 @@ const ITEM_DATABASE = {
     icon: '⛩️',
     type: 'exam',
     price: 2200,
-    desc: '学問の神様のご加護。共通テスト・二次試験本番で各大問得点ボーナス！',
+    desc: '学問の神様のご加護。共通試験・二次試験本番で各大問得点ボーナス！',
     passiveText: '本番各大問得点ボーナス',
     effectTags: [
       { text: '本番得点ボーナス', type: 'exp' },
@@ -1027,7 +1027,7 @@ function renderShopUI() {
   const moneyBar = document.querySelector('.shop-money-bar');
   if (moneyBar) {
     if (curShopTab === 'buy') {
-      moneyBar.innerHTML = `<span>💰 現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥${(state.money || 0).toLocaleString()}</b></span>`;
+      moneyBar.innerHTML = `<span>現在の所持金: <b id="shop-current-money" style="color: #16a34a; font-size: 1.05rem;">¥${(state.money || 0).toLocaleString()}</b></span>`;
     } else {
       const ownedCount = Object.keys(state.inventory || {}).filter(k => (state.inventory[k] || 0) > 0).length;
       const usedText = (state.itemsUsedThisTurn || 0) >= 1 ? '<span style="color:#ef4444; font-weight:800;">今週使用済(1/1)</span>' : '<span style="color:#16a34a; font-weight:800;">今週使用可(0/1)</span>';
@@ -1087,7 +1087,7 @@ function renderShopBuyList() {
     }).join('');
 
     card.innerHTML = `
-      <div class="item-icon">${item.icon}</div>
+      <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
       <div class="item-info">
         <div class="item-title-row">
           <span class="item-name">${item.name}</span>
@@ -1173,7 +1173,7 @@ function renderShopBagList() {
     }).join('');
 
     card.innerHTML = `
-      <div class="item-icon">${item.icon}</div>
+      <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
       <div class="item-info">
         <div class="item-title-row">
           <span class="item-name">${item.name}${countLabel}</span>
@@ -1256,7 +1256,7 @@ function createInitialState(playerName = '合格太郎') {
     club: '未定',
     specialtySubjects: null, // 専門科目組み合わせ（例: { sub1: '物理', sub2: '化学', name: '物理・化学' }）
     subExtraScore: 35,       // 情報I・副教科（理系社会/文系理科基礎）の共テ対策度（0〜100）
-    kyotsuPeriodActive: false, // 高3 11月以降の共通テスト直前対策期間フラグ
+    kyotsuPeriodActive: false, // 高3 11月以降の共通試験直前対策期間フラグ
     targetUniv: null,
     subUniv: null,
     subUnivPassed: false,
@@ -1322,8 +1322,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   // --- 難関国立（旧帝大・最難関） ---
   {
     id: 'todai_sci',
-    name: '東京大学 理科一類（工・理学部）',
-    shortName: '東大 理一',
+    name: '帝都大学 理科一類（工・理学部）',
+    shortName: '帝大 理一',
     type: '国公立',
     course: '理系',
     border: 73,
@@ -1332,8 +1332,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'todai_med',
-    name: '東京大学 理科三類（医学部）',
-    shortName: '東大 理三(医)',
+    name: '帝都大学 理科三類（医学部）',
+    shortName: '帝大 理三(医)',
     type: '国公立',
     course: '理系',
     border: 78,
@@ -1342,8 +1342,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'todai_hum',
-    name: '東京大学 文科一類・二類（法・経済）',
-    shortName: '東大 文科(法経)',
+    name: '帝都大学 文科一類・二類（法・経済）',
+    shortName: '帝大 文科(法経)',
     type: '国公立',
     course: '文系',
     border: 72,
@@ -1352,8 +1352,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'kyodai_eng',
-    name: '京都大学 工学部・理学部',
-    shortName: '京大 工・理',
+    name: '京洛大学 工学部・理学部',
+    shortName: '京洛大 工・理',
     type: '国公立',
     course: '理系',
     border: 71,
@@ -1362,8 +1362,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'kyodai_law',
-    name: '京都大学 法学部・経済学部',
-    shortName: '京大 法・経',
+    name: '京洛大学 法学部・経済学部',
+    shortName: '京洛大 法・経',
     type: '国公立',
     course: '文系',
     border: 70,
@@ -1374,8 +1374,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   // --- 最難関私大（早慶） ---
   {
     id: 'waseda_pol',
-    name: '早稲田大学 政治経済学部',
-    shortName: '早稲田 政経',
+    name: '早稲谷大学 政治経済学部',
+    shortName: '早稲谷 政経',
     type: '私立',
     course: '文系',
     border: 69,
@@ -1384,8 +1384,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'keio_econ',
-    name: '慶應義塾大学 経済学部・法学部',
-    shortName: '慶應 経・法',
+    name: '慶明義塾大学 経済学部・法学部',
+    shortName: '慶明 経・法',
     type: '私立',
     course: '文系',
     border: 68,
@@ -1394,8 +1394,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'waseda_sci',
-    name: '早稲田大学 先進・創造理工学部',
-    shortName: '早稲田 理工',
+    name: '早稲谷大学 先進・創造理工学部',
+    shortName: '早稲谷 理工',
     type: '私立',
     course: '理系',
     border: 67,
@@ -1406,8 +1406,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   // --- 上位私大（MARCH・関関同立） ---
   {
     id: 'meiji_law',
-    name: '明治大学 法学部・商学部',
-    shortName: '明治 法・商',
+    name: '明政大学 法学部・商学部',
+    shortName: '明政 法・商',
     type: '私立',
     course: '文系',
     border: 62,
@@ -1416,8 +1416,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'aoyama_lit',
-    name: '青山学院大学 文学部・国際政経',
-    shortName: '青学 文・国政',
+    name: '青葉学院大学 文学部・国際政経',
+    shortName: '青葉 文・国政',
     type: '私立',
     course: '文系',
     border: 61,
@@ -1426,8 +1426,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'doshisha_sci',
-    name: '同志社大学 理工学部',
-    shortName: '同志社 理工',
+    name: '同朋社大学 理工学部',
+    shortName: '同朋社 理工',
     type: '私立',
     course: '理系',
     border: 60,
@@ -1438,30 +1438,30 @@ const UNIV_LIST = window.UNIV_LIST = [
   // --- 中堅国公立 ---
   {
     id: 'chiiki_eng',
-    name: '地方国立大学 工学部（金沢・岡山・埼玉等）',
-    shortName: '地方国立 工学',
+    name: '地方拠点国立大学 工学部（加賀・吉備・武蔵等）',
+    shortName: '拠点国立 工学',
     type: '国公立',
     course: '理系',
     border: 56,
     weights: { eng: 1.0, math: 1.4, jp: 0.8, sci: 1.4 },
-    desc: '共通テスト5教科＋2次数理。手堅く理系就職・研究を目指す王道。'
+    desc: '共通試験5教科＋2次数理。手堅く理系就職・研究を目指す王道。'
   },
   {
     id: 'chiiki_hum',
-    name: '地方国立大学 人文・経済学部',
-    shortName: '地方国立 文・経',
+    name: '地方拠点国立大学 人文・経済学部',
+    shortName: '拠点国立 文・経',
     type: '国公立',
     course: '文系',
     border: 55,
     weights: { eng: 1.2, math: 0.8, jp: 1.3, sci: 1.2 },
-    desc: '共通テストで全科目安定得点し、2次記述で国英を固めて合格を掴む。'
+    desc: '共通試験で全科目安定得点し、2次記述で国英を固めて合格を掴む。'
   },
 
   // --- 中堅私大（日東駒専・産近甲龍） ---
   {
     id: 'nichidai_hum',
-    name: '日本大学・東洋大学 文系学部',
-    shortName: '日東駒専 文系',
+    name: '日東大学・東亜大学 文系学部',
+    shortName: '日東東亜 文系',
     type: '私立',
     course: '文系',
     border: 50,
@@ -1470,8 +1470,8 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'kindai_sci',
-    name: '近畿大学・東洋大学 理工学部',
-    shortName: '産近甲龍 理工',
+    name: '浪速大学・東亜大学 理工学部',
+    shortName: '浪速東亜 理工',
     type: '私立',
     course: '理系',
     border: 50,
@@ -1482,7 +1482,7 @@ const UNIV_LIST = window.UNIV_LIST = [
   // --- 国公立大学 後期日程 ---
   {
     id: 'nankan_kouki_sci',
-    name: '難関国公立大学 理系後期（東工大・千葉・神戸等）',
+    name: '難関国公立大学 理系後期（帝都科学大・房総大・港都大等）',
     shortName: '難関国立 後期(理)',
     type: '国公立後期',
     course: '理系',
@@ -1492,7 +1492,7 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'chiiki_eng_kouki',
-    name: '地方国立大学 理工学部後期日程',
+    name: '地方拠点国立大学 理工学部後期日程',
     shortName: '地方国立 後期(工)',
     type: '国公立後期',
     course: '理系',
@@ -1502,7 +1502,7 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'nankan_kouki_hum',
-    name: '難関国公立大学 文系後期（一橋・神戸・横国等）',
+    name: '難関国公立大学 文系後期（一ノ橋大・港都大・浜国大等）',
     shortName: '難関国立 後期(文)',
     type: '国公立後期',
     course: '文系',
@@ -1512,7 +1512,7 @@ const UNIV_LIST = window.UNIV_LIST = [
   },
   {
     id: 'chiiki_hum_kouki',
-    name: '地方国立大学 人文・社会学部後期日程',
+    name: '地方拠点国立大学 人文・社会学部後期日程',
     shortName: '地方国立 後期(文)',
     type: '国公立後期',
     course: '文系',
@@ -2021,7 +2021,7 @@ function openOBRosterModal() {
 
       cardsHtml += `
         <div class="ob-history-card">
-          <div class="avatar">👨‍🎓</div>
+          <div class="avatar">👨‍</div>
           <div class="info">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <span class="name">${ob.name} 先輩</span>
@@ -2037,7 +2037,7 @@ function openOBRosterModal() {
 
     body.innerHTML = `
       <div class="ob-list-summary" style="display:flex; justify-content:space-between; align-items:center; padding: 4px 6px; font-size:0.8rem; font-weight:800; color:#334155; border-bottom:1px solid #e2e8f0; margin-bottom:6px;">
-        <span>📜 歴代OB合格名簿: <span style="color:#2563eb;">${list.length}名 登録</span></span>
+        <span>歴代OB合格名簿: <span style="color:#2563eb;">${list.length}名 登録</span></span>
         <button class="btn-clear-ob" onclick="clearOBListConfirm()" style="font-size:0.7rem; background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; border-radius:6px; padding:2px 8px; cursor:pointer; font-weight:700;">名簿初期化</button>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">
@@ -2050,7 +2050,7 @@ function openOBRosterModal() {
   } else {
     body.innerHTML = `
       <div style="text-align: center; padding: 24px 0; color: #64748b; font-size: 0.85rem; font-weight: 700;">
-        <div style="font-size: 2.5rem; margin-bottom: 8px;">🎓</div>
+        <div style="font-size: 2.5rem; margin-bottom: 8px;"></div>
         まだ合格実績データがありません。<br>
         大学に合格してゲームをクリアすると、<br>
         ここにあなたのキャラが栄光の歴代OBとして何人でも登録されます！
@@ -2174,7 +2174,7 @@ function renderUI() {
   if (state.stress >= 100) state.hadMaxStress = true;
   if (typeof checkAchievements === 'function') checkAchievements();
 
-  // 共通テスト直前対策期間（高3 11月〜1月2週）限定ボタン表示制御
+  // 共通試験直前対策期間（高3 11月〜1月2週）限定ボタン表示制御
   const isKyotsuPeriod = state.year === 3 && (state.month === 11 || state.month === 12 || (state.month === 1 && state.week <= 2));
   const extraBtn = document.getElementById('study-btn-kyotsu-extra');
   if (extraBtn) {
@@ -2303,7 +2303,7 @@ function renderRelationsGrid() {
     obCard.title = 'クリックして歴代OB名簿を見る';
     obCard.onclick = () => openOBRosterModal();
     obCard.innerHTML = `
-      <div class="rel-avatar">👨‍🎓</div>
+      <div class="rel-avatar">👨‍</div>
       <div class="rel-info">
         <div class="rel-name" style="display:flex; justify-content:space-between; align-items:center;">
           <span>歴代OB先輩 (${obList.length}名登録中)</span>
@@ -2315,7 +2315,7 @@ function renderRelationsGrid() {
   } else {
     obCard.className = 'relation-card unmet';
     obCard.innerHTML = `
-      <div class="rel-avatar">🎓</div>
+      <div class="rel-avatar"></div>
       <div class="rel-info">
         <div class="rel-name">OBの先輩 (未登録)</div>
         <div class="rel-desc">大学に合格してゲームをクリアすると、歴代OBとして何人でも登録されます！</div>
@@ -2521,8 +2521,8 @@ function renderStudyMenu() {
   const gearEarplugsTag = hasEarplugs ? '<span class="play-tag heal" style="background:#dcfce7;color:#15803d;border-color:#bbf7d0;">耳栓 15%軽減</span>' : '';
 
   container.innerHTML = `
-    <button class="study-card-btn" onclick="executeStudy('eng')">
-      <span class="icon">🔤</span>
+    <button class="study-card-btn study-eng-btn" onclick="executeStudy('eng')">
+      <div class="subject-pill pill-eng">英語</div>
       <div class="info">
         <div class="name">英語の集中学習</div>
         <div class="desc">
@@ -2538,8 +2538,8 @@ function renderStudyMenu() {
       </div>
     </button>
 
-    <button class="study-card-btn" onclick="executeStudy('math')">
-      <span class="icon">📐</span>
+    <button class="study-card-btn study-math-btn" onclick="executeStudy('math')">
+      <div class="subject-pill pill-math">数学</div>
       <div class="info">
         <div class="name">数学の集中学習</div>
         <div class="desc">
@@ -2555,8 +2555,8 @@ function renderStudyMenu() {
       </div>
     </button>
 
-    <button class="study-card-btn" onclick="executeStudy('jp')">
-      <span class="icon">📕</span>
+    <button class="study-card-btn study-jp-btn" onclick="executeStudy('jp')">
+      <div class="subject-pill pill-jp">国語</div>
       <div class="info">
         <div class="name">国語の集中学習</div>
         <div class="desc">
@@ -2572,8 +2572,8 @@ function renderStudyMenu() {
       </div>
     </button>
 
-    <button class="study-card-btn" onclick="executeStudy('sci')">
-      <span class="icon">${sciIcon}</span>
+    <button class="study-card-btn study-sci-btn" onclick="executeStudy('sci')">
+      <div class="subject-pill pill-sci">${sciLabel}</div>
       <div class="info">
         <div class="name">${sciLabel}（${specName}）の集中学習</div>
         <div class="desc">
@@ -2589,8 +2589,8 @@ function renderStudyMenu() {
       </div>
     </button>
 
-    <button class="study-card-btn all-round" onclick="executeStudy('all')">
-      <span class="icon">🎯</span>
+    <button class="study-card-btn all-round study-all-btn" onclick="executeStudy('all')">
+      <div class="subject-pill pill-all">総合</div>
       <div class="info">
         <div class="name">全科目 総合演習</div>
         <div class="desc">
@@ -2606,15 +2606,15 @@ function renderStudyMenu() {
     </button>
 
     ${isKyotsuPeriod ? `
-    <button class="study-card-btn kyotsu-extra" style="border-color: #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);" onclick="executeStudy('sub_extra')">
-      <span class="icon">💻</span>
+    <button class="study-card-btn kyotsu-extra study-extra-btn" style="border-color: #f59e0b; background: #fffbeb;" onclick="executeStudy('sub_extra')">
+      <div class="subject-pill pill-extra">共試</div>
       <div class="info">
-        <div class="name" style="color: #b45309; font-weight: 800;">💻 情報I・${subName} マーク演習</div>
+        <div class="name" style="color: #b45309; font-weight: 800;">情報I・${subName} 演習</div>
         <div class="desc">
           <div class="play-effect-row">
             <span class="play-tag cost">体力 -${costs.extra.sCost}</span>
             <span class="play-tag cost">ストレス +${costs.extra.stCost}%</span>
-            <span class="play-tag exp">共テ200点枠 +14pt</span>
+            <span class="play-tag exp">共通試験200点枠 +14pt</span>
             <span class="play-tag mot">現在: ${Math.round(state.subExtraScore || 35)}点</span>
           </div>
         </div>
@@ -2767,7 +2767,7 @@ function executeStudy(subject) {
       rewardLines.push(`全科目経験値: 各 +${avgPts} pt 獲得！${gradeNotice}`);
       showFloatingText(`全科目 +${avgPts} pt`, null, null, 'exp');
       if (leveledUpSubjs.length > 0) {
-        rewardLines.push(`🎉 【学力UP!】${leveledUpSubjs.join('・')}`);
+        rewardLines.push(` 【学力UP!】${leveledUpSubjs.join('・')}`);
       }
     } else {
       let mult = 1.0;
@@ -2799,7 +2799,7 @@ function executeStudy(subject) {
 
       if (levelUps > 0) {
         anyLevelUp = true;
-        rewardLines.push(`🎉 【${subjName} 偏差値 UP! ➔ ${state.subjects[subject].score}】`);
+        rewardLines.push(` 【${subjName} 偏差値 UP! ➔ ${state.subjects[subject].score}】`);
       }
     }
 
@@ -2902,7 +2902,7 @@ function openPlayMenu() {
     openShopModal();
   };
   btnShop.innerHTML = `
-    <span class="icon">🛒</span>
+    <span class="play-type-pill pill-shop">購買</span>
     <div class="info">
       <div class="name" style="color:#166534; font-weight:900;">購買部・本屋に行く</div>
       <div class="desc">
@@ -2921,7 +2921,7 @@ function openPlayMenu() {
   btnHome.className = 'study-card-btn';
   btnHome.onclick = () => executePlay('home');
   btnHome.innerHTML = `
-    <span class="icon">🎮</span>
+    <span class="play-type-pill pill-home">自宅</span>
     <div class="info">
       <div class="name">自宅の部屋でゲーム＆マンガ</div>
       <div class="desc">
@@ -2941,7 +2941,7 @@ function openPlayMenu() {
   btnShrine.className = 'study-card-btn';
   btnShrine.onclick = () => executePlay('shrine');
   btnShrine.innerHTML = `
-    <span class="icon">⛩️</span>
+    <span class="play-type-pill pill-shrine">神社</span>
     <div class="info">
       <div class="name">学問神社でお参り＆合格祈願</div>
       <div class="desc">
@@ -2961,7 +2961,7 @@ function openPlayMenu() {
   btnBookstore.className = 'study-card-btn';
   btnBookstore.onclick = () => executePlay('bookstore');
   btnBookstore.innerHTML = `
-    <span class="icon">📚</span>
+    <span class="play-type-pill pill-book">書店</span>
     <div class="info">
       <div class="name">大型書店＆自習カフェ</div>
       <div class="desc">
@@ -2981,7 +2981,7 @@ function openPlayMenu() {
   btnKaraoke.className = 'study-card-btn';
   btnKaraoke.onclick = () => executePlay('karaoke');
   btnKaraoke.innerHTML = `
-    <span class="icon">🎤</span>
+    <span class="play-type-pill pill-sing">熱唱</span>
     <div class="info">
       <div class="name">カラオケで熱唱！大発散</div>
       <div class="desc">
@@ -3002,7 +3002,7 @@ function openPlayMenu() {
     btnAoi.className = 'study-card-btn';
     btnAoi.onclick = () => executePlay('aoi');
     btnAoi.innerHTML = `
-      <span class="icon">👧</span>
+      <span class="play-type-pill pill-friend">交友</span>
       <div class="info">
         <div class="name">あおいとカフェで自習＆おしゃべり</div>
         <div class="desc">
@@ -3019,7 +3019,7 @@ function openPlayMenu() {
   } else {
     btnAoi.className = 'study-card-btn locked';
     btnAoi.innerHTML = `
-      <span class="icon">🔒</span>
+      <span class="play-type-pill pill-lock">未解放</span>
       <div class="info">
         <div class="name">幼馴染とお出かけ (未解放)</div>
         <div class="desc">
@@ -3042,7 +3042,7 @@ function openPlayMenu() {
       ? '<span class="play-tag exp">国語 +20pt・社会 +15pt</span>' 
       : '<span class="play-tag exp">数学 +20pt・英語 +15pt</span>';
     btnShindo.innerHTML = `
-      <span class="icon">👦</span>
+      <span class="play-type-pill pill-rival">切磋</span>
       <div class="info">
         <div class="name">神童くんとファミレスで受験戦略会議</div>
         <div class="desc">
@@ -3058,7 +3058,7 @@ function openPlayMenu() {
   } else {
     btnShindo.className = 'study-card-btn locked';
     btnShindo.innerHTML = `
-      <span class="icon">🔒</span>
+      <span class="play-type-pill pill-lock">未解放</span>
       <div class="info">
         <div class="name">ライバルとお出かけ (未解放)</div>
         <div class="desc">
@@ -3382,7 +3382,7 @@ function cureRedTrait(traitId) {
   state.traits = state.traits.filter(t => t !== traitId);
   playSound('success');
   enqueueModal(() => {
-    showEventModal('✨ 弱点克服！', `カウンセリングと自己改善により、【赤特】${trait.name} を完全に克服・消去した！`, [], '🎉');
+    showEventModal('✨ 弱点克服！', `カウンセリングと自己改善により、【赤特】${trait.name} を完全に克服・消去した！`, [], '');
   });
   renderUI();
   renderRedTraitsShop();
@@ -3438,7 +3438,7 @@ function checkScheduledEvents() {
     return;
   }
 
-  // 高3 1月4週：国公立前期・後期 最終出願決定（共テリサーチを受けた出願変更＆後期校決定）
+  // 高3 1月4週：国公立前期・後期 最終出願決定（共通試験リサーチを受けた出願変更＆後期校決定）
   if (y === 3 && m === 1 && w === 4 && !state.finalAppDone) {
     state.finalAppDone = true;
     enqueueModal(() => triggerFinalApplicationChoice());
@@ -3478,18 +3478,18 @@ function checkScheduledEvents() {
     return;
   }
 
-  // 高3 11月1週：共通テスト直前対策期間スタート告知
+  // 高3 11月1週：共通試験直前対策期間スタート告知
   if (y === 3 && m === 11 && w === 1 && !state.kyotsuPeriodActive) {
     state.kyotsuPeriodActive = true;
     enqueueModal(() => {
       showEventModal(
-        '🔥 共通テスト直前対策期間 スタート！',
-        'いよいよ11月！大学入学共通テスト本番まで残り2ヶ月半となった！\n\nここからは新課程共通テストの専用科目【情報I】と、副教科（理系社会 / 文系の理科基礎）の集中対策期間が解禁！\n勉強メニューの「💻 情報I・副教科マーク演習」を活用して、200点分の得点源をがっちり確保しよう！',
+        '共通試験直前対策期間 スタート！',
+        'いよいよ11月！全国統一共通試験本番まで残り2ヶ月半となった！\n\nここからは新課程共通試験の専用科目【情報I】と、副教科（理系社会 / 文系の理科基礎）の集中対策期間が解禁！\n勉強メニューの「情報I・副教科演習」を活用して、200点分の得点源をがっちり確保しよう！',
         ['勉強メニューに「情報I・副教科マーク演習」が解放！', '共テ200点枠を抜け目なく鍛えて足切りを突破せよ！'],
         '💻',
         () => renderUI()
       );
-      setDialog('担任の先生', '11月からは共通テスト対策のギアを一段上げよう！情報Iと副教科を抜かりなく仕上げておくことが安全圏への鍵だ！');
+      setDialog('担任の先生', '11月からは共通試験対策のギアを一段上げよう！情報Iと副教科を抜かりなく仕上げておくことが安全圏への鍵だ！');
     });
     return;
   }
@@ -3682,7 +3682,7 @@ function triggerSpecialtySubjectChoice(course) {
         },
         {
           title: '📖 日本史 ＋ 世界史 （最難関国公立文系 二次特化型）',
-          subtext: '東大文系・京大文学部など、地歴2科目を課す難関二次試験専用の本格派！',
+          subtext: '帝大文系・京洛大文学部など、地歴2科目を課す難関二次試験専用の本格派！',
           action: () => setSpecialtySubjects('社会', '日本史', '世界史', '日本史・世界史')
         }
       ],
@@ -3739,7 +3739,7 @@ function triggerTargetUnivChoice() {
     };
   });
 
-  showChoiceModal('🎓 志望校・学部を決定しよう！', '高校3年生の春。いよいよ受験する大学・学部のターゲットを定める時が来た！', options, '🏫');
+  showChoiceModal(' 志望校・学部を決定しよう！', '高校3年生の春。いよいよ受験する大学・学部のターゲットを定める時が来た！', options, '🏫');
 }
 
 function triggerApplicationChoice() {
@@ -3773,13 +3773,13 @@ function triggerApplicationChoice() {
 
     return {
       title: `${u.name} (偏差値${u.border} / 現在${judge})`,
-      subtext: `傾斜偏差値: ${curDev} (${diffPrefix}) | 共通テスト利用 ＆ 2月個別日程併願`,
+      subtext: `傾斜偏差値: ${curDev} (${diffPrefix}) | 共通試験利用 ＆ 2月個別日程併願`,
       action: () => {
         state.subUniv = u;
         enqueueModal(() => {
           showEventModal(
-            `📑 私大併願校の出願完了！`,
-            `【${u.name}】（ボーダー偏差値 ${u.border}）の出願手続きを完了した！\n\n1月の大学入学共通テストでは「共通テスト利用入試」にも同時出願！\n高得点を獲得できれば2月の個別試験前に合格を確定できるぞ！`,
+            `私大併願校の出願完了！`,
+            `【${u.name}】（ボーダー偏差値 ${u.border}）の出願手続きを完了した！\n\n1月の全国統一共通試験では「共通試験利用入試」にも同時出願！\n高得点を獲得できれば2月の個別試験前に合格を確定できるぞ！`,
             [
               `併願校: ${u.name}`,
               `目標ボーダー: 偏差値 ${u.border}`,
@@ -3788,7 +3788,7 @@ function triggerApplicationChoice() {
             '📑'
           );
         });
-        setDialog('担任の先生', `【${u.name}】の出願だな！共通テスト利用と2月個別の2段構えでいこう！`);
+        setDialog('担任の先生', `【${u.name}】の出願だな！共通試験利用と2月個別の2段構えでいこう！`);
         renderUI();
       }
     };
@@ -3819,7 +3819,7 @@ function triggerApplicationChoice() {
 
   showChoiceModal(
     '🎯 冬の出願戦略会議（私大併願校の決定）',
-    '高校3年 12月。いよいよ大学入試の出願シーズンが始まった！\n共通テスト利用入試および2月個別日程で併願する私立大学（すべり止め・併願校）を決定しよう！',
+    '高校3年 12月。いよいよ大学入試の出願シーズンが始まった！\n共通試験利用入試および2月個別日程で併願する私立大学（すべり止め・併願校）を決定しよう！',
     options,
     '📑'
   );
@@ -3839,15 +3839,15 @@ function triggerSubExamEvent() {
     return;
   }
 
-  // すでに共通テスト利用で合格済みの場合
+  // すでに共通試験利用で合格済みの場合
   if (state.subUnivKyotsuPass) {
     playSound('success');
     state.motivation = Math.min(4, state.motivation + 1);
     state.stamina = state.maxStamina;
     state.stress = Math.max(0, state.stress - 20);
     showEventModal(
-      '🎉 併願校合格確保済み！私大個別試験は免除！',
-      `共通テスト利用入試で見事【${state.subUniv.name}】の合格を確保しているため、2月の私大個別試験は受験不要！\n\nすべり止め校を確保した大きな精神的アドバンテージを得て、月末の第1志望本番に全集中できる！`,
+      ' 併願校合格確保済み！私大個別試験は免除！',
+      `共通試験利用入試で見事【${state.subUniv.name}】の合格を確保しているため、2月の私大個別試験は受験不要！\n\nすべり止め校を確保した大きな精神的アドバンテージを得て、月末の第1志望本番に全集中できる！`,
       [
         `合格確保済み: ${state.subUniv.name}`,
         '私大個別日程: 受験免除',
@@ -3860,12 +3860,12 @@ function triggerSubExamEvent() {
     return;
   }
 
-  // 共通テスト利用で受かっていない場合 ➔ 個別試験本番
+  // 共通試験利用で受かっていない場合 ➔ 個別試験本番
   showEventModal(
     '⚔️ 私大個別日程入試 本番！',
     `併願校【${state.subUniv.name}】（ボーダー偏差値 ${state.subUniv.border}）の個別日程入試が始まった！\n得意教科を活かした3教科の勝負！合格を勝ち取って浪人を回避せよ！`,
     [`受験校: ${state.subUniv.name}`, `試験科目: 3教科記述`],
-    '🎓',
+    '',
     () => startExamBattle('private_sub')
   );
 }
@@ -3915,7 +3915,7 @@ function triggerFinalApplicationChoice() {
     },
     {
       title: '🔄 志望校を全選択肢から選びなおす（出願先変更）',
-      subtext: `共通テスト自己採点【${state.kyotsuScore}点 (${state.kyotsuRate}%)】をもとに、全ての大学・学部から前期出願先を再選択する！`,
+      subtext: `共通試験自己採点【${state.kyotsuScore}点 (${state.kyotsuRate}%)】をもとに、全ての大学・学部から前期出願先を再選択する！`,
       action: () => {
         triggerReselectTargetUniv();
       }
@@ -3923,8 +3923,8 @@ function triggerFinalApplicationChoice() {
   ];
 
   showChoiceModal(
-    '📑 共テリサーチ返却！国公立 前期・最終出願戦略',
-    `共通テスト自己採点結果: 【 ${state.kyotsuScore}点 (${state.kyotsuRate}%) 】\n現在の第1志望【${currentTarget.name}】のリサーチ判定: 【 ${curJudge.rank}判定 (${curJudge.desc}) 】\n\nここが出願締め切り前の最終決定！前期日程の出願先を確定させよう！`,
+    '共通試験リサーチ返却！国公立 前期・最終出願戦略',
+    `共通試験自己採点結果: 【 ${state.kyotsuScore}点 (${state.kyotsuRate}%) 】\n現在の第1志望【${currentTarget.name}】のリサーチ判定: 【 ${curJudge.rank}判定 (${curJudge.desc}) 】\n\nここが出願締め切り前の最終決定！前期日程の出願先を確定させよう！`,
     options,
     '📑'
   );
@@ -3976,12 +3976,12 @@ function triggerReselectTargetUniv() {
         }
 
         showEventModal(
-          `📑 前期出願校 決定！【${u.name}】`,
-          `共通テストリサーチ結果【${judge.rank}判定】を踏まえ、前期日程の出願先を【${u.name}】（ボーダー偏差値 ${u.border}）に決定・出願した！\n\n二次試験本番に向けてラストスパートをかけよう！`,
+          `前期出願校 決定！【${u.name}】`,
+          `全国共通試験リサーチ結果【${judge.rank}判定】を踏まえ、前期日程の出願先を【${u.name}】（ボーダー偏差値 ${u.border}）に決定・出願した！\n\n二次試験本番に向けてラストスパートをかけよう！`,
           [
             `前期出願先: ${u.name}`,
             `目標ボーダー: 偏差値 ${u.border}`,
-            `共テリサーチ判定: 【${judge.rank}判定】`,
+            `共通試験リサーチ判定: 【${judge.rank}判定】`,
             rewardText
           ],
           '🏫',
@@ -4009,7 +4009,7 @@ function triggerReselectTargetUniv() {
 
   showChoiceModal(
     '🎯 前期出願先・志望校の再選択（全大学・学部）',
-    `【共通テスト自己採点: ${state.kyotsuScore}点 (${state.kyotsuRate}%)】\n各大学のリサーチ判定と傾斜偏差値を吟味して、前期日程の出願先を再決定しよう！`,
+    `【共通試験自己採点: ${state.kyotsuScore}点 (${state.kyotsuRate}%)】\n各大学のリサーチ判定と傾斜偏差値を吟味して、前期日程の出願先を再決定しよう！`,
     options,
     '🏫'
   );
@@ -4030,7 +4030,7 @@ function triggerKoukiSelect() {
       action: () => {
         state.kokuritsuKouki = u;
         showEventModal(
-          '📑 国公立 後期日程 出願完了！',
+          '国公立 後期日程 出願完了！',
           `【${u.name}】（ボーダー偏差値 ${u.border}）への後期日程出願を完了した！\nもし2月下旬の前期日程で涙を呑むことになっても、3月中旬にこの後期日程で最後の逆転を狙える！`,
           [`後期出願校: ${u.name}`, `ボーダー偏差値: ${u.border}`],
           '📑'
@@ -4080,14 +4080,14 @@ function triggerZenkiResultEvent() {
     playSound('fanfare');
     triggerParticles(null, null, 40, 'confetti');
     showEventModal(
-      `🌸 祝！【${target.name}】 前期日程 合格発表！ 🌸`,
+      `祝！【${target.name}】 前期日程 合格発表！ 🌸`,
       `合格者受験番号一覧の中に、自分の番号が確かにあった！\n第1志望【${target.name}】（ボーダー偏差値 ${target.border}）に見事現役合格！！\n高校3年間のすべての努力が最高の形で報われた！`,
       [
-        `前期日程合否: 【 合格 💮 】`,
+        `前期日程合否: 【 合格 [合格] 】`,
         `最終傾斜偏差値: ${finalDev} (目標ボーダー: ${target.border})`,
         '堂々の第1志望合格！栄光の大学生活へ進もう！'
       ],
-      '🎓',
+      '',
       () => triggerGameEnd()
     );
     setDialog('担任の先生', `受かったぞ！！本当によく頑張った！おめでとう！！`);
@@ -4147,7 +4147,7 @@ function triggerZenkiResultEvent() {
       `🍂 【${target.name}】 前期日程 不合格……`,
       `第1志望【${target.name}】の壁は厚く、涙を呑む結果となった……。\nだがまだチャンスはある！3月2週の国公立後期日程【${state.kokuritsuKouki.name}】が君を待っている！\n涙を拭いて、最後の栄光を掴み取れ！`,
       [
-        `前期日程合否: 【 不合格 ❌ 】`,
+        `前期日程合否: 【 不合格 [不合格] 】`,
         `残された道: 国公立後期日程【${state.kokuritsuKouki.name}】へ突入！`
       ],
       '⚔️',
@@ -4159,7 +4159,7 @@ function triggerZenkiResultEvent() {
     showEventModal(
       `🍂 【${target.name}】 不合格……全日程終了`,
       `全力を尽くしたが、第1志望の合格通知には届かなかった……。すべての入試日程が終了した。`,
-      [`前期日程合否: 【 不合格 ❌ 】`],
+      [`前期日程合否: 【 不合格 [不合格] 】`],
       '🍂',
       () => triggerGameEnd()
     );
@@ -4174,7 +4174,7 @@ function triggerKoukiExamEvent() {
     '🔥 国公立大学 後期日程 本番！',
     `泣いても笑ってもこれが高校3年間のラストバトル！\n後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）の試験開始ベルが鳴り響いた！\n残されたすべての情熱を解答用紙にぶつけろ！`,
     [`受験校: ${koukiUniv.name}`, `試験科目: 総合論述・専門記述（300点満点）`],
-    '🎓',
+    '',
     () => startExamBattle('kouki')
   );
 }
@@ -4295,7 +4295,7 @@ function triggerOBVisit() {
   const genText = ob.generation ? `第${ob.generation}期生の` : '';
 
   showEventModal(
-    `👨‍🎓 ${ob.name}先輩（${ob.univ}合格）の家庭教師指導！`,
+    `👨‍ ${ob.name}先輩（${ob.univ}合格）の家庭教師指導！`,
     `歴代OB名簿（全${list.length}名）の中から、見事【${ob.univ}】に合格した${genText}${ob.name}先輩が激励・家庭教師として駆けつけてくれた！\n\n「後輩のために、俺が得意だった【${bestSubjName}】の受験テクニックを直接伝授してやるぞ！」と熱血指導と参考書を差し入れてくれた！`,
     [
       `得意科目【${bestSubjName}】経験値 +25 pt！`,
@@ -4362,10 +4362,10 @@ function triggerMockEntry(y, m, w) {
   const targetUnivName = state.targetUniv ? state.targetUniv.name : '第1志望大学';
   let kanName = '難関大学 突破オープン模試';
   if (state.targetUniv) {
-    if (state.targetUniv.id.includes('todai')) kanName = '東大入試実戦模試';
-    else if (state.targetUniv.id.includes('kyodai')) kanName = '京大入試オープン模試';
-    else if (state.targetUniv.id.includes('waseda')) kanName = '早大入試プレ模試';
-    else if (state.targetUniv.id.includes('keio')) kanName = '慶大入試プレ模試';
+    if (state.targetUniv.id.includes('todai')) kanName = '帝大入試実戦模試';
+    else if (state.targetUniv.id.includes('kyodai')) kanName = '京洛大入試オープン模試';
+    else if (state.targetUniv.id.includes('waseda')) kanName = '早稲谷大入試プレ模試';
+    else if (state.targetUniv.id.includes('keio')) kanName = '慶明大入試プレ模試';
     else if (state.targetUniv.type === '国公立') kanName = `${state.targetUniv.shortName || '難関国公立'} 突破オープン模試`;
     else kanName = `${state.targetUniv.shortName || '有名私大'} 突破プレ模試`;
   }
@@ -4376,20 +4376,20 @@ function triggerMockEntry(y, m, w) {
   if (y === 3 && (m === 8 || m === 11) && state.targetUniv) {
     const kanSeason = m === 8 ? '夏の陣' : '秋の決戦';
     options.push({
-      title: `🏛️ 【${kanName}（${kanSeason}）】を受験する！`,
+      title: `【${kanName}（${kanSeason}）】を受験する！`,
       subtext: `志望校【${targetUnivName}】の出題形式・配点を完全模倣！A/B判定で特能【本番◯】や自信を獲得！（費用無料 / 体力-28）`,
       action: () => executeMockExam('kan', `${kanName}（${kanSeason}）`)
     });
   }
 
-  // 共通テスト型マーク模試（高3は 4月、7月、12月に開催。8月は冠模試に集中！）
+  // 共通試験型マーク模試（高3は 4月、7月、12月に開催。8月は冠模試に集中！）
   const isKyotsuMockMonth = (y === 3 && (m === 4 || m === 7 || m === 12)) || (y < 3);
   if (isKyotsuMockMonth) {
     let markName = '';
     if (y === 3) {
-      if (m === 4) markName = '第1回 全統共通テスト模試（春季）';
-      else if (m === 7) markName = '第2回 全統共通テスト模試（夏の共テ模試）';
-      else markName = '全統共通テストプレ模試（直前ファイナル）';
+      if (m === 4) markName = '第1回 全国統一共通模試（春季）';
+      else if (m === 7) markName = '第2回 全国統一共通模試（夏の共テ模試）';
+      else markName = '全国統一共通プレ模試（直前ファイナル）';
     } else {
       markName = `第${m === 6 ? 1 : (m === 11 ? 2 : 3)}回 マーク模試`;
     }
@@ -4403,9 +4403,9 @@ function triggerMockEntry(y, m, w) {
 
   // 記述模試（12月の直前プレ以外で受験可能）
   if (!(y === 3 && m === 12)) {
-    const descName = y === 3 ? `全統記述模試（${m === 8 ? '夏期' : (m === 11 ? '秋期' : `${m}月`)}）` : `第${m === 6 ? 1 : 2}回 学力記述模試`;
+    const descName = y === 3 ? `全国統一記述模試（${m === 8 ? '夏期' : (m === 11 ? '秋期' : `${m}月`)}）` : `第${m === 6 ? 1 : 2}回 学力記述模試`;
     options.push({
-      title: `📝 【${descName}】を受験する`,
+      title: `【${descName}】を受験する`,
       subtext: `論述・記述形式の難問演習！二次試験の記述力を鍛え、主要教科の経験値特大。（費用無料 / 体力-25）`,
       action: () => executeMockExam('desc', descName)
     });
@@ -4413,12 +4413,12 @@ function triggerMockEntry(y, m, w) {
 
   // 見送り選択肢
   options.push({
-    title: '📖 今回は模試を見送り、自習・休養に専念する',
+    title: '今回は模試を見送り、自習・休養に専念する',
     subtext: '体力と時間を温存し、自分のペースで苦手分野の勉強や体調管理を行います。（費用¥0 / 体力消費なし）',
     action: () => {
       playSound('click');
       showEventModal(
-        '📖 模試見送り・自習期間',
+        '模試見送り・自習期間',
         '今回は模試の受験を見送り、自分の課題に合わせた弱点克服学習と体調管理に専念した！',
         ['体力消費なし', 'この週の通常行動（勉強・休養・お出かけ）を行えます'],
         '📖'
@@ -4430,7 +4430,7 @@ function triggerMockEntry(y, m, w) {
 
   playSound('click');
   showChoiceModal(
-    `📑 ${y}年生 ${m}月 模試エントリー選択！`,
+    `${y}年生 ${m}月 模試エントリー選択！`,
     `大手予備校の模試シーズンがやってきた！\n自分の志望校戦略に合わせて、受験する模試を選択しよう！（学校一括申込のため受験料は無料です）`,
     options,
     '📊'
@@ -4483,13 +4483,13 @@ function executeMockExam(mockType, mockTitle) {
     if (d >= -6.0) return 'D';
     return 'E';
   };
-  const judgeTop = getGroupJudge(72);   // 最難関（東大・京大・国公立医進）
+  const judgeTop = getGroupJudge(72);   // 最難関（帝大・京洛大・国公立医進）
   const judgeHigh = getGroupJudge(64);  // 難関上位（早慶・旧帝大・上位国立）
   const judgeUpper = getGroupJudge(56); // 上位校（MARCH・関関同立・上位国公立）
   const judgeMid = getGroupJudge(48);   // 中堅校（日東駒専・産近甲龍・中堅国公立）
   if ((dev >= 70.0 || generalDev >= 70.0) && typeof unlockAchievement === 'function') unlockAchievement('dev_70');
 
-  // 共通テスト型マーク模試なら 1000点満点換算得点を算出
+  // 共通試験型マーク模試なら 1000点満点換算得点を算出
   let kyotsuScoreEst = Math.min(1000, Math.round((generalDev / 75) * 850 + (state.subExtraScore || 35) * 1.5 + (Math.random() - 0.5) * 20));
   let kyotsuRateEst = Math.round((kyotsuScoreEst / 1000) * 100);
 
@@ -4561,7 +4561,7 @@ function executeMockExam(mockType, mockTitle) {
     const gridHtml = `
       <div class="group-judge-grid">
         <div class="judge-badge-card">
-          <div class="group-name">🏆 最難関 (東大・京大・医進)</div>
+          <div class="group-name">最難関 (帝大・京洛大・医進)</div>
           <div class="group-result">
             <span class="group-target">目標:72</span>
             <span class="rank-tag rank-${judgeTop}">${judgeTop} 判定</span>
@@ -4575,7 +4575,7 @@ function executeMockExam(mockType, mockTitle) {
           </div>
         </div>
         <div class="judge-badge-card">
-          <div class="group-name">🎓 上位校 (MARCH・関関同立)</div>
+          <div class="group-name"> 上位校 (MARCH・関関同立)</div>
           <div class="group-result">
             <span class="group-target">目標:56</span>
             <span class="rank-tag rank-${judgeUpper}">${judgeUpper} 判定</span>
@@ -4681,12 +4681,12 @@ function startExamBattle(type) {
   const isSubExam = type === 'private_sub';
   const isKouki = type === 'kouki';
   
-  let title = '🎓 国公立二次試験（前期日程）/ 第1志望本番！';
+  let title = ' 国公立二次試験（前期日程）/ 第1志望本番！';
   let maxScore = 500;
   let maxSteps = 5;
 
   if (isKyotsu) {
-    title = '🔥 大学入学共通テスト 本番！（新課程1000点満点）';
+    title = '🔥 全国統一共通試験 本番！（新課程1000点満点）';
     maxScore = 1000;
     maxSteps = 5;
   } else if (isSubExam) {
@@ -4802,7 +4802,7 @@ function advanceExamBattle() {
 
   let gained = 0;
   if (qMax === 200) {
-    // 共通テスト200点満点大問
+    // 共通試験200点満点大問
     gained = Math.round(baseScore * 2.1) + Math.floor(Math.random() * 20);
   } else {
     // 二次試験・個別試験100点満点大問
@@ -4940,7 +4940,7 @@ function finishExamBattle() {
     state.kyotsuScore = battleState.score;
     state.kyotsuRate = Math.round((battleState.score / 1000) * 100);
 
-    // 第1志望の共通テストリサーチ判定
+    // 第1志望の全国共通試験リサーチ判定
     const target = state.targetUniv || UNIV_LIST[0];
     let targetBorderRate = 70;
     if (target.border >= 75) targetBorderRate = 88;
@@ -4962,7 +4962,7 @@ function finishExamBattle() {
     if (researchRank === 'E') state.hadMockE = true;
     if (state.kyotsuScore >= 900 && typeof unlockAchievement === 'function') unlockAchievement('kyotsu_900');
 
-    // 併願校の「共通テスト利用入試」判定
+    // 併願校の「共通試験利用入試」判定
     let subKyotsuMsg = '';
     if (state.subUniv) {
       let subBorderRate = 68;
@@ -4980,22 +4980,22 @@ function finishExamBattle() {
         subKyotsuMsg = `⚠️【共テ利用 不合格】${state.subUniv.name} のボーダー（${subBorderRate}%）に及ばず。2月2週の個別入試で合格を狙おう！`;
       }
     } else {
-      subKyotsuMsg = '📑 私大併願校の出願なし（第1志望一本勝負）';
+      subKyotsuMsg = '私大併願校の出願なし（第1志望一本勝負）';
     }
 
     const targetLabel = target.shortName || target.name;
     const summaryRewards = [
-      `共通テスト得点: ${state.kyotsuScore}点 / 1000点 (得点率: ${state.kyotsuRate}%)`,
+      `共通試験得点: ${state.kyotsuScore}点 / 1000点 (得点率: ${state.kyotsuRate}%)`,
       `第1志望【${targetLabel}】: 【 ${researchRank} 判定 】(目標: ${targetBorderRate}%)`,
       `合格見込み: ${researchDesc}`,
       subKyotsuMsg
     ];
 
     showEventModal(
-      '📝 共通テスト終了！自己採点＆共テ利用結果',
-      `2日間の共通テスト（新課程1000点満点）を戦い抜いた！\n獲得得点: 【 ${battleState.score} / 1000 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の共通テストリサーチ結果と併願校の合否が判明した！`,
+      '📝 全国統一共通試験 終了！自己採点＆利用入試結果',
+      `2日間の全国統一共通試験（新課程1000点満点）を戦い抜いた！\n獲得得点: 【 ${battleState.score} / 1000 点 】(得点率: ${state.kyotsuRate}%)\n\n大手予備校の全国共通試験リサーチ結果と併願校の合否が判明した！`,
       summaryRewards,
-      state.subUnivKyotsuPass ? '🎉' : '🎯',
+      state.subUnivKyotsuPass ? '' : '🎯',
       () => advanceTurn()
     );
 
@@ -5060,15 +5060,15 @@ function finishExamBattle() {
       playSound('fanfare');
       triggerParticles(null, null, 35, 'gold');
       showEventModal(
-        `🌸 【${koukiUniv.name}】 後期日程 奇跡の逆転合格！！ 🌸`,
+        `🌸 【${koukiUniv.name}】 後期日程 奇跡の逆転合格！！`,
         `掲示板の番号を見た瞬間、膝から崩れ落ちて号泣した！\n超高倍率の国公立後期日程【${koukiUniv.name}】（ボーダー偏差値 ${koukiUniv.border}）を見事に突破！\n\n獲得得点: 【 ${battleState.score} / 300 点 】\n前期不合格のどん底から不屈の闘志で奇跡の逆転合格を掴み取った！`,
         [
-          `後期合否: 【 合格 💮 】`,
+          `後期合否: 【 合格 [合格] 】`,
           `獲得得点: ${battleState.score}点 / 300点`,
           `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`,
           '不屈の精神により 栄光の国公立進学決定！'
         ],
-        '🎓',
+        '',
         () => triggerGameEnd()
       );
     } else {
@@ -5078,7 +5078,7 @@ function finishExamBattle() {
         `🍂 【${koukiUniv.name}】 後期日程 不合格……`,
         `全力を尽くして解答用紙を埋めたが、超高倍率の後期日程の壁は破れなかった……。\n\n獲得得点: 【 ${battleState.score} / 300 点 】\nだが、最後の1秒まで逃げずに戦い抜いた君の勇姿は、何者にも代えがたい宝物だ！`,
         [
-          `後期合否: 【 不合格 ❌ 】`,
+          `後期合否: 【 不合格 [不合格] 】`,
           `獲得得点: ${battleState.score}点 / 300点`,
           `算出偏差値: ${finalKoukiDev} (ボーダー: ${koukiUniv.border})`
         ],
@@ -5092,7 +5092,7 @@ function finishExamBattle() {
   } else {
     // 2月4週 国公立前期 / 第1志望本番
     showEventModal(
-      '🎓 前期日程・本命入試 終了！！',
+      ' 前期日程・本命入試 終了！！',
       `高校3年間のすべてをぶつけた二次試験・第1志望入試が終了した！\nすべての解答用紙を提出し終え、静かな開放感と緊張が胸を満たす。\n\n来週3月1週の運命の合格発表を待とう……！`,
       [`試験得点: ${battleState.score}点 / 500点`],
       '🌸',
@@ -5167,14 +5167,14 @@ function triggerGameEnd() {
   if (uniquePassed.length > 1) {
     // 複数合格！進学先選択画面
     const options = uniquePassed.map(u => ({
-      title: `🎓 【${u.name}】 に進学する！`,
+      title: ` 【${u.name}】 に進学する！`,
       subtext: `区分: ${u.type}・${u.course} | ボーダー偏差値: ${u.border}`,
       action: () => finalizeEnrollment(u, uniquePassed)
     }));
 
     playSound('fanfare');
     showChoiceModal(
-      '🎓 歓喜の進路決定！進学先大学を選択しよう！',
+      ' 歓喜の進路決定！進学先大学を選択しよう！',
       `おめでとうございます！君の努力が実を結び、複数の大学から合格通知を勝ち取りました！\nこれから4年間を過ごす運命のキャンパスを選択してください！`,
       options,
       '🌸'
@@ -5209,10 +5209,10 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
     if (typeof onGraduateAchievementsCheck === 'function') onGraduateAchievementsCheck(enrolledUniv, allPassed, finalDev);
 
     if (enrolledUniv.id === target.id) {
-      title = `🌸 祝！【${enrolledUniv.name}】 現役合格！！ 🌸`;
+      title = `祝！【${enrolledUniv.name}】 現役合格！！`;
       desc = `高校3年間のすべての努力が最高の結果となって結実した！\n難関【${enrolledUniv.name}】（ボーダー偏差値 ${enrolledUniv.border}）へ堂々進学決定！\n輝かしい未来のキャンパスライフが幕を開ける！`;
     } else {
-      title = `🌸 【${enrolledUniv.name}】 進学決定！！ 🌸`;
+      title = `🌸 【${enrolledUniv.name}】 進学決定！！`;
       desc = `熾烈を極めた受験戦争を戦い抜き、実力で勝ち取った【${enrolledUniv.name}】（ボーダー偏差値 ${enrolledUniv.border}）への進学が決定！\n大学で何を学び、どう成長するかは自分次第だ。胸を張って新しいスタートを切ろう！`;
     }
   } else {
@@ -5237,11 +5237,11 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
   let subStatusText = 'なし';
   if (state.subUniv) {
     if (state.subUnivKyotsuPass) {
-      subStatusText = `${state.subUniv.name} (共テ利用合格 💮)`;
+      subStatusText = `${state.subUniv.name} (共テ利用合格 [合格])`;
     } else if (state.subUnivPassed) {
-      subStatusText = `${state.subUniv.name} (一般合格 💮)`;
+      subStatusText = `${state.subUniv.name} (一般合格 [合格])`;
     } else if (state.subExamDone) {
-      subStatusText = `${state.subUniv.name} (不合格 ❌)`;
+      subStatusText = `${state.subUniv.name} (不合格 [不合格])`;
     } else {
       subStatusText = `${state.subUniv.name} (未受験)`;
     }
@@ -5252,7 +5252,7 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
     if (state.firstChoicePassed) {
       koukiStatusText = `${state.kokuritsuKouki.name}（前期合格のため受験辞退）`;
     } else if (state.koukiExamDone) {
-      koukiStatusText = `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 💮' : '不合格 ❌'})`;
+      koukiStatusText = `${state.kokuritsuKouki.name} (${state.kokuritsuKoukiPassed ? '合格 [合格]' : '不合格 [不合格]'})`;
     } else {
       koukiStatusText = `${state.kokuritsuKouki.name}（未受験）`;
     }
@@ -5264,16 +5264,16 @@ function finalizeEnrollment(enrolledUniv, allPassed) {
   isModalShowing = false;
   currentModalCallback = null;
 
-  const endText = `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrolledUniv ? enrolledUniv.name : '浪人決定'}\n第1志望(前期): ${target.name} (${state.firstChoicePassed ? '合格 💮' : '不合格 ❌'})\n国公立後期: ${koukiStatusText}\n併願私大: ${subStatusText}\n共通テスト得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`;
+  const endText = `${desc}\n\n【最終戦績サマリー】\n受験生: ${state.playerName}\n最終進学先: ${enrolledUniv ? enrolledUniv.name : '浪人決定'}\n第1志望(前期): ${target.name} (${state.firstChoicePassed ? '合格 [合格]' : '不合格 [不合格]'})\n国公立後期: ${koukiStatusText}\n併願私大: ${subStatusText}\n共通試験得点: ${state.kyotsuScore > 0 ? `${state.kyotsuScore}点 (${state.kyotsuRate}%)` : '受験免除'}\n総合学力: ${Math.round(avgAcademic)} (${getRank(avgAcademic).rank}ランク)\n本番傾斜偏差値: ${finalDev}\n習得特能数: ${state.traits.length}個\nあおい好感度: ${state.friends.aoi.affection}%`;
   const endRewards = [
     isWin ? '★ クリアデータをOB名簿に保存しました！次周回で先輩として登場します！' : 'タイトル画面からもう一度挑戦できます！'
   ];
-  state.endingData = { title, text: endText, rewards: endRewards, icon: isWin ? '🎓' : '📚' };
+  state.endingData = { title, text: endText, rewards: endRewards, icon: isWin ? '' : '📚' };
 
   // 終了後にリロードして続きから再開されないようセーブを消去
   clearSavedGame();
 
-  showEventModal(title, endText, endRewards, isWin ? '🎓' : '📚');
+  showEventModal(title, endText, endRewards, isWin ? '' : '📚');
 
   setDialog('担任の先生', `3年間の高校生活、本当によく頑張ったな！君のこれからの人生に大いなる幸あれ！`);
 }
@@ -5284,19 +5284,19 @@ function showGameOverAgain() {
   if (d) {
     showEventModal(d.title, d.text, d.rewards, d.icon);
   } else {
-    showEventModal('🎓 高校生活終了', '高校3年間の受験生活は終了しました。タイトル画面から新しい代を始めよう！', [], '🎓');
+    showEventModal(' 高校生活終了', '高校3年間の受験生活は終了しました。タイトル画面から新しい代を始めよう！', [], '');
   }
 }
 
 // 汎用イベントモーダル
 let currentModalCallback = null;
 
-function showEventModal(title, text, rewards = [], icon = '🎉', onConfirm = null) {
+function showEventModal(title, text, rewards = [], icon = '', onConfirm = null) {
   currentModalCallback = onConfirm;
 
   document.getElementById('event-modal-title').textContent = title;
   document.getElementById('event-modal-text').textContent = text;
-  document.getElementById('event-modal-icon').textContent = icon;
+  const eventIconEl = document.getElementById('event-modal-icon'); if (eventIconEl) eventIconEl.textContent = icon;
 
   const rewardsEl = document.getElementById('event-modal-rewards');
   rewardsEl.innerHTML = '';
@@ -5333,11 +5333,11 @@ function closeEventModal() {
   showNextModal();
 }
 
-function showChoiceModal(title, text, options = [], icon = '🤔') {
+function showChoiceModal(title, text, options = [], icon = '') {
   playSound('click');
   document.getElementById('choice-modal-title').textContent = title;
   document.getElementById('choice-modal-text').textContent = text;
-  document.getElementById('choice-modal-icon').textContent = icon;
+  const choiceIconEl = document.getElementById('choice-modal-icon'); if (choiceIconEl) choiceIconEl.textContent = icon;
 
   const btnContainer = document.getElementById('choice-buttons-container');
   btnContainer.innerHTML = '';
@@ -5455,14 +5455,14 @@ window.addEventListener('pageshow', () => {
 const ACHIEVEMENTS_KEY = 'juken_success_achievements';
 
 const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
-  // --- 🎓 大学合格実績 (16種) ---
+  // ---  大学合格実績 (16種) ---
   {
     id: 'pass_todai_med',
     name: '医学の頂',
     grade: 'platinum',
     icon: '👑',
     category: 'univ',
-    desc: '東京大学 理科三類（医学部）に現役合格する'
+    desc: '帝都大学 理科三類（医学部）に現役合格する'
   },
   {
     id: 'pass_todai_sci',
@@ -5470,7 +5470,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '🏛️',
     category: 'univ',
-    desc: '東京大学 理科一類（工・理学部）に現役合格する'
+    desc: '帝都大学 理科一類（工・理学部）に現役合格する'
   },
   {
     id: 'pass_todai_hum',
@@ -5478,7 +5478,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '⚖️',
     category: 'univ',
-    desc: '東京大学 文科一類・二類（法・経済）に現役合格する'
+    desc: '帝都大学 文科一類・二類（法・経済）に現役合格する'
   },
   {
     id: 'pass_kyodai_eng',
@@ -5486,7 +5486,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '🔬',
     category: 'univ',
-    desc: '京都大学 工学部・理学部に現役合格する'
+    desc: '京洛大学 工学部・理学部に現役合格する'
   },
   {
     id: 'pass_kyodai_law',
@@ -5494,7 +5494,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '📜',
     category: 'univ',
-    desc: '京都大学 法学部・経済学部に現役合格する'
+    desc: '京洛大学 法学部・経済学部に現役合格する'
   },
   {
     id: 'pass_waseda_pol',
@@ -5502,7 +5502,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '🦅',
     category: 'univ',
-    desc: '早稲田大学 政治経済学部に現役合格する'
+    desc: '早稲谷大学 政治経済学部に現役合格する'
   },
   {
     id: 'pass_keio_econ',
@@ -5510,7 +5510,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '🖊️',
     category: 'univ',
-    desc: '慶應義塾大学 経済学部・法学部に現役合格する'
+    desc: '慶明義塾大学 経済学部・法学部に現役合格する'
   },
   {
     id: 'pass_waseda_sci',
@@ -5518,15 +5518,15 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '⚙️',
     category: 'univ',
-    desc: '早稲田大学 先進・創造理工学部に現役合格する'
+    desc: '早稲谷大学 先進・創造理工学部に現役合格する'
   },
   {
     id: 'pass_meiji_law',
-    name: '駿台の砦',
+    name: '駿峰の砦',
     grade: 'silver',
     icon: '🏫',
     category: 'univ',
-    desc: '明治大学 法学部・商学部に現役合格する'
+    desc: '明政大学 法学部・商学部に現役合格する'
   },
   {
     id: 'pass_aoyama_lit',
@@ -5534,7 +5534,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '🌿',
     category: 'univ',
-    desc: '青山学院大学 文学部・国際政経に現役合格する'
+    desc: '青葉学院大学 文学部・国際政経に現役合格する'
   },
   {
     id: 'pass_doshisha_sci',
@@ -5542,7 +5542,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '🔔',
     category: 'univ',
-    desc: '同志社大学 理工学部に現役合格する'
+    desc: '同朋社大学 理工学部に現役合格する'
   },
   {
     id: 'pass_chiiki_eng',
@@ -5550,7 +5550,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'bronze',
     icon: '🏗️',
     category: 'univ',
-    desc: '地方国立大学 工学部（金沢・岡山・埼玉等）に現役合格する'
+    desc: '地方拠点国立大学 工学部（加賀・吉備・武蔵等）に現役合格する'
   },
   {
     id: 'pass_chiiki_hum',
@@ -5558,7 +5558,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'bronze',
     icon: '🏛️',
     category: 'univ',
-    desc: '地方国立大学 人文・経済学部に現役合格する'
+    desc: '地方拠点国立大学 人文・経済学部に現役合格する'
   },
   {
     id: 'pass_nitto_kindai',
@@ -5566,7 +5566,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'bronze',
     icon: '🌸',
     category: 'univ',
-    desc: '日本大学・東洋大学 または 近畿大学・東洋大学に合格する'
+    desc: '日東大学・東亜大学 または 浪速大学・東亜大学に合格する'
   },
   {
     id: 'pass_nankan_kouki',
@@ -5574,7 +5574,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '🔥',
     category: 'univ',
-    desc: '難関国公立大学 後期日程（東工大・一橋・神戸等）に合格する'
+    desc: '難関国公立大学 後期日程（帝都科学大・一ノ橋大・港都大等）に合格する'
   },
   {
     id: 'pass_chiiki_kouki',
@@ -5582,7 +5582,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'silver',
     icon: '💮',
     category: 'univ',
-    desc: '地方国立大学 後期日程（理工・人文社会）に合格する'
+    desc: '地方拠点国立大学 後期日程（理工・人文社会）に合格する'
   },
 
   // --- 📖 学力・試験実績 (7種) ---
@@ -5628,11 +5628,11 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
   },
   {
     id: 'kyotsu_900',
-    name: '共通テストマスター',
+    name: '共通試験マスター',
     grade: 'gold',
     icon: '🎯',
     category: 'study',
-    desc: '大学入学共通テスト本番（1000点満点）で900点以上を獲得する'
+    desc: '全国統一共通試験本番（1000点満点）で900点以上を獲得する'
   },
   {
     id: 'miracle_comeback',
@@ -5640,7 +5640,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     grade: 'gold',
     icon: '🌈',
     category: 'study',
-    desc: '模試または共テリサーチでE判定だった第1志望大学に本番合格する'
+    desc: '模試または共通試験リサーチでE判定だった第1志望大学に本番合格する'
   },
 
   // --- 🏫 生活・マネジメント・やりこみ実績 (7種) ---
@@ -5688,7 +5688,7 @@ const ACHIEVEMENTS_MASTER = window.ACHIEVEMENTS_MASTER = [
     id: 'ob_10',
     name: '名門校の礎',
     grade: 'gold',
-    icon: '👨‍🎓',
+    icon: '👨‍',
     category: 'life',
     desc: '歴代OB名簿に合格者を累計10名以上登録する'
   },
@@ -5725,10 +5725,10 @@ const UNIV_TO_ACHIEVEMENT_MAP = {
 };
 
 const GRADE_META = {
-  platinum: { label: '👑 プラチナ', icon: '👑' },
-  gold:     { label: '🥇 ゴールド', icon: '🥇' },
-  silver:   { label: '🥈 シルバー', icon: '🥈' },
-  bronze:   { label: '🥉 ブロンズ', icon: '🥉' }
+  platinum: { label: 'PLATINUM', icon: '👑' },
+  gold:     { label: 'GOLD', icon: '🥇' },
+  silver:   { label: 'SILVER', icon: '🥈' },
+  bronze:   { label: 'BRONZE', icon: '🥉' }
 };
 
 function getAchievementsData() {
@@ -5778,7 +5778,7 @@ function processAchievementToastQueue() {
   toast.innerHTML = `
     <div class="ach-toast-icon">${ach.icon}</div>
     <div class="ach-toast-body">
-      <div class="ach-toast-label">🏆 実績解除！ [${gMeta.label}]</div>
+      <div class="ach-toast-label">実績解除！ [${gMeta.label}]</div>
       <div class="ach-toast-title">${ach.name}</div>
       <div class="ach-toast-desc">${ach.desc}</div>
     </div>
@@ -5861,7 +5861,7 @@ function checkAchievements() {
     unlockAchievement('sub_extra_max');
   }
 
-  // 3. 共通テスト900点
+  // 3. 共通試験900点
   if ((state.kyotsuScore || 0) >= 900) {
     unlockAchievement('kyotsu_900');
   }
@@ -5917,6 +5917,39 @@ function onGraduateAchievementsCheck(enrolledUniv, allPassed, finalDev) {
   checkAchievements();
 }
 
+const OLD_TO_NEW_UNIV_ID_MAP = {
+  '東京大学 理科一類（工・理学部）': 'todai_sci',
+  '東大 理一': 'todai_sci',
+  '東京大学 理科三類（医学部）': 'todai_med',
+  '東大 理三(医)': 'todai_med',
+  '東京大学 文科一類・二類（法・経済）': 'todai_hum',
+  '東大 文科(法経)': 'todai_hum',
+  '京都大学 工学部・理学部': 'kyodai_eng',
+  '京大 工・理': 'kyodai_eng',
+  '京都大学 法学部・経済学部': 'kyodai_law',
+  '京大 法・経': 'kyodai_law',
+  '早稲田大学 政治経済学部': 'waseda_pol',
+  '早稲田 政経': 'waseda_pol',
+  '慶應義塾大学 経済学部・法学部': 'keio_econ',
+  '慶應 経・法': 'keio_econ',
+  '早稲田大学 先進・創造理工学部': 'waseda_sci',
+  '早稲田 理工': 'waseda_sci',
+  '明治大学 法学部・商学部': 'meiji_law',
+  '明治 法・商': 'meiji_law',
+  '青山学院大学 文学部・国際政経': 'aoyama_lit',
+  '青学 文・国政': 'aoyama_lit',
+  '同志社大学 理工学部': 'doshisha_sci',
+  '同志社 理工': 'doshisha_sci',
+  '地方国立大学 工学部（金沢・岡山・埼玉等）': 'chiiki_eng',
+  '地方国立 工学': 'chiiki_eng',
+  '地方国立大学 人文・経済学部': 'chiiki_hum',
+  '地方国立 文・経': 'chiiki_hum',
+  '日本大学・東洋大学 文系学部': 'nichidai_hum',
+  '日東駒専 文系': 'nichidai_hum',
+  '近畿大学・東洋大学 理工学部': 'kindai_sci',
+  '産近甲龍 理工': 'kindai_sci'
+};
+
 function syncExistingOBToAchievements() {
   try {
     const obList = getOBList();
@@ -5926,6 +5959,8 @@ function syncExistingOBToAchievements() {
       const matched = UNIV_LIST.find(u => u.name === ob.univ || u.shortName === ob.univ);
       if (matched) {
         unlockUnivAchievement(matched.id, true);
+      } else if (OLD_TO_NEW_UNIV_ID_MAP[ob.univ]) {
+        unlockUnivAchievement(OLD_TO_NEW_UNIV_ID_MAP[ob.univ], true);
       }
     });
     if (obList.length >= 10) {
@@ -5989,10 +6024,10 @@ function renderAchievementsModal() {
   const gradeCountsEl = document.getElementById('ach-grade-counts');
   if (gradeCountsEl) {
     gradeCountsEl.innerHTML = `
-      <span title="プラチナ">👑${grades.platinum}</span>
-      <span title="ゴールド">🥇${grades.gold}</span>
-      <span title="シルバー">🥈${grades.silver}</span>
-      <span title="ブロンズ">🥉${grades.bronze}</span>
+      <span class="ach-pill grade-plat">PLATINUM ${grades.platinum}</span>
+      <span class="ach-pill grade-gold">GOLD ${grades.gold}</span>
+      <span class="ach-pill grade-silver">SILVER ${grades.silver}</span>
+      <span class="ach-pill grade-bronze">BRONZE ${grades.bronze}</span>
     `;
   }
 
@@ -6012,7 +6047,7 @@ function renderAchievementsModal() {
     const card = document.createElement('div');
     card.className = `ach-card ${isUnlocked ? 'unlocked' : 'locked'} grade-${ach.grade}`;
     card.innerHTML = `
-      <div class="ach-icon-box">${isUnlocked ? ach.icon : '🔒'}</div>
+      <div class="ach-icon-box ${ach.grade} ${isUnlocked ? 'unlocked' : 'locked'}">${isUnlocked ? ach.grade.toUpperCase().slice(0, 4) : 'LOCK'}</div>
       <div class="ach-info">
         <div class="ach-title-row">
           <div class="ach-title-left">
