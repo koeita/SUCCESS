@@ -1087,20 +1087,24 @@ function renderShopBuyList() {
     }).join('');
 
     card.innerHTML = `
-      <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
-      <div class="item-info">
-        <div class="item-title-row">
-          <span class="item-name">${item.name}</span>
-          ${badgeHtml}
+      <div class="item-card-header">
+        <div class="item-header-main">
+          <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
+          <div class="item-title-info">
+            <div class="item-name">${item.name}</div>
+            <div class="item-badges-wrap">${badgeHtml}</div>
+          </div>
         </div>
-        <div class="item-desc">${item.desc}</div>
-        <div class="play-effect-row" style="margin-top: 4px;">
+        <div class="item-action">
+          ${actionBtnHtml}
+        </div>
+      </div>
+      <div class="item-desc">${item.desc}</div>
+      <div class="item-card-footer">
+        <div class="play-effect-row">
           ${effectTagsHtml}
         </div>
-        <div class="item-price" style="margin-top: 4px;">¥${item.price.toLocaleString()}</div>
-      </div>
-      <div class="item-action">
-        ${actionBtnHtml}
+        <div class="item-price">¥${item.price.toLocaleString()}</div>
       </div>
     `;
     container.appendChild(card);
@@ -1120,7 +1124,7 @@ function renderShopBagList() {
         <div style="font-size: 2.5rem; margin-bottom: 8px;">🎒</div>
         <div style="color: #334155; font-size: 0.95rem; font-weight: 800; margin-bottom: 4px;">マイバッグは空です</div>
         まだ何もアイテムを持っていません。<br>
-        「🛒 購買」タブでお小遣いを使って参考書やグッズを購入してみましょう！
+        「購買」タブでお小遣いを使って参考書やグッズを購入してみましょう！
       </div>
     `;
     return;
@@ -1160,10 +1164,10 @@ function renderShopBagList() {
     }
 
     let typeBadge = '';
-    if (item.type === 'book') typeBadge = `<span class="item-badge" style="background:#e0f2fe; color:#0284c7;">参考書</span>`;
-    else if (item.type === 'gear') typeBadge = `<span class="item-badge" style="background:#fef3c7; color:#d97706;">ギア</span>`;
-    else if (item.type === 'consumable') typeBadge = `<span class="item-badge" style="background:#dcfce7; color:#15803d;">消耗品</span>`;
-    else if (item.type === 'exam') typeBadge = `<span class="item-badge" style="background:#fae8ff; color:#a21caf;">お守り</span>`;
+    if (item.type === 'book') typeBadge = `<span class="item-badge badge-book">参考書</span>`;
+    else if (item.type === 'gear') typeBadge = `<span class="item-badge badge-gear">ギア</span>`;
+    else if (item.type === 'consumable') typeBadge = `<span class="item-badge badge-consumable">消耗品</span>`;
+    else if (item.type === 'exam') typeBadge = `<span class="item-badge badge-exam">お守り</span>`;
 
     const countLabel = item.type === 'consumable' ? ` <b style="color:#2563eb; font-weight:900;">×${count}個</b>` : '';
 
@@ -1173,19 +1177,23 @@ function renderShopBagList() {
     }).join('');
 
     card.innerHTML = `
-      <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
-      <div class="item-info">
-        <div class="item-title-row">
-          <span class="item-name">${item.name}${countLabel}</span>
-          ${typeBadge}
+      <div class="item-card-header">
+        <div class="item-header-main">
+          <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
+          <div class="item-title-info">
+            <div class="item-name">${item.name}${countLabel}</div>
+            <div class="item-badges-wrap">${typeBadge}</div>
+          </div>
         </div>
-        <div class="item-desc">${item.desc}</div>
-        <div class="play-effect-row" style="margin-top: 4px;">
-          ${effectTagsHtml}
+        <div class="item-action">
+          ${actionHtml}
         </div>
       </div>
-      <div class="item-action">
-        ${actionHtml}
+      <div class="item-desc">${item.desc}</div>
+      <div class="item-card-footer">
+        <div class="play-effect-row">
+          ${effectTagsHtml}
+        </div>
       </div>
     `;
     container.appendChild(card);
