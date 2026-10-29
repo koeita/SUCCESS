@@ -1045,6 +1045,16 @@ function renderShopUI() {
   }
 }
 
+function getItemTypeIconText(type) {
+  switch (type) {
+    case 'book': return 'BOOK';
+    case 'gear': return 'GEAR';
+    case 'consumable': return 'FOOD';
+    case 'exam': return 'EXAM';
+    default: return (type || '').slice(0, 4).toUpperCase();
+  }
+}
+
 function renderShopBuyList() {
   const container = document.getElementById('shop-items-list');
   if (!container) return;
@@ -1089,7 +1099,7 @@ function renderShopBuyList() {
     card.innerHTML = `
       <div class="item-card-header">
         <div class="item-header-main">
-          <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
+          <div class="item-icon ${item.type}"><span class="item-type-text">${getItemTypeIconText(item.type)}</span></div>
           <div class="item-title-info">
             <div class="item-name">${item.name}</div>
             <div class="item-badges-wrap">${badgeHtml}</div>
@@ -1179,7 +1189,7 @@ function renderShopBagList() {
     card.innerHTML = `
       <div class="item-card-header">
         <div class="item-header-main">
-          <div class="item-icon ${item.type}"><span class="item-type-text">${item.type.toUpperCase()}</span></div>
+          <div class="item-icon ${item.type}"><span class="item-type-text">${getItemTypeIconText(item.type)}</span></div>
           <div class="item-title-info">
             <div class="item-name">${item.name}${countLabel}</div>
             <div class="item-badges-wrap">${typeBadge}</div>
