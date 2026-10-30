@@ -56,11 +56,13 @@ body {
     linear-gradient(90deg, rgba(29, 53, 87, 0.03) 1px, transparent 1px);
   background-size: 20px 20px;
   color: var(--navy-dark);
+  width: 100%;
   height: 100dvh;
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
   overflow: hidden;
   position: relative;
 }
@@ -1012,7 +1014,8 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 100;
-  padding: 12px;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
 }
 .modal-overlay.active {
   display: flex;
@@ -1946,6 +1949,7 @@ body {
     right: 0;
     bottom: 0;
     touch-action: manipulation;
+    box-sizing: border-box;
   }
 
   .game-container {
@@ -1958,6 +1962,11 @@ body {
     box-shadow: none;
     box-sizing: border-box;
     overflow: hidden;
+    background: var(--navy-dark);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 }
 
