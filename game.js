@@ -5,6 +5,7 @@
 // ========================================================
 // 1. Web Audio API 音響エンジン & 各種設定システム
 // ========================================================
+const GAME_VERSION = '2.0.1';
 const SAVE_KEY = 'juken_success_save';
 const SETTINGS_KEY = 'juken_success_settings';
 
